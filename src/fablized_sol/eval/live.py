@@ -4,7 +4,7 @@ import shutil
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final, final
+from typing import Final, assert_never, final
 
 from agents import ModelResponse, Tool
 from anyio import to_thread
@@ -164,6 +164,8 @@ def _ledger_counts(ledger: Ledger) -> tuple[int, int, int]:
                 gate_blocks += 1
             case ClassifyEvent():
                 pass
+            case _:
+                assert_never(event)
     return tool_calls, failed_verifications, gate_blocks
 
 

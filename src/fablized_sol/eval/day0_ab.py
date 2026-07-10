@@ -3,7 +3,7 @@
 import os
 from hashlib import sha256
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, assert_never
 
 import anyio
 import typer
@@ -96,6 +96,8 @@ async def run_evaluation(options: EvalOptions) -> int:  # noqa: C901
                 writer.append(finished_event(run, "completed", None))
             case RunExhausted():
                 writer.append(finished_event(run, "exhausted", None))
+            case _:
+                assert_never(outcome)
     return int(failed)
 
 
