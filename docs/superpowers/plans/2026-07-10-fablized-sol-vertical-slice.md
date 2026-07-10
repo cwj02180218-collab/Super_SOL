@@ -124,7 +124,6 @@ reportUnusedCallResult = "warning"
 reportUnnecessaryTypeIgnoreComment = "error"
 reportUnusedVariable = "error"
 reportMissingParameterType = "error"
-reportMissingReturnType = "error"
 reportPrivateUsage = "error"
 
 [tool.ruff]
@@ -133,6 +132,7 @@ line-length = 100
 src = ["src", "tests"]
 
 [tool.ruff.lint]
+# typeCheckingMode = "all" and Ruff ANN rules enforce return annotations.
 select = ["ALL"]
 ignore = ["COM812", "ISC001", "D203", "D213", "CPY001", "FBT001", "FBT002"]
 
