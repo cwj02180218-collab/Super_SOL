@@ -13,6 +13,8 @@
 - Use Python `>=3.12`; the current host Python 3.9.6 is not supported by the project.
 - Use `uv` for environment and dependency management; do not add `requirements.txt`.
 - Pin `openai-agents==0.17.4` for the first measured harness release.
+- Pin `openai==2.38.0`; newer 2.45.0 usage-detail models are incompatible with
+  the pinned Agents SDK's default `Usage()` construction.
 - Use `typeCheckingMode = "all"`, Ruff `select = ["ALL"]`, and pytest strict mode.
 - Keep each Python module below 250 non-blank, non-comment lines.
 - Use frozen, slotted dataclasses for internal values and frozen Pydantic models at file/CLI boundaries.
@@ -94,6 +96,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
   "anyio>=4.11,<5",
+  "openai==2.38.0",
   "openai-agents==0.17.4",
   "pydantic>=2.12,<3",
   "typer>=0.19,<1",
@@ -678,6 +681,11 @@ class FablizedContext:
     registry: ToolRegistry
     arm: HoldoutArm
     retry_limit: int
+    workspace_lock: anyio.Lock = field(
+        default_factory=anyio.Lock,
+        compare=False,
+        repr=False,
+    )
 ```
 
 `validate_exposed` requires all four local tools to be registered before agent
@@ -687,7 +695,7 @@ UNKNOWN never becomes mutation or verification evidence.
 
 - [ ] **Step 4: Implement confined filesystem/process helpers before SDK decorators**
 
-Resolve relative paths against `workspace.resolve()`, reject absolute paths, and require `resolved.is_relative_to(root)`. `write_text` creates parent directories and returns `MutationToolResult` with DOCS for `.md`, `.rst`, and `.txt`, otherwise CODE. `run_verification_process` calls `anyio.run_process(context.verify_argv, cwd=context.workspace, check=False)` with a 120-second `anyio.fail_after`, returning decoded stdout/stderr capped to the final 32 KiB.
+Resolve relative paths against `workspace.resolve()`, reject absolute paths, and require `resolved.is_relative_to(root)`. Hold one process-local `anyio.Lock` across resolve plus read/write and across the complete verification process, so harness-internal parallel calls cannot race confinement checks. Hostile external processes mutating the workspace concurrently are outside the v0.1 threat model. `write_text` creates parent directories and returns `MutationToolResult` with DOCS for `.md`, `.rst`, and `.txt`, otherwise CODE. `run_verification_process` uses `anyio.open_process`, concurrently drains stdout and stderr, and retains only rolling final 32 KiB bytearrays under a 120-second `anyio.fail_after`; it must not buffer full process output before truncation.
 
 Convert `TimeoutError` to a typed result with exit code 124 and
 `FileNotFoundError` or `PermissionError` to exit code 127. The function tool
@@ -714,6 +722,10 @@ Run: `uv run pytest tests/harness/test_registry.py tests/harness/test_workspace_
 Run: `uv run python -c 'from agents import RunHooks, function_tool; from fablized_sol.harness.hooks import LedgerHooks; print(RunHooks, LedgerHooks, function_tool)'`
 
 Expected: tests pass and the smoke command prints the imported classes/function without an exception.
+
+Run the offline Runner compatibility test with normal SDK context/`Usage()`
+construction and a fake model provider. It must perform no network request and
+must fail if the OpenAI client pin drifts to the incompatible usage schema.
 
 ```bash
 git add src/fablized_sol/harness tests/harness

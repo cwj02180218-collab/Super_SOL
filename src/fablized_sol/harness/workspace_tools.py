@@ -1,12 +1,14 @@
 """Confined workspace helpers and their OpenAI Agents SDK adapters."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Final, override
 
 import anyio
 from agents import function_tool
 from agents.tool_context import ToolContext
+from anyio import to_thread
+from anyio.abc import ByteReceiveStream
 
 from fablized_sol.engine.ledger import Ledger
 from fablized_sol.engine.models import ChangeKind, HoldoutArm
@@ -49,6 +51,7 @@ class FablizedContext:
     registry: ToolRegistry
     arm: HoldoutArm
     retry_limit: int
+    workspace_lock: anyio.Lock = field(default_factory=anyio.Lock, compare=False, repr=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,8 +76,7 @@ def _resolve_confined(context: FablizedContext, path: str | Path) -> tuple[Path,
     return relative, resolved
 
 
-def list_file_paths(context: FablizedContext) -> tuple[str, ...]:
-    """List confined files as stable workspace-relative POSIX paths."""
+def _list_file_paths(context: FablizedContext) -> tuple[str, ...]:
     root = context.workspace.resolve()
     return tuple(
         sorted(
@@ -85,14 +87,28 @@ def list_file_paths(context: FablizedContext) -> tuple[str, ...]:
     )
 
 
-def read_text(context: FablizedContext, path: str | Path) -> str:
-    """Read UTF-8 text only after resolving the path inside the workspace."""
+async def list_file_paths(context: FablizedContext) -> tuple[str, ...]:
+    """List confined files while holding the process-local workspace lock."""
+    async with context.workspace_lock:
+        return await to_thread.run_sync(_list_file_paths, context)
+
+
+def _read_text(context: FablizedContext, path: str | Path) -> str:
     _, resolved = _resolve_confined(context, path)
     return resolved.read_text(encoding="utf-8")
 
 
-def write_text(context: FablizedContext, path: str | Path, content: str) -> MutationToolResult:
-    """Write confined UTF-8 text and classify the changed artifact."""
+async def read_text(context: FablizedContext, path: str | Path) -> str:
+    """Resolve and read UTF-8 text under the process-local workspace lock."""
+    async with context.workspace_lock:
+        return await to_thread.run_sync(_read_text, context, path)
+
+
+def _write_text(
+    context: FablizedContext,
+    path: str | Path,
+    content: str,
+) -> MutationToolResult:
     relative, resolved = _resolve_confined(context, path)
     resolved.parent.mkdir(parents=True, exist_ok=True)
     _ = resolved.write_text(content, encoding="utf-8")
@@ -100,49 +116,95 @@ def write_text(context: FablizedContext, path: str | Path, content: str) -> Muta
     return MutationToolResult(path=relative.as_posix(), change_kind=change_kind)
 
 
-def _decode_tail(output: bytes) -> str:
-    return output[-_OUTPUT_LIMIT_BYTES:].decode("utf-8", errors="replace")
+async def write_text(
+    context: FablizedContext,
+    path: str | Path,
+    content: str,
+) -> MutationToolResult:
+    """Resolve and write UTF-8 text under the process-local workspace lock."""
+    async with context.workspace_lock:
+        return await to_thread.run_sync(_write_text, context, path, content)
+
+
+def _append_tail(output: bytearray, chunk: bytes) -> None:
+    if len(chunk) >= _OUTPUT_LIMIT_BYTES:
+        output[:] = chunk[-_OUTPUT_LIMIT_BYTES:]
+        return
+    overflow = len(output) + len(chunk) - _OUTPUT_LIMIT_BYTES
+    if overflow > 0:
+        del output[:overflow]
+    output.extend(chunk)
+
+
+async def _drain_tail(stream: ByteReceiveStream | None, output: bytearray) -> None:
+    if stream is None:
+        return
+    async for chunk in stream:
+        _append_tail(output, chunk)
+
+
+async def _capture_process(context: FablizedContext) -> tuple[int, bytearray, bytearray]:
+    stdout = bytearray()
+    stderr = bytearray()
+    exit_code = 127
+    async with (
+        await anyio.open_process(
+            context.verify_argv,
+            stdin=None,
+            cwd=context.workspace.resolve(),
+        ) as process,
+        anyio.create_task_group() as task_group,
+    ):
+        _ = task_group.start_soon(_drain_tail, process.stdout, stdout)
+        _ = task_group.start_soon(_drain_tail, process.stderr, stderr)
+        exit_code = await process.wait()
+    return exit_code, stdout, stderr
+
+
+def _decode(output: bytearray) -> str:
+    return output.decode("utf-8", errors="replace")
 
 
 async def run_verification_process(context: FablizedContext) -> VerificationToolResult:
     """Run only manifest-owned argv and preserve a bounded typed process result."""
-    try:
-        with anyio.fail_after(_VERIFICATION_TIMEOUT_SECONDS):
-            completed = await anyio.run_process(
-                context.verify_argv,
-                cwd=context.workspace,
-                check=False,
+    async with context.workspace_lock:
+        try:
+            with anyio.fail_after(_VERIFICATION_TIMEOUT_SECONDS):
+                exit_code, stdout, stderr = await _capture_process(context)
+        except TimeoutError:
+            return VerificationToolResult(
+                exit_code=124,
+                stdout="",
+                stderr="verification timed out",
             )
-    except TimeoutError:
-        return VerificationToolResult(exit_code=124, stdout="", stderr="verification timed out")
-    except (FileNotFoundError, PermissionError) as error:
-        return VerificationToolResult(exit_code=127, stdout="", stderr=str(error))
+        except (FileNotFoundError, PermissionError) as error:
+            return VerificationToolResult(exit_code=127, stdout="", stderr=str(error))
     return VerificationToolResult(
-        exit_code=completed.returncode,
-        stdout=_decode_tail(completed.stdout),
-        stderr=_decode_tail(completed.stderr),
+        exit_code=exit_code,
+        stdout=_decode(stdout),
+        stderr=_decode(stderr),
     )
 
 
 @function_tool(failure_error_function=None)
-def list_files(context: ToolContext[FablizedContext]) -> tuple[str, ...]:
+async def list_files(context: ToolContext[FablizedContext]) -> tuple[str, ...]:
     """List all files under the confined workspace."""
-    return list_file_paths(context.context)
+    return await list_file_paths(context.context)
 
 
 @function_tool(failure_error_function=None)
-def read_file(context: ToolContext[FablizedContext], path: str) -> str:
+async def read_file(context: ToolContext[FablizedContext], path: str) -> str:
     """Read one UTF-8 file from the confined workspace.
 
     Args:
         context: SDK tool-call context carrying the trusted workspace manifest.
         path: Workspace-relative file path.
     """
-    return read_text(context.context, path)
+    return await read_text(context.context, path)
 
 
 @function_tool(failure_error_function=None)
-def write_file(
+async def write_file(
     context: ToolContext[FablizedContext],
     path: str,
     content: str,
@@ -154,7 +216,7 @@ def write_file(
         path: Workspace-relative file path.
         content: Complete replacement file content.
     """
-    return write_text(context.context, path, content)
+    return await write_text(context.context, path, content)
 
 
 @function_tool(failure_error_function=None)

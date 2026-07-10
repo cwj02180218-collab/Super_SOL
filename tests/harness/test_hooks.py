@@ -2,7 +2,6 @@ from pathlib import Path
 
 import anyio
 from agents import Agent, FunctionTool, RunContextWrapper, Usage, function_tool
-from openai.types.responses.response_usage import InputTokensDetails, OutputTokensDetails
 
 from fablized_sol.engine.events import (
     ClassifyEvent,
@@ -66,10 +65,7 @@ def _invoke_hook(
     hooks = LedgerHooks()
     wrapped = RunContextWrapper(
         context=context,
-        usage=Usage(
-            input_tokens_details=InputTokensDetails(cache_write_tokens=0, cached_tokens=0),
-            output_tokens_details=OutputTokensDetails(reasoning_tokens=0),
-        ),
+        usage=Usage(),
     )
     agent = Agent[FablizedContext](name="test")
     anyio.run(hooks.on_tool_end, wrapped, agent, tool, result)
