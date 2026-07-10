@@ -338,12 +338,13 @@ class VerificationToolEvent(BaseModel):
     kind: Literal[ToolKind.VERIFICATION] = ToolKind.VERIFICATION
     success: bool
 
-class UnknownToolEvent(BaseModel):
+class EvidenceRejectedEvent(BaseModel):
     model_config = ConfigDict(frozen=True)
-    event: Literal["tool_call"] = "tool_call"
+    event: Literal["evidence_rejected"] = "evidence_rejected"
     ts: datetime = Field(default_factory=lambda: datetime.now(UTC))
     tool: ToolName
-    kind: Literal[ToolKind.UNKNOWN] = ToolKind.UNKNOWN
+    claimed_kind: ToolKind
+    reason: Literal["unknown_tool", "malformed_result"]
 
 class ClassifyEvent(BaseModel):
     model_config = ConfigDict(frozen=True)
@@ -362,7 +363,7 @@ type LedgerEvent = (
     ReadToolEvent
     | MutationToolEvent
     | VerificationToolEvent
-    | UnknownToolEvent
+    | EvidenceRejectedEvent
     | ClassifyEvent
     | GateFireEvent
 )
@@ -634,6 +635,12 @@ def test_verification_returns_exit_code_without_output_parsing(context: Fablized
 
 Create a hook test with a fake tool named `write_file` and a `MutationToolResult(path="src/x.py", change_kind=CODE)`; after `on_tool_end`, assert the ledger contains one mutation event. Add a verification result with exit code 1 and assert `success is False`.
 
+Add adapter-drift cases for an unregistered tool and for registered mutation
+and verification tools returning the wrong result type. Each case must append
+`EvidenceRejectedEvent` and leave mutation indices and successful verification
+indices unchanged. This contract is derived from GPT.C's observed outer/inner
+event drift, but uses typed SDK callbacks instead of copying its JSON parser.
+
 - [ ] **Step 2: Run focused tests and confirm red**
 
 Run: `uv run pytest tests/harness/test_registry.py tests/harness/test_workspace_tools.py tests/harness/test_hooks.py -v`
@@ -695,7 +702,8 @@ Subclass `RunHooks[FablizedContext]`. Look up kind by `tool.name`, then
 exhaustively match the kind. READ appends `ReadToolEvent`; MUTATION requires
 `MutationToolResult` and appends `MutationToolEvent`; VERIFICATION requires
 `VerificationToolResult` and appends `VerificationToolEvent` with its success;
-UNKNOWN appends `UnknownToolEvent` and continues without evidence credit.
+UNKNOWN and malformed typed results append `EvidenceRejectedEvent` and continue
+without evidence credit. Never infer a fallback result from `str(result)`.
 Use one targeted `# noqa: OBJECT_OK` on the SDK-mandated `result: object`
 override and narrow immediately with typed parser helpers.
 
@@ -882,6 +890,7 @@ git commit -m "Block unverified completion with bounded retries"
 - Create: `src/fablized_sol/eval/day0_ab.py`
 - Create: `src/fablized_sol/measure/shadow.py`
 - Create: `eval/tasks.example.json`
+- Create: `eval/PREREGISTRATION.md`
 - Create: `eval/fixtures/python_logic/calc.py`
 - Create: `eval/fixtures/python_logic/test_calc.py`
 - Test: `tests/measure/test_shadow.py`
@@ -971,7 +980,15 @@ not the caller's current working directory.
 
 - [ ] **Step 4: Implement the separate shadow stream**
 
-Define discriminated `RunPlanned`, `RunStarted`, and `RunFinished` schemas. `RunFinished` includes `status`, `wall_time_seconds`, `tool_calls`, `failed_verifications`, `gate_blocks`, `final_defect_found: bool | None`, and `error_type: str | None`. It must not include prompts, instructions, pack text, or model output. Append one JSON line under a local lock.
+Define discriminated `RunPlanned`, `RunStarted`, and `RunFinished` schemas. `RunFinished` includes `status`, `wall_time_seconds`, `tool_calls`, `failed_verifications`, `gate_blocks`, `input_tokens`, `output_tokens`, `final_defect_found: bool | None`, and `error_type: str | None`. It must not include prompts, instructions, pack text, or model output. Append one JSON line under a local lock.
+
+Write `eval/PREREGISTRATION.md` before any live run. Declare
+`final_defect_found` as the primary quality outcome, with wall time, tool calls,
+failed verification count, gate blocks, and input/output tokens as cost
+guardrails. Compare ON/OFF within each model and Sol/baseline within the same
+arm, include exhausted/error/abandoned runs, and forbid claims based only on a
+50-session count without effect size and uncertainty. Keep this document out of
+model instructions.
 
 - [ ] **Step 5: Implement dry-run and sequential live execution**
 
