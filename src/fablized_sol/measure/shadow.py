@@ -17,7 +17,7 @@ def _utc_now() -> datetime:
 
 
 class _ShadowBase(BaseModel):
-    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid", strict=True)
 
     ts: datetime = Field(default_factory=_utc_now)
     session_id: SessionId

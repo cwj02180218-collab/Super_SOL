@@ -7,6 +7,7 @@ from typing import Annotated
 
 import anyio
 import typer
+from pydantic import ValidationError
 
 from fablized_sol.engine.models import SessionId
 from fablized_sol.eval.live import (
@@ -108,14 +109,17 @@ def evaluate(  # noqa: PLR0913
     dry_run: Annotated[bool, typer.Option()] = False,
 ) -> None:
     """Run a paired model evaluation; the CLI signature is the option contract."""
-    options = EvalOptions(
-        tasks=tasks,
-        output_dir=output_dir,
-        run_id=run_id,
-        models=(sol_model, baseline_model),
-        max_gate_retries=max_gate_retries,
-        dry_run=dry_run,
-    )
+    try:
+        options = EvalOptions(
+            tasks=tasks,
+            output_dir=output_dir,
+            run_id=run_id,
+            models=(sol_model, baseline_model),
+            max_gate_retries=max_gate_retries,
+            dry_run=dry_run,
+        )
+    except ValidationError as error:
+        raise typer.BadParameter(str(error), param_hint="evaluation options") from error
     exit_code = anyio.run(run_evaluation, options)
     if exit_code != 0:
         raise typer.Exit(exit_code)

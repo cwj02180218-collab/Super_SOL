@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 import pytest
-from agents import Agent, ModelResponse, RunContextWrapper, Usage
+from agents import ModelResponse, Usage
 from pydantic import JsonValue, TypeAdapter
 from typer.testing import CliRunner
 
@@ -14,7 +14,6 @@ from fablized_sol.harness.run import (
     AttemptRequest,
     SdkAttemptExecutor,
 )
-from fablized_sol.harness.workspace_tools import FablizedContext
 
 _RUNNER = CliRunner()
 _ROW_ADAPTER = TypeAdapter[dict[str, JsonValue]](dict[str, JsonValue])
@@ -111,6 +110,35 @@ def test_dry_run_pairs_arms_and_separates_sessions(tmp_path: Path) -> None:
     assert len({_text(row, "session_id") for row in planned}) == 2
 
 
+def test_dry_run_rejects_identical_comparison_models_before_writing(tmp_path: Path) -> None:
+    # Given both CLI comparison roles name the same model
+    output_dir = tmp_path / "out"
+
+    # When the evaluation is planned
+    result = _RUNNER.invoke(
+        app,
+        [
+            "--tasks",
+            str(_example_manifest(tmp_path)),
+            "--output-dir",
+            str(output_dir),
+            "--run-id",
+            "duplicate-models",
+            "--sol-model",
+            "gpt-5.5",
+            "--baseline-model",
+            "gpt-5.5",
+            "--dry-run",
+        ],
+    )
+
+    # Then no colliding sessions or ledgers are created
+    assert result.exit_code != 0
+    assert "comparison models must be distinct" in result.output
+    assert "Traceback" not in result.output
+    assert not output_dir.exists()
+
+
 def test_existing_run_root_fails_without_appending(tmp_path: Path) -> None:
     # Given an already populated run root
     output_dir = tmp_path / "out"
@@ -151,18 +179,16 @@ def test_live_run_is_sequential_isolated_and_records_usage(
         request: AttemptRequest,
     ) -> AttemptCompleted:
         del request
-        assert self.hooks is not None
+        assert self.response_observer is not None
         observed.append((str(self.model), self.context.workspace))
         assert not (self.context.workspace / "other-session.txt").exists()
         _ = (self.context.workspace / "other-session.txt").write_text("private", encoding="utf-8")
-        await self.hooks.on_llm_end(
-            RunContextWrapper(context=self.context, usage=Usage()),
-            Agent[FablizedContext](name="offline"),
+        self.response_observer.observe(
             ModelResponse(
                 output=[],
                 usage=Usage(input_tokens=11, output_tokens=7, total_tokens=18),
                 response_id="offline",
-            ),
+            )
         )
         return AttemptCompleted(output="offline completion")
 

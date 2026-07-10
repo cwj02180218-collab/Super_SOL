@@ -8,14 +8,13 @@ from agents import (
     GuardrailFunctionOutput,
     Model,
     OutputGuardrailTripwireTriggered,
-    RunHooks,
     Runner,
     Tool,
 )
 
 from fablized_sol.engine.models import GateAction, HoldoutArm
 from fablized_sol.harness.guardrails import GuardrailInfo, verification_gate
-from fablized_sol.harness.hooks import LedgerHooks
+from fablized_sol.harness.hooks import LedgerHooks, ModelResponseObserver, ObservedLedgerHooks
 from fablized_sol.harness.workspace_tools import FablizedContext
 
 
@@ -131,7 +130,7 @@ class SdkAttemptExecutor:
     model: str | Model
     tools: tuple[Tool, ...]
     instructions: str
-    hooks: RunHooks[FablizedContext] | None = None
+    response_observer: ModelResponseObserver | None = None
 
     async def execute(self, request: AttemptRequest) -> AttemptCompleted | AttemptBlocked:
         """Run one agent and retain the SDK guardrail's nested blocked output."""
@@ -150,7 +149,11 @@ class SdkAttemptExecutor:
             output_guardrails=output_guardrails,
         )
         try:
-            hooks = self.hooks if self.hooks is not None else LedgerHooks()
+            hooks = (
+                LedgerHooks()
+                if self.response_observer is None
+                else ObservedLedgerHooks(self.response_observer)
+            )
             result = await Runner.run(
                 agent,
                 request.input_text,

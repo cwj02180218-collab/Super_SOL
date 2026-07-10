@@ -2,8 +2,9 @@ import json
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
-from fablized_sol.eval.manifest import ManifestParseError, TaskManifest
+from fablized_sol.eval.manifest import EvalOptions, ManifestParseError, TaskManifest
 
 
 def _write_manifest(
@@ -96,3 +97,17 @@ def test_manifest_wraps_invalid_json_with_path(tmp_path: Path) -> None:
     # When the loader parses it
     with pytest.raises(ManifestParseError, match=str(path)):
         _ = TaskManifest.load(path)
+
+
+def test_eval_options_reject_identical_comparison_models(tmp_path: Path) -> None:
+    # Given both comparison roles name the same model
+    # When evaluation options cross the typed boundary
+    with pytest.raises(ValidationError, match="comparison models must be distinct"):
+        _ = EvalOptions(
+            tasks=tmp_path / "tasks.json",
+            output_dir=tmp_path / "out",
+            run_id="duplicate-models",
+            models=("gpt-5.5", "gpt-5.5"),
+            max_gate_retries=2,
+            dry_run=True,
+        )

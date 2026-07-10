@@ -4,9 +4,9 @@ import shutil
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final, final, override
+from typing import Final, final
 
-from agents import Agent, ModelResponse, RunContextWrapper, Tool
+from agents import ModelResponse, Tool
 from anyio import to_thread
 
 from fablized_sol.engine.events import (
@@ -20,7 +20,6 @@ from fablized_sol.engine.events import (
 from fablized_sol.engine.ledger import Ledger
 from fablized_sol.engine.models import HoldoutArm, SessionId, ToolKind, ToolName
 from fablized_sol.eval.manifest import TaskSpec
-from fablized_sol.harness.hooks import LedgerHooks
 from fablized_sol.harness.registry import ToolRegistry, ToolSpec
 from fablized_sol.harness.router import InstructionRequest, build_instructions
 from fablized_sol.harness.run import (
@@ -57,7 +56,7 @@ class PlannedRun:
 
 
 @final
-class UsageHooks(LedgerHooks):
+class UsageObserver:
     """Accumulate model-response token usage across bounded attempts."""
 
     __slots__ = ("input_tokens", "output_tokens")
@@ -69,14 +68,8 @@ class UsageHooks(LedgerHooks):
         self.input_tokens = 0
         self.output_tokens = 0
 
-    @override
-    async def on_llm_end(
-        self,
-        context: RunContextWrapper[FablizedContext],
-        agent: Agent[FablizedContext],
-        response: ModelResponse,
-    ) -> None:
-        del context, agent
+    def observe(self, response: ModelResponse) -> None:
+        """Add one SDK response's tokens to the out-of-band totals."""
         self.input_tokens += response.usage.input_tokens
         self.output_tokens += response.usage.output_tokens
 
@@ -88,7 +81,7 @@ class LiveRun:
     planned: PlannedRun
     workspace: Path
     ledger: Ledger
-    hooks: UsageHooks
+    usage: UsageObserver
     started: float
 
 
@@ -98,7 +91,7 @@ def create_live_run(planned: PlannedRun, run_root: Path) -> LiveRun:
         planned=planned,
         workspace=run_root / "workspaces" / planned.session_id,
         ledger=Ledger(run_root / "ledgers" / f"{planned.session_id}.jsonl"),
-        hooks=UsageHooks(),
+        usage=UsageObserver(),
         started=time.monotonic(),
     )
 
@@ -145,7 +138,7 @@ async def execute_live(run: LiveRun, max_gate_retries: int) -> RunCompleted | Ru
         model=run.planned.model,
         tools=_TOOLS,
         instructions=bundle.instructions,
-        hooks=run.hooks,
+        response_observer=run.usage,
     )
     return await run_fablized(
         executor,
@@ -186,8 +179,8 @@ def finished_event(run: LiveRun, status: RunStatus, error_type: str | None) -> R
         tool_calls=tool_calls,
         failed_verifications=failed_verifications,
         gate_blocks=gate_blocks,
-        input_tokens=run.hooks.input_tokens,
-        output_tokens=run.hooks.output_tokens,
+        input_tokens=run.usage.input_tokens,
+        output_tokens=run.usage.output_tokens,
         final_defect_found=None,
         error_type=error_type,
     )

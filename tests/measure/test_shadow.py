@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from pydantic import JsonValue, TypeAdapter
+import pytest
+from pydantic import JsonValue, TypeAdapter, ValidationError
 
 from fablized_sol.engine.models import HoldoutArm, SessionId
 from fablized_sol.measure.shadow import RunFinished, RunPlanned, RunStarted, ShadowWriter
@@ -59,3 +60,33 @@ def test_shadow_schemas_exclude_model_visible_content(tmp_path: Path) -> None:
         for line in writer.path.read_text(encoding="utf-8").splitlines()
     ]
     assert all(forbidden.isdisjoint(row) for row in rows)
+
+
+@pytest.mark.parametrize(
+    ("field", "coercive_value"),
+    [("wall_time_seconds", "1.25"), ("tool_calls", True), ("input_tokens", "100")],
+)
+def test_shadow_finished_rejects_coercive_metrics(
+    field: str,
+    coercive_value: JsonValue,
+) -> None:
+    # Given an otherwise valid terminal shadow payload with one coercive metric
+    payload = RunFinished(
+        session_id=SessionId("s1"),
+        arm=HoldoutArm.ON,
+        model="gpt-5.6-sol",
+        status="completed",
+        wall_time_seconds=1.25,
+        tool_calls=3,
+        failed_verifications=0,
+        gate_blocks=0,
+        input_tokens=100,
+        output_tokens=20,
+        final_defect_found=None,
+        error_type=None,
+    ).model_dump()
+    payload[field] = coercive_value
+
+    # When the shadow schema parses it
+    with pytest.raises(ValidationError):
+        _ = RunFinished.model_validate(payload)

@@ -2,9 +2,10 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import ClassVar, override
+from typing import Annotated, ClassVar, override
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StrictStr, ValidationError
+from pydantic_core import PydanticCustomError
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,6 +18,25 @@ class ManifestParseError(Exception):
     @override
     def __str__(self) -> str:
         return f"{self.path}: {self.detail}"
+
+
+def _require_distinct_models(
+    models: tuple[StrictStr, StrictStr],
+) -> tuple[StrictStr, StrictStr]:
+    if models[0] == models[1]:
+        error_code = "duplicate_comparison_models"
+        message = "comparison models must be distinct"
+        raise PydanticCustomError(
+            error_code,
+            message,
+        )
+    return models
+
+
+type ComparisonModels = Annotated[
+    tuple[StrictStr, StrictStr],
+    AfterValidator(_require_distinct_models),
+]
 
 
 class TaskSpec(BaseModel):
@@ -73,6 +93,6 @@ class EvalOptions(BaseModel):
     tasks: Path
     output_dir: Path
     run_id: StrictStr = Field(min_length=1, pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]*$")
-    models: tuple[StrictStr, StrictStr]
+    models: ComparisonModels
     max_gate_retries: int = Field(ge=0, le=5)
     dry_run: bool
