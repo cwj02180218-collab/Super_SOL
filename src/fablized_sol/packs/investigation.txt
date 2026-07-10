@@ -1,0 +1,1 @@
+Reproduce the observed failure first. Isolate one falsifiable hypothesis, test it, then make the smallest change and rerun the narrow verification.

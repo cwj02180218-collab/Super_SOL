@@ -1,0 +1,1 @@
+Split independent outcomes into explicit stories. Close each story only with concrete evidence, and reserve the final story for end-to-end verification.

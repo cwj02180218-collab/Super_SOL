@@ -1,0 +1,1 @@
+Inspect the actual artifact before judging it. Render, execute, or parse it with an appropriate tool and base conclusions on that observed result.
