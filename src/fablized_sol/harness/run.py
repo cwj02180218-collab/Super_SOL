@@ -8,6 +8,7 @@ from agents import (
     GuardrailFunctionOutput,
     Model,
     OutputGuardrailTripwireTriggered,
+    RunHooks,
     Runner,
     Tool,
 )
@@ -130,6 +131,7 @@ class SdkAttemptExecutor:
     model: str | Model
     tools: tuple[Tool, ...]
     instructions: str
+    hooks: RunHooks[FablizedContext] | None = None
 
     async def execute(self, request: AttemptRequest) -> AttemptCompleted | AttemptBlocked:
         """Run one agent and retain the SDK guardrail's nested blocked output."""
@@ -148,11 +150,12 @@ class SdkAttemptExecutor:
             output_guardrails=output_guardrails,
         )
         try:
+            hooks = self.hooks if self.hooks is not None else LedgerHooks()
             result = await Runner.run(
                 agent,
                 request.input_text,
                 context=self.context,
-                hooks=LedgerHooks(),
+                hooks=hooks,
             )
         except OutputGuardrailTripwireTriggered as error:
             output: GuardrailFunctionOutput = error.guardrail_result.output

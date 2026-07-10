@@ -1,0 +1,10 @@
+{
+  "tasks": [
+    {
+      "id": "python-logic",
+      "prompt": "Diagnose and fix the failing test in this Python fixture, then run the configured verification.",
+      "fixture": "fixtures/python_logic",
+      "verify_argv": ["uv", "run", "--with", "pytest", "pytest", "-q"]
+    }
+  ]
+}
