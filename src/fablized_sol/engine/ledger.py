@@ -74,7 +74,7 @@ class SessionState:
 
 
 @final
-class Ledger:  # noqa: MUTABLE_OK
+class Ledger:
     """Mutable file owner that serializes appends with a process-local lock."""
 
     __slots__ = ("_lock", "_path")

@@ -378,7 +378,7 @@ one classification for the session.
 
 - [ ] **Step 4: Implement append and aggregation**
 
-`Ledger` is intentionally mutable because it owns a process-local `threading.Lock`; document that exception and use `# noqa: MUTABLE_OK`. Append exactly one UTF-8 JSON line inside the lock. Aggregate events in file order, retaining the sequence number of the latest code mutation and latest successful verification.
+`Ledger` is intentionally mutable because it owns a process-local `threading.Lock`; document that exception in the class docstring. Append exactly one UTF-8 JSON line inside the lock. Aggregate events in file order, retaining the sequence number of the latest code mutation and latest successful verification.
 
 ```python
 @dataclass(frozen=True, slots=True)

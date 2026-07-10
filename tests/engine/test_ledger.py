@@ -59,6 +59,42 @@ def test_invalid_event_reports_line_number(tmp_path: Path) -> None:
         _ = Ledger(path).read()
 
 
+@pytest.mark.parametrize("coercive_success", ["true", 1], ids=["string", "integer"])
+def test_coercive_verification_success_reports_line_number(
+    tmp_path: Path,
+    coercive_success: str | int,
+) -> None:
+    # Given
+    path = tmp_path / "ledger.jsonl"
+    classify = json.dumps({"event": "classify", "mode": "deep", "risk_flags": []})
+    verification = json.dumps(
+        {
+            "event": "tool_call",
+            "tool": "test",
+            "kind": "verification",
+            "success": coercive_success,
+        }
+    )
+    _ = path.write_text(f"{classify}\n{verification}\n", encoding="utf-8")
+
+    # When / Then
+    with pytest.raises(LedgerParseError, match="line 2"):
+        _ = Ledger(path).read()
+
+
+def test_event_with_extra_field_reports_line_number(tmp_path: Path) -> None:
+    # Given
+    path = tmp_path / "ledger.jsonl"
+    classify = json.dumps(
+        {"event": "classify", "mode": "deep", "risk_flags": [], "unexpected": "value"}
+    )
+    _ = path.write_text(f"{classify}\n", encoding="utf-8")
+
+    # When / Then
+    with pytest.raises(LedgerParseError, match="line 1"):
+        _ = Ledger(path).read()
+
+
 def test_state_rejects_missing_classification(tmp_path: Path) -> None:
     # Given
     ledger = Ledger(tmp_path / "ledger.jsonl")

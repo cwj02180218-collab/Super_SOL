@@ -15,7 +15,7 @@ def _utc_now() -> datetime:
 class ReadToolEvent(BaseModel):
     """A tool call that only observes state."""
 
-    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, strict=True, extra="forbid")
 
     event: Literal["tool_call"] = "tool_call"
     ts: datetime = Field(default_factory=_utc_now)
@@ -26,7 +26,7 @@ class ReadToolEvent(BaseModel):
 class MutationToolEvent(BaseModel):
     """A tool call that changes a classified artifact."""
 
-    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, strict=True, extra="forbid")
 
     event: Literal["tool_call"] = "tool_call"
     ts: datetime = Field(default_factory=_utc_now)
@@ -39,7 +39,7 @@ class MutationToolEvent(BaseModel):
 class VerificationToolEvent(BaseModel):
     """A tool call that provides explicit verification evidence."""
 
-    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, strict=True, extra="forbid")
 
     event: Literal["tool_call"] = "tool_call"
     ts: datetime = Field(default_factory=_utc_now)
@@ -51,7 +51,7 @@ class VerificationToolEvent(BaseModel):
 class EvidenceRejectedEvent(BaseModel):
     """An observable tool claim that receives no evidence credit."""
 
-    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, strict=True, extra="forbid")
 
     event: Literal["evidence_rejected"] = "evidence_rejected"
     ts: datetime = Field(default_factory=_utc_now)
@@ -63,7 +63,7 @@ class EvidenceRejectedEvent(BaseModel):
 class ClassifyEvent(BaseModel):
     """The task classification fixed for a session."""
 
-    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, strict=True, extra="forbid")
 
     event: Literal["classify"] = "classify"
     ts: datetime = Field(default_factory=_utc_now)
@@ -74,7 +74,7 @@ class ClassifyEvent(BaseModel):
 class GateFireEvent(BaseModel):
     """A recorded stop attempt blocked by the evidence gate."""
 
-    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True)
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, strict=True, extra="forbid")
 
     event: Literal["gate_fire"] = "gate_fire"
     ts: datetime = Field(default_factory=_utc_now)
