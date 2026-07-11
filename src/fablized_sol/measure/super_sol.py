@@ -17,7 +17,7 @@ class SuperSolDecision:
 
 @dataclass(frozen=True, slots=True)
 class SuperSolProfile:
-    """Merged benchmark profile for GPT.C-aligned Fablized SOL runs."""
+    """Merged benchmark profile for GPT.C-aligned Super SOL runs."""
 
     name: str
     version: str
@@ -32,8 +32,8 @@ class SuperSolProfile:
 SUPER_SOL_PROFILE: Final = SuperSolProfile(
     name="super-sol",
     version="2026-07-11",
-    product_surface="gpt-5.5 + fablized-sol",
-    model_comparator_surface="gpt-5.6-sol + fablized-sol",
+    product_surface="gpt-5.5 + Super SOL",
+    model_comparator_surface="gpt-5.6-sol + Super SOL",
     reference_surface="GPT.C + Codex CLI",
     adopt_now=(
         SuperSolDecision(

@@ -2,7 +2,7 @@
 
 Date: 2026-07-11
 
-Release candidate: `v0.2.0`
+Release candidate: `v0.2.1`
 
 ## Decision
 

@@ -77,7 +77,7 @@ def test_package_exports_version() -> None:
     version = fablized_sol.__version__
 
     # Then the package exports the distribution version
-    assert version == "0.2.0"
+    assert version == "0.2.1"
 
 
 def test_sdist_uses_an_explicit_source_allowlist() -> None:

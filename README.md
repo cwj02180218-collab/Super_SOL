@@ -22,7 +22,7 @@ without exposing measurement labels to the model.
 See [docs/SUPER_SOL.md](docs/SUPER_SOL.md) for the adopted, parked, and rejected
 GPT.C decisions.
 
-The Day 1-3 validation path adds a same-task ON/OFF crossover, verifier-private
+The Day 1-3 validation path adds a same-task ON/OFF crossover, out-of-band grader
 tests, and a report that measures quality, token volume, time, tool activity,
 and GPT-5.5-first lazy escalation. See
 [docs/DAY3_VALIDATION.md](docs/DAY3_VALIDATION.md).
@@ -177,7 +177,7 @@ per-model/per-arm quality and resource cells plus a GPT-5.5-first lazy cascade.
 Token volume is reported as a cost proxy; it is not converted to dollars without
 actual billing data.
 
-Version 0.2.0 retains `fablized-sol-eval` and `fablized-sol-report` as
+The 0.2 release series retains `fablized-sol-eval` and `fablized-sol-report` as
 compatibility aliases. New automation should use the `super-sol-*` names.
 
 ## Ledger And Shadow Stream
