@@ -1,0 +1,16 @@
+{
+  "name": "super-sol",
+  "owner": { "name": "cuj0218" },
+  "metadata": {
+    "description": "Super SOL — evidence-gated paired evaluation harness for coding agents",
+    "version": "0.2.1"
+  },
+  "plugins": [
+    {
+      "name": "super-sol",
+      "source": "./",
+      "description": "Evidence-gated paired evaluation harness. One-command bootstrap (uv + Python 3.12 + offline dry-run smoke), guided dry-run and live crossover evaluations, and fail-closed aggregate reports. Live runs are billable and always require explicit confirmation; results below the preregistered threshold are reported as engineering evidence, never leaderboard claims.",
+      "category": "workflow"
+    }
+  ]
+}

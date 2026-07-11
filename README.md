@@ -34,6 +34,30 @@ evidence for harness plumbing and a routing hypothesis, not Fable parity or
 model superiority. See the [published aggregate report](benchmarks/day3-contract-v2/)
 and [Day 7 review](docs/DAY7_REVIEW.md).
 
+## Install As A Claude Code Plugin
+
+The repository ships as a Claude Code plugin so anyone can run the harness
+without cloning it manually. Inside Claude Code:
+
+```
+/plugin marketplace add cuj0218/Super-SOL
+/plugin install super-sol@super-sol
+```
+
+Then bootstrap once — `/super-sol:setup` provisions Python 3.12 and the locked
+environment via uv and proves the CLI with an offline dry-run smoke (no API
+key, no Docker, no billing). After that:
+
+- `/super-sol:eval [manifest.json]` — paired evaluation, dry-run by default;
+  live billable runs require `--live` plus explicit confirmation and the
+  fail-closed preconditions below.
+- `/super-sol:report [run-dir]` — aggregate a run and summarize it within the
+  evidence boundary (paired effects with confidence intervals, no
+  leaderboard claims below the promotion threshold).
+
+The plugin never starts a live run implicitly and never relaxes the isolation
+or evidence rules described in this README.
+
 ## Philosophy And Non-goals
 
 The harness judges observed tool execution rather than claims in generated text.

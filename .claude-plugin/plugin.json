@@ -1,0 +1,17 @@
+{
+  "name": "super-sol",
+  "version": "0.2.1",
+  "description": "Evidence-gated paired evaluation harness as a Claude Code plugin. Runs deterministic GPT-5.5 vs GPT-5.6 Sol crossover evaluations with an out-of-band grader, fail-closed Docker verification, and aggregate reporting. Measures whether routed procedures improve observable outcomes; it never converts unverified completion into success and it does not make model-superiority claims below the preregistered evidence threshold.",
+  "author": { "name": "cuj0218" },
+  "keywords": [
+    "evaluation",
+    "harness",
+    "benchmark",
+    "routing",
+    "evidence-gate",
+    "gpt-5.6-sol",
+    "paired-eval",
+    "crossover"
+  ],
+  "skills": ["./skills/super-sol"]
+}
