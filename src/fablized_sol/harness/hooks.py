@@ -54,7 +54,7 @@ class LedgerHooks(RunHooks[FablizedContext]):
         context: RunContextWrapper[FablizedContext],
         agent: Agent[FablizedContext],
         tool: Tool,
-        result: MutationToolResult | VerificationToolResult | str,
+        result: MutationToolResult | VerificationToolResult | tuple[str, ...] | str,
     ) -> None:
         """Adapt the SDK's raw runtime result without string inference."""
         del agent

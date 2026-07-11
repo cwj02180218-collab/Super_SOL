@@ -7,6 +7,7 @@ from fablized_sol.engine.events import (
     ClassifyEvent,
     EvidenceRejectedEvent,
     MutationToolEvent,
+    ReadToolEvent,
     VerificationToolEvent,
 )
 from fablized_sol.engine.ledger import Ledger
@@ -23,6 +24,7 @@ from fablized_sol.harness.workspace_tools import (
     FablizedContext,
     MutationToolResult,
     VerificationToolResult,
+    list_files,
     run_verification,
     write_file,
 )
@@ -54,7 +56,7 @@ def _context(tmp_path: Path) -> FablizedContext:
     )
 
 
-type HookResult = MutationToolResult | VerificationToolResult | str
+type HookResult = MutationToolResult | VerificationToolResult | tuple[str, ...] | str
 
 
 def _invoke_hook(
@@ -85,6 +87,19 @@ def test_hook_records_typed_mutation_result(tmp_path: Path) -> None:
     assert event.tool == ToolName("write_file")
     assert event.path == "src/x.py"
     assert event.change_kind is ChangeKind.CODE
+
+
+def test_hook_accepts_typed_file_listing_result(tmp_path: Path) -> None:
+    # Given a registered read tool returning its typed tuple
+    context = _context(tmp_path)
+
+    # When the real SDK hook adapter observes the tool ending
+    _invoke_hook(context, list_files, ("src/x.py",))
+
+    # Then read evidence is recorded without coercing the result
+    event = context.ledger.read()[-1]
+    assert isinstance(event, ReadToolEvent)
+    assert event.tool == ToolName("list_files")
 
 
 def test_hook_records_failed_verification_result(tmp_path: Path) -> None:
