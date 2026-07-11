@@ -1,6 +1,6 @@
 [project]
 name = "super-sol-harness"
-version = "0.2.1"
+version = "0.3.0"
 description = "Evidence-gated coding-agent harness with reproducible model comparisons"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -37,6 +37,7 @@ packages = ["src/fablized_sol"]
 
 [tool.hatch.build.targets.sdist]
 include = [
+  "/.agents",
   "/.python-version",
   "/AGENTS.md",
   "/CONTRIBUTING.md",
@@ -48,6 +49,8 @@ include = [
   "/docs",
   "/eval",
   "/pyproject.toml",
+  "/plugins",
+  "/security",
   "/src",
   "/tests",
   "/uv.lock",

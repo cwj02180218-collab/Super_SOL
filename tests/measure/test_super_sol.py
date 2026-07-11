@@ -8,7 +8,8 @@ def test_super_sol_profile_keeps_product_and_reference_surfaces_separate() -> No
     # When its benchmark claim boundaries are inspected
     # Then the harness product and Codex reference comparator are not conflated
     assert profile.name == "super-sol"
-    assert profile.product_surface == "gpt-5.5 + Super SOL"
+    assert profile.version == "2026-07-11-plugin-v1"
+    assert profile.product_surface == "gpt-5.6-terra + Super SOL"
     assert profile.model_comparator_surface == "gpt-5.6-sol + Super SOL"
     assert profile.reference_surface == "GPT.C + Codex CLI"
 

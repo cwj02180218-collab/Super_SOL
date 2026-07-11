@@ -8,6 +8,7 @@ from fablized_sol.engine.models import HoldoutArm
 from fablized_sol.measure.report import build_report
 from fablized_sol.measure.report_cli import app
 from fablized_sol.measure.report_models import BenchmarkReport, GradeFile
+from fablized_sol.measure.super_sol import SUPER_SOL_PROFILE
 
 _RUNNER = CliRunner()
 
@@ -38,8 +39,8 @@ def write_inputs(tmp_path: Path) -> tuple[Path, Path]:
                 "arm": arm,
                 "model": model,
                 "reasoning_effort": "medium",
-                "profile": "super-sol",
-                "profile_version": "2026-07-11",
+                "profile": SUPER_SOL_PROFILE.name,
+                "profile_version": SUPER_SOL_PROFILE.version,
             }
         )
         rows.append(

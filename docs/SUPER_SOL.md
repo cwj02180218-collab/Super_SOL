@@ -1,61 +1,74 @@
-# Super Sol Profile
+# Super SOL 제품 경계
 
-Super SOL is the merged operating profile derived from the original
-`fablized-sol` harness and `cuj0218/GPT.C`.
+Super SOL은 `fablized-sol`의 재현 가능한 평가 하네스와 `cuj0218/GPT.C`에서 검토한
+실행·검증 원칙을 결합한 Codex 품질관리 하네스입니다. 모델도, 일반 지식 온톨로지도 아닙니다.
 
-It keeps GPT-5.5 plus Super SOL as the measured product surface. GPT-5.6 Sol
-uses the same adapter only as a controlled model comparator, while GPT.C plus
-Codex CLI remains a separate operational reference whose scores are never
-pooled with this benchmark. GPT.C's wrapper and ontology inform procedure
-choices; Super SOL owns the stricter benchmark evidence boundary.
+저장소에는 서로 분리된 두 표면이 있습니다.
 
-## Adopt Now
+1. **Codex 플러그인**: 현재 Codex 작업의 도구 결과만 관찰해 변경 뒤 검증 누락을 알립니다.
+2. **선택형 API 벤치마크**: 사용자가 명시적으로 실행할 때만 모델·effort·ON/OFF arm을
+   통제된 조건에서 비교합니다.
 
-- Verification must be newer than the latest code mutation.
-- Model-callable verification and out-of-band grading must use separate,
-  digest-pinned Docker images.
-- Only typed local tool results receive mutation or verification credit.
-- Holdout labels and shadow-stream measurements stay outside model context.
-- Lazy routing is measured as a GPT-5.5-first operational cascade, with GPT-5.6
-  Sol selected only when completion or the out-of-band grader fails.
+## 일상 사용 원칙
 
-## Park For Evidence
+- 플러그인은 별도 API 키, SDK 호출, HTTP 요청, MCP 서버, 백그라운드 서비스가 없습니다.
+- 프롬프트 원문, 명령, 도구 출력, 모델 출력, 환경변수를 저장하지 않습니다.
+- 파일 변경보다 새로운 성공 검증만 완료 증거로 인정합니다.
+- 검증 누락은 한 번만 계속하도록 요청하고 무한 반복하지 않습니다.
+- 모델, reasoning effort, 권한, 서브에이전트를 자동으로 바꾸지 않습니다.
 
-- Promise-without-action regexes.
-- Repeated-failure disclosure heuristics.
-- Global always-on policy blocks copied from GPT.C.
+따라서 플러그인 자체에는 추가 API 과금 호출이 없습니다. Codex가 원래 수행하는 작업의 요금과
+사용자가 직접 승인한 외부 명령은 별개입니다. 훅은 품질 가드레일이지 운영체제 보안 경계가
+아니므로 Codex 권한·샌드박스·조직 정책을 대체하지 않습니다.
 
-These may become useful Codex wrapper behavior after holdout evidence, but they
-are not completion evidence in the benchmark harness.
+## 현재 모델 기준
 
-## Reject
+[OpenAI의 2026-07-09 GPT-5.6 정식 출시 발표](https://openai.com/index/gpt-5-6/)를 기준으로
+일상 기본값은 `gpt-5.6-terra/medium`, 어려운 문제의 통제 비교군은
+`gpt-5.6-sol/medium`입니다. 실제 모델 접근 가능 여부는 사용자 플랜과 워크스페이스 정책에
+따릅니다.
 
-- Treating command output text or model prose as verification credit.
-- Treating fail-open parser or verifier errors as successful completion.
-- Mixing GPT.C wrapper runs and Super SOL verifier runs into one score.
+플러그인은 이 권장안을 안내만 하고 모델을 자동 전환하지 않습니다. API 벤치마크는 모델과
+effort를 세션 ID 및 plan/start/finish 이벤트에 기록해 서로 다른 조건이 섞이지 않게 합니다.
 
-## Day 0 Execution Path
+## 채택한 증거 규칙
 
-1. Run dry-run smoke to confirm manifest parsing, paired model assignment, and
-   Super Sol profile metadata.
-2. Build separate verifier and grader images pinned by immutable digests.
-3. Run a small live pilot with `OPENAI_API_KEY`, `VERIFICATION_IMAGE`, and
-   `GRADER_IMAGE` set only in the local shell.
-4. Grade `final_defect_found` out of band; the runner intentionally records it as
-   `null`.
+- 모델이 호출하는 verifier와 사후 grader는 서로 다른 digest-pinned 이미지여야 합니다.
+- 로컬 typed tool 결과만 mutation 또는 verification credit을 받습니다.
+- holdout label과 shadow measurement는 모델 context 밖에 둡니다.
+- grader 오류, 증거 누락, parser 오류는 성공으로 해석하지 않습니다.
+- 공급망 검사는 고정 base digest, Critical/High CVE fail-closed scan, SPDX SBOM을 요구합니다.
 
-## Day 1-7 Validation
+다음 항목은 충분한 holdout 증거가 생길 때까지 실험으로 둡니다.
 
-The next gate adds task-level ON/OFF crossover cells, an out-of-band grader,
-and a fail-closed quality and efficiency report. It also measures a lazy
-baseline-first cascade that escalates GPT-5.5 failures to the GPT-5.6 Sol
-reference instead of paying for the reference model on every task.
+- promise-without-action 텍스트 휴리스틱
+- 반복 실패 disclosure 휴리스틱
+- 작업별 자동 모델/effort escalation
+- GPT.C의 큰 온톨로지나 전역 정책 블록
 
-See [DAY3_VALIDATION.md](DAY3_VALIDATION.md) for the commands, evidence boundary,
-and promotion threshold.
+## 무료 smoke와 선택형 live 평가
 
-The release decision and the benchmark-promotion decision are reviewed
-separately on Day 7. See [DAY7_REVIEW.md](DAY7_REVIEW.md): the open-source
-harness may ship after its offline quality gates pass, while Fable-parity and
-broad model claims remain on hold until the larger preregistered evidence gate
-is satisfied.
+무료 smoke는 모델이나 API를 호출하지 않습니다.
+
+```bash
+uv run super-sol-eval \
+  --tasks eval/tasks.example.json \
+  --output-dir .fablized/smoke \
+  --run-id day0-smoke \
+  --dry-run
+```
+
+live 평가는 로컬 `OPENAI_API_KEY`, 서로 다른 두 digest-pinned 이미지, 그리고 명령의
+`--confirm-billable`이 모두 있어야 시작됩니다. CI나 플러그인은 live 평가를 자동 실행하지
+않습니다. 전체 절차는 [README](../README.md)와
+[verifier 안내](../eval/verifier/README.md)를 참고하세요.
+
+## 과거 결과와 승격 기준
+
+v0.2.1의 GPT-5.5 대 GPT-5.6 Sol 파일럿은 당시 배관과 routing 가설을 검증한 동결된 역사
+자료입니다. 현재 Terra/Sol 조합의 성능이나 Fable parity를 증명하지 않습니다.
+
+모델·하네스 성능 주장을 승격하려면 최소 50개 crossover 작업 그룹, 미공개 versioned grader
+pack, 고정된 두 이미지 digest, 세션별 외부 결함 라벨, paired effect와 불확실성, 실제 청구
+비용, 튜닝에 쓰지 않은 사전등록 재실행이 필요합니다. 자세한 내용은
+[Day 1-3 검증](DAY3_VALIDATION.md)과 [Day 7 검토](DAY7_REVIEW.md)를 참고하세요.

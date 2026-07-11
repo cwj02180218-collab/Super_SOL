@@ -44,6 +44,7 @@ def test_console_scripts_are_registered() -> None:
         "fablized-sol-report",
         "super-sol-eval",
         "super-sol-report",
+        "super-sol-container-audit",
     }
 
     # When its public console-script metadata is selected
@@ -77,7 +78,7 @@ def test_package_exports_version() -> None:
     version = fablized_sol.__version__
 
     # Then the package exports the distribution version
-    assert version == "0.2.1"
+    assert version == "0.3.0"
 
 
 def test_sdist_uses_an_explicit_source_allowlist() -> None:
@@ -91,6 +92,7 @@ def test_sdist_uses_an_explicit_source_allowlist() -> None:
     # Then only publishable source and project metadata roots are eligible
     assert included == {
         "/.python-version",
+        "/.agents",
         "/AGENTS.md",
         "/CONTRIBUTING.md",
         "/LICENSE",
@@ -101,7 +103,22 @@ def test_sdist_uses_an_explicit_source_allowlist() -> None:
         "/docs",
         "/eval",
         "/pyproject.toml",
+        "/plugins",
+        "/security",
         "/src",
         "/tests",
         "/uv.lock",
     }
+
+
+def test_readme_exposes_beginner_plugin_and_current_model_contract() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+
+    assert "codex plugin marketplace add cuj0218/Super-SOL" in readme
+    assert "추가 API 과금 호출 없음" in readme
+    assert "gpt-5.6-terra" in readme
+    assert "--product-effort" in readme
+    assert "--confirm-billable" in readme
+    assert "super-sol-container-audit" in readme
+    assert "https://openai.com/index/gpt-5-6/" in readme
+    assert "GPT-5.6 Sol is a limited preview" not in readme
