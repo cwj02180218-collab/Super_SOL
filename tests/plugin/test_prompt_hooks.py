@@ -82,6 +82,23 @@ def test_negative_billing_phrase_overrides_live_words(
     assert _state_payloads(plugin_data)[0]["billable_authorized"] is False
 
 
+def test_billable_authorization_requires_standalone_fixed_confirmation(
+    run_hook: HookRunner,
+    plugin_data: Path,
+) -> None:
+    incidental = run_hook(
+        hook_input(
+            "UserPromptSubmit", prompt="Explain the phrase 'call the api' without running it"
+        )
+    )
+    assert incidental.returncode == 0
+    assert _state_payloads(plugin_data)[0]["billable_authorized"] is False
+
+    approved = run_hook(hook_input("UserPromptSubmit", prompt="SUPER SOL BILLABLE RUN APPROVED"))
+    assert approved.returncode == 0
+    assert _state_payloads(plugin_data)[0]["billable_authorized"] is True
+
+
 def test_malformed_and_oversized_input_fail_open_with_warning(run_hook: HookRunner) -> None:
     malformed = run_hook("not-json")
     oversized = run_hook("{" + ("x" * 1_048_576))

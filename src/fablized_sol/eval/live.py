@@ -54,6 +54,14 @@ class PlannedRun:
     reasoning_effort: ReasoningEffort
     session_id: SessionId
     arm: HoldoutArm
+    run_digest: str
+    task_digest: str
+    preregistration_digest: str
+    harness_version: str
+    agents_sdk_version: str
+    openai_sdk_version: str
+    verification_image: str
+    grader_image: str
 
 
 @final

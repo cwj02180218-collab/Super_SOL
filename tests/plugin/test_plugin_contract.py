@@ -36,6 +36,8 @@ def test_hook_config_registers_only_local_python_commands() -> None:
     assert set(hooks) == {"SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop"}
     encoded = json.dumps(hooks)
     assert "$PLUGIN_ROOT/hooks/super_sol_hook.py" in encoded
+    assert "commandWindows" in encoded
+    assert "command_windows" not in encoded
     assert "http://" not in encoded
     assert "https://" not in encoded
 

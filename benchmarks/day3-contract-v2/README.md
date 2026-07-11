@@ -29,4 +29,6 @@ hypothesis. It does not establish Fable parity, general GPT-5.5 superiority, or
 a quality uplift from Super SOL. Promotion requires the larger evidence gate in
 [the Day 7 review](../../docs/DAY7_REVIEW.md).
 
-`report.json` is the machine-readable report emitted by `super-sol-report`.
+`report.json` is the frozen machine-readable v0.2.1 report. It predates the v0.3 provenance and
+reasoning-effort schema and is intentionally not accepted by the current `super-sol-report` parser.
+No missing effort or provenance has been guessed during migration.

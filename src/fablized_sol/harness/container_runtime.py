@@ -21,6 +21,7 @@ _IMAGE_PATTERN: Final = re.compile(r"^[^@\s]+@sha256:[0-9a-f]{64}$")
 _MEMORY_LIMIT: Final = "512m"
 _CPU_LIMIT: Final = "1.0"
 _CLEANUP_TIMEOUT_SECONDS: Final = 10.0
+_PREFLIGHT_TIMEOUT_SECONDS: Final = 30.0
 
 
 @final
@@ -93,6 +94,31 @@ class VerificationProcessRunner(Protocol):
 def is_digest_pinned_image(image: str) -> bool:
     """Whether an image reference is immutable and syntactically complete."""
     return _IMAGE_PATTERN.fullmatch(image) is not None
+
+
+def preflight_local_images(images: tuple[str, ...]) -> bool:
+    """Confirm every immutable image exists locally before a model run begins."""
+    try:
+        docker = _resolve_docker_executable()
+        environment = {
+            key: value
+            for key in ("HOME", "DOCKER_CONFIG", "DOCKER_CONTEXT", "DOCKER_HOST")
+            if (value := os.environ.get(key)) is not None
+        }
+        for image in images:
+            completed = subprocess.run(  # noqa: S603
+                (str(docker), "image", "inspect", image),
+                check=False,
+                env=environment,
+                stderr=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                timeout=_PREFLIGHT_TIMEOUT_SECONDS,
+            )
+            if completed.returncode != 0:
+                return False
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return True
 
 
 def build_docker_invocation(

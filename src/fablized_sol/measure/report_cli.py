@@ -17,6 +17,8 @@ def _markdown(report: BenchmarkReport) -> str:
         "",
         f"Baseline: `{baseline}` (`{report.baseline_effort}`)  ",
         f"Reference: `{reference}` (`{report.reference_effort}`)",
+        f"Run digest: `{report.run_digest}`  ",
+        f"Quality interval: `{report.quality_interval_method}`",
         "",
         "| Model | Effort | Arm | Quality | Tokens | Tokens / good run | Mean seconds |",
         "| --- | --- | --- | ---: | ---: | ---: | ---: |",
@@ -38,14 +40,14 @@ def _markdown(report: BenchmarkReport) -> str:
             "",
             "## Paired ON-minus-OFF effects",
             "",
-            "| Model | Quality delta (95% CI) | Token delta (95% CI) |",
-            "| --- | ---: | ---: |",
+            "| Model | Effort | Quality delta (95% CI) | Token delta (95% CI) |",
+            "| --- | --- | ---: | ---: |",
         ]
     )
     for effect in report.paired_effects:
         model = effect.model.replace("|", "\\|").replace("\n", " ")
         row = (
-            f"| {model} | {effect.quality_delta:.1%} "
+            f"| {model} | {effect.reasoning_effort} | {effect.quality_delta:.1%} "
             f"[{effect.quality_ci_low:.1%}, {effect.quality_ci_high:.1%}] | "
             f"{effect.mean_token_delta:.1f} "
             f"[{effect.token_ci_low:.1f}, {effect.token_ci_high:.1f}] |"

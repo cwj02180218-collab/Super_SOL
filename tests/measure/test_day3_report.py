@@ -2,15 +2,26 @@ import json
 from pathlib import Path
 
 import pytest
+from pydantic import JsonValue, TypeAdapter
 from typer.testing import CliRunner
 
 from fablized_sol.engine.models import HoldoutArm
 from fablized_sol.measure.report import build_report
 from fablized_sol.measure.report_cli import app
-from fablized_sol.measure.report_models import BenchmarkReport, GradeFile
+from fablized_sol.measure.report_models import BenchmarkReport, GradeFile, ReportInputError
 from fablized_sol.measure.super_sol import SUPER_SOL_PROFILE
 
 _RUNNER = CliRunner()
+_ROW_ADAPTER = TypeAdapter[dict[str, JsonValue]](dict[str, JsonValue])
+_RUN_DIGEST = "d" * 64
+_VERIFICATION_IMAGE = "ghcr.io/example/verify@sha256:" + "a" * 64
+_GRADER_IMAGE = "ghcr.io/example/grader@sha256:" + "b" * 64
+
+
+def _event_rows(events: Path) -> list[dict[str, JsonValue]]:
+    return [
+        _ROW_ADAPTER.validate_json(line) for line in events.read_text(encoding="utf-8").splitlines()
+    ]
 
 
 def write_inputs(tmp_path: Path) -> tuple[Path, Path]:
@@ -41,6 +52,14 @@ def write_inputs(tmp_path: Path) -> tuple[Path, Path]:
                 "reasoning_effort": "medium",
                 "profile": SUPER_SOL_PROFILE.name,
                 "profile_version": SUPER_SOL_PROFILE.version,
+                "run_digest": _RUN_DIGEST,
+                "task_digest": ("a" if task_id == "task-a" else "b") * 64,
+                "preregistration_digest": "c" * 64,
+                "harness_version": "0.3.0",
+                "agents_sdk_version": "0.17.4",
+                "openai_sdk_version": "2.38.0",
+                "verification_image": _VERIFICATION_IMAGE,
+                "grader_image": _GRADER_IMAGE,
             }
         )
         rows.append(
@@ -78,7 +97,16 @@ def write_inputs(tmp_path: Path) -> tuple[Path, Path]:
         "".join(f"{json.dumps(row)}\n" for row in rows),
         encoding="utf-8",
     )
-    _ = grades.write_text(json.dumps({"grades": grade_rows}), encoding="utf-8")
+    _ = grades.write_text(
+        json.dumps(
+            {
+                "schema_version": "super-sol-grades/v3",
+                "run_digest": _RUN_DIGEST,
+                "grades": grade_rows,
+            }
+        ),
+        encoding="utf-8",
+    )
     return events, grades
 
 
@@ -107,6 +135,10 @@ def test_report_quantifies_quality_efficiency_and_lazy_escalation(tmp_path: Path
     # Then it separates model cells and prices the lazy fallback in token volume
     assert result.exit_code == 0
     report = BenchmarkReport.model_validate_json(output.read_text(encoding="utf-8"))
+    assert report.schema_version == "super-sol-report/v3"
+    assert report.run_digest == _RUN_DIGEST
+    assert report.verification_image == _VERIFICATION_IMAGE
+    assert report.grader_image == _GRADER_IMAGE
     cells = {(cell.model, cell.arm): cell for cell in report.cells}
     assert cells[("gpt-5.6-terra", HoldoutArm.ON)].quality_rate == 0.5
     assert cells[("gpt-5.6-sol", HoldoutArm.ON)].quality_rate == 1.0
@@ -122,6 +154,8 @@ def test_report_quantifies_quality_efficiency_and_lazy_escalation(tmp_path: Path
     assert effects["gpt-5.6-terra"].quality_delta == -0.5
     assert effects["gpt-5.6-terra"].mean_token_delta == -20.0
     assert effects["gpt-5.6-sol"].quality_delta == 0.5
+    markdown = output.with_suffix(".md").read_text(encoding="utf-8")
+    assert "| Model | Effort | Quality delta" in markdown
 
 
 def test_report_fails_closed_when_an_out_of_band_grade_is_missing(tmp_path: Path) -> None:
@@ -147,6 +181,54 @@ def test_report_fails_closed_when_an_out_of_band_grade_is_missing(tmp_path: Path
     # Then incomplete quality evidence cannot become a benchmark claim
     assert result.exit_code != 0
     assert "missing grade" in result.output
+
+
+def test_report_rejects_grade_file_for_a_different_run(tmp_path: Path) -> None:
+    events, grades = write_inputs(tmp_path)
+    payload = GradeFile.model_validate_json(grades.read_text(encoding="utf-8"))
+    _ = grades.write_text(
+        payload.model_copy(update={"run_digest": "e" * 64}).model_dump_json(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ReportInputError, match="run digest"):
+        _ = build_report(events, grades, "gpt-5.6-terra", "gpt-5.6-sol")
+
+
+def test_report_rejects_embedded_final_defect_label(tmp_path: Path) -> None:
+    events, grades = write_inputs(tmp_path)
+    rows = _event_rows(events)
+    finish = next(row for row in rows if row["event"] == "run_finished")
+    finish["final_defect_found"] = True
+    _ = events.write_text("".join(f"{json.dumps(row)}\n" for row in rows), encoding="utf-8")
+
+    with pytest.raises(ReportInputError, match="embedded final defect"):
+        _ = build_report(events, grades, "gpt-5.6-terra", "gpt-5.6-sol")
+
+
+def test_all_tied_binary_quality_keeps_nonzero_uncertainty(tmp_path: Path) -> None:
+    events, grades = write_inputs(tmp_path)
+    rows = _event_rows(events)
+    for row in rows:
+        if row["event"] == "run_finished":
+            row["grader_passed"] = True
+    _ = events.write_text("".join(f"{json.dumps(row)}\n" for row in rows), encoding="utf-8")
+    payload = GradeFile.model_validate_json(grades.read_text(encoding="utf-8"))
+    tied = payload.model_copy(
+        update={
+            "grades": tuple(
+                grade.model_copy(update={"final_defect_found": False}) for grade in payload.grades
+            )
+        }
+    )
+    _ = grades.write_text(tied.model_dump_json(), encoding="utf-8")
+
+    report = build_report(events, grades, "gpt-5.6-terra", "gpt-5.6-sol")
+
+    assert all(effect.quality_delta == 0 for effect in report.paired_effects)
+    assert all(
+        effect.quality_ci_low < 0 < effect.quality_ci_high for effect in report.paired_effects
+    )
 
 
 def test_report_rejects_identical_model_roles_and_markdown_output_path(tmp_path: Path) -> None:

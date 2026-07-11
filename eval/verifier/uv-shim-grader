@@ -1,0 +1,27 @@
+#!/bin/sh
+set -eu
+
+if [ "$#" -lt 1 ] || [ "$1" != "run" ]; then
+  echo "uv grader shim supports: uv run [--with PACKAGE] pytest ..." >&2
+  exit 64
+fi
+
+shift
+
+if [ "$#" -ge 2 ] && [ "$1" = "--with" ]; then
+  shift 2
+fi
+
+if [ "$#" -lt 1 ] || [ "$1" != "pytest" ]; then
+  echo "uv grader shim requires pytest after uv run" >&2
+  exit 64
+fi
+
+shift
+unset PYTHONHOME PYTHONPATH
+export PYTEST_DISABLE_PLUGIN_AUTOLOAD=1
+export PYTHONDONTWRITEBYTECODE=1
+
+exec /usr/local/bin/python -I -c \
+  'import sys; sys.path.insert(0, "/opt/grader/tests"); from pytest import console_main; raise SystemExit(console_main())' \
+  "$@"

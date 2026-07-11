@@ -35,22 +35,6 @@ jobs:
           load: true
           pull: true
           tags: super-sol-grader:audit
-      - name: Scan verifier
-        uses: docker/scout-action@2688993af7bafd6ba8c6a74ec652442be91dd82b # v1.23.1
-        with:
-          command: cves
-          image: local://super-sol-verifier:audit
-          only-severities: critical,high
-          exit-code: true
-          write-comment: false
-      - name: Scan grader
-        uses: docker/scout-action@2688993af7bafd6ba8c6a74ec652442be91dd82b # v1.23.1
-        with:
-          command: cves
-          image: local://super-sol-grader:audit
-          only-severities: critical,high
-          exit-code: true
-          write-comment: false
       - name: Prepare SBOM directory
         run: mkdir -p security/sbom
       - name: Generate verifier SBOM
@@ -69,9 +53,36 @@ jobs:
           format: spdx
           output: security/sbom/grader.spdx.json
           write-comment: false
+      - name: Scan verifier
+        id: scan-verifier
+        continue-on-error: true
+        uses: docker/scout-action@2688993af7bafd6ba8c6a74ec652442be91dd82b # v1.23.1
+        with:
+          command: cves
+          image: local://super-sol-verifier:audit
+          only-severities: critical,high
+          exit-code: true
+          write-comment: false
+      - name: Scan grader
+        id: scan-grader
+        continue-on-error: true
+        uses: docker/scout-action@2688993af7bafd6ba8c6a74ec652442be91dd82b # v1.23.1
+        with:
+          command: cves
+          image: local://super-sol-grader:audit
+          only-severities: critical,high
+          exit-code: true
+          write-comment: false
       - name: Upload SBOM evidence
+        if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: super-sol-sboms
           path: security/sbom/*.spdx.json
           if-no-files-found: error
+      - name: Enforce scan gate
+        if: always()
+        env:
+          GRADER_SCAN: ${{ steps.scan-grader.outcome }}
+          VERIFIER_SCAN: ${{ steps.scan-verifier.outcome }}
+        run: test "$VERIFIER_SCAN" = success && test "$GRADER_SCAN" = success

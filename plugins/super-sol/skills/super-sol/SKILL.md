@@ -19,6 +19,7 @@ description: Complete and verify work in stock Codex with beginner-friendly expl
 - Stay inside the active Codex task. Do not make a direct paid model or API call unless the user
   explicitly requests and confirms a billable run.
 - Do not request an API key for ordinary plugin work.
+- Warn about missing verification without automatically creating another model continuation.
 - Do not create subagents automatically.
 - Explain technical terms briefly before relying on them.
 - Do not claim the harness changes a model's intrinsic capability.

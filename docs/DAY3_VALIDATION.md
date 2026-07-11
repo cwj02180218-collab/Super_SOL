@@ -50,7 +50,8 @@ context를 별도로 사용해야 합니다.
 ## Day 3: 명시적 live 실행과 보고서
 
 live는 자동 호출되지 않습니다. 로컬 API 키, 두 digest-pinned 이미지와 함께 사용자가
-`--confirm-billable`을 직접 입력해야 합니다.
+`--confirm-billable`을 직접 입력해야 합니다. 실행기는 두 이미지가 로컬에 있는지 모델 호출 전에
+확인합니다.
 
 ```bash
 uv run super-sol-eval \
@@ -69,6 +70,8 @@ uv run super-sol-eval \
 
 ```json
 {
+  "schema_version": "super-sol-grades/v3",
+  "run_digest": "events.jsonl의 공통 run_digest",
   "grades": [
     {"session_id": "sha256-session-id", "final_defect_found": false}
   ]
@@ -83,8 +86,9 @@ uv run super-sol-report \
 ```
 
 보고서는 모든 계획 세션의 plan/start/finish와 외부 grade가 정확히 하나씩 있을 때만 생성됩니다.
-모델 또는 effort 불일치, 빠진 셀, 중복 terminal event, 빠진 grade는 fail-closed입니다. 결과에는
-결함 없는 비율, token, 시간, 도구 호출, 검증 실패, gate block, paired effect, 95% 구간과
+모델, effort, run digest, task content, image provenance 불일치나 빠진 셀, 중복 terminal event,
+빠진 grade는 fail-closed입니다. 결과에는 결함 없는 비율, token, 시간, 도구 호출, 검증 실패,
+gate block, paired effect, 보수적인 paired-binary 95% 구간과
 Terra-first lazy cascade의 품질·escalation rate·token 절감 proxy가 포함됩니다.
 
 token volume은 비용 proxy이지 실제 달러 비용이 아닙니다. 비용 주장은 해당 실행의 실제 청구

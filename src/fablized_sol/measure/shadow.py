@@ -34,6 +34,14 @@ class RunPlanned(_ShadowBase):
     task_id: str = Field(min_length=1)
     profile: str
     profile_version: str
+    run_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    task_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    preregistration_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    harness_version: str = Field(min_length=1)
+    agents_sdk_version: str = Field(min_length=1)
+    openai_sdk_version: str = Field(min_length=1)
+    verification_image: str = Field(min_length=1)
+    grader_image: str = Field(min_length=1)
 
 
 class RunStarted(_ShadowBase):

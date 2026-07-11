@@ -79,6 +79,15 @@ def test_dry_run_emits_two_models_without_api_key(
     }
     assert {_text(row, "profile") for row in planned} == {SUPER_SOL_PROFILE.name}
     assert {_text(row, "profile_version") for row in planned} == {SUPER_SOL_PROFILE.version}
+    assert len({_text(row, "run_digest") for row in planned}) == 1
+    assert all(len(_text(row, "run_digest")) == 64 for row in planned)
+    assert all(len(_text(row, "task_digest")) == 64 for row in planned)
+    assert {_text(row, "verification_image") for row in planned} == {"dry-run"}
+    assert {_text(row, "grader_image") for row in planned} == {"dry-run"}
+    assert all(_text(row, "preregistration_digest") for row in planned)
+    assert all(_text(row, "harness_version") == "0.3.0" for row in planned)
+    assert all(_text(row, "agents_sdk_version") for row in planned)
+    assert all(_text(row, "openai_sdk_version") for row in planned)
 
 
 def test_dry_run_pairs_arms_and_separates_sessions(tmp_path: Path) -> None:
@@ -105,6 +114,48 @@ def test_dry_run_pairs_arms_and_separates_sessions(tmp_path: Path) -> None:
     planned = [row for row in rows if row["event"] == "run_planned"]
     assert len({_text(row, "arm") for row in planned}) == 1
     assert len({_text(row, "session_id") for row in planned}) == 2
+
+
+def test_session_identity_changes_with_task_and_fixture_content(tmp_path: Path) -> None:
+    first_root = tmp_path / "first"
+    second_root = tmp_path / "second"
+    first_root.mkdir()
+    second_root.mkdir()
+    first_manifest = example_manifest(first_root)
+    second_manifest = example_manifest(second_root)
+    second_text = second_manifest.read_text(encoding="utf-8").replace(
+        "Diagnose and fix the failing test.",
+        "A materially different task.",
+    )
+    _ = second_manifest.write_text(second_text, encoding="utf-8")
+    _ = (second_root / "fixture" / "calc.py").write_text("def add(a, b):\n    return a + b\n")
+
+    for manifest, output in (
+        (first_manifest, tmp_path / "out-first"),
+        (second_manifest, tmp_path / "out-second"),
+    ):
+        result = RUNNER.invoke(
+            app,
+            [
+                "--tasks",
+                str(manifest),
+                "--output-dir",
+                str(output),
+                "--run-id",
+                "same-label",
+                "--dry-run",
+            ],
+        )
+        assert result.exit_code == 0
+
+    first = read_jsonl(tmp_path / "out-first" / "same-label" / "events.jsonl")
+    second = read_jsonl(tmp_path / "out-second" / "same-label" / "events.jsonl")
+    assert {_text(row, "run_digest") for row in first} != {
+        _text(row, "run_digest") for row in second
+    }
+    assert {_text(row, "session_id") for row in first} != {
+        _text(row, "session_id") for row in second
+    }
 
 
 def test_live_cli_rejects_missing_billable_confirmation_before_creating_run(

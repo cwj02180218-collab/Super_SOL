@@ -1,7 +1,10 @@
 """Privacy-minimized lifecycle hooks for the Super SOL Codex plugin."""
 
+from __future__ import annotations
+
 import json
 import re
+import shlex
 import sys
 import time
 
@@ -27,15 +30,9 @@ _NEGATIVE_BILLING = (
     "don't call api",
     "do not call api",
 )
-_POSITIVE_BILLING = (
-    "과금 승인",
-    "유료 실행",
-    "billable approved",
-    "confirm billable",
-    "live eval 실행",
-    "run live eval",
-    "api 호출해",
-    "call the api",
+_BILLABLE_CONFIRMATIONS = (
+    "super sol 유료 실행 승인",
+    "super sol billable run approved",
 )
 _RELEASE_SIGNALS = (
     "release",
@@ -58,12 +55,7 @@ _CONVERSATION_SIGNALS = (
     "뭐야",
     "알려줘",
 )
-_VERIFICATION = re.compile(
-    r"(?:\bpytest\b|\bruff\b|\bbasedpyright\b|\bmypy\b|\bcargo\s+test\b|"
-    r"\bgo\s+test\b|\b(?:npm|pnpm|yarn)\s+(?:run\s+)?(?:test|lint|build)\b|"
-    r"\buv\s+build\b|\bgit\s+diff\s+--check\b)",
-    re.IGNORECASE,
-)
+_SHELL_OPERATORS = {"&", "&&", ";", "|", "||"}
 
 
 def _context(event: str, text: str) -> dict[str, object]:
@@ -89,13 +81,15 @@ def _billable_authorized(prompt: str) -> bool:
     lowered = prompt.casefold()
     if any(signal in lowered for signal in _NEGATIVE_BILLING):
         return False
-    return any(signal in lowered for signal in _POSITIVE_BILLING)
+    lines = {line.strip().casefold() for line in prompt.splitlines()}
+    return any(confirmation in lines for confirmation in _BILLABLE_CONFIRMATIONS)
 
 
 def _session_start() -> dict[str, object]:
     text = (
         "Super SOL은 현재 Codex 작업 안에서만 동작하며 추가 과금 API를 자동 호출하지 않는다. "
         "행동을 바꾸면 가장 좁은 검증을 실행하고 결과를 읽는다. "
+        "검증 누락 시 경고만 하며 모델을 자동으로 다시 호출하지 않는다. "
         "초보자가 이해할 말로 결론부터 설명한다."
     )
     return _context("SessionStart", text)
@@ -145,7 +139,71 @@ def _command(payload: dict[str, object]) -> str | None:
     if not isinstance(tool_input, dict):
         return None
     command = tool_input.get("command")
-    return command if isinstance(command, str) else None
+    if isinstance(command, str):
+        return command
+    fallback = tool_input.get("cmd")
+    return fallback if isinstance(fallback, str) else None
+
+
+def _simple_argv(command: str) -> tuple[str, ...] | None:
+    try:
+        lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|")
+        lexer.whitespace_split = True
+        lexer.commenters = "#"
+        argv = tuple(lexer)
+    except ValueError:
+        return None
+    if not argv or any(token in _SHELL_OPERATORS for token in argv):
+        return None
+    return argv
+
+
+def _eval_command(argv: tuple[str, ...]) -> bool:
+    return any(
+        token.rsplit("/", maxsplit=1)[-1] in {"super-sol-eval", "fablized-sol-eval"}
+        for token in argv
+    )
+
+
+def _command_parts(argv: tuple[str, ...]) -> tuple[str, tuple[str, ...]]:
+    executable = argv[0].rsplit("/", maxsplit=1)[-1].casefold()
+    arguments = argv[1:]
+    if executable != "uv":
+        return executable, arguments
+    if arguments[:1] == ("build",):
+        return "uv-build", arguments[1:]
+    if arguments[:1] != ("run",):
+        return "", ()
+    arguments = arguments[1:]
+    if arguments[:1] == ("--with",):
+        arguments = arguments[2:]
+    if not arguments:
+        return "", ()
+    return arguments[0].rsplit("/", maxsplit=1)[-1].casefold(), arguments[1:]
+
+
+def _verification_command(argv: tuple[str, ...] | None) -> bool:
+    if argv is None:
+        return False
+    executable, arguments = _command_parts(argv)
+    script = (
+        arguments[1]
+        if arguments[:1] == ("run",) and len(arguments) > 1
+        else (arguments[0] if arguments else "")
+    )
+    return (
+        executable in {"pytest", "basedpyright", "mypy", "uv-build"}
+        or (
+            executable == "ruff"
+            and (
+                arguments[:1] == ("check",)
+                or (arguments[:1] == ("format",) and "--check" in arguments)
+            )
+        )
+        or (executable in {"cargo", "go"} and arguments[:1] == ("test",))
+        or (executable in {"npm", "pnpm", "yarn"} and script in {"test", "lint", "build"})
+        or (executable == "git" and arguments[:1] == ("diff",) and "--check" in arguments)
+    )
 
 
 def _pre_tool(payload: dict[str, object]) -> dict[str, object] | None:
@@ -153,6 +211,7 @@ def _pre_tool(payload: dict[str, object]) -> dict[str, object] | None:
     if command is None:
         return None
     lowered = command.casefold()
+    argv = _simple_argv(command)
     state = load_state(payload) or {}
     authorized = state.get("billable_authorized") is True
     if "api.openai.com" in lowered and not authorized:
@@ -163,21 +222,24 @@ def _pre_tool(payload: dict[str, object]) -> dict[str, object] | None:
             return _deny(
                 "live 평가는 자동 실행하지 않습니다. 먼저 사용자의 명시적 과금 승인이 필요합니다."
             )
-        if "--confirm-billable" not in lowered:
+        if argv is None or not _eval_command(argv) or "--confirm-billable" not in argv:
             return _deny("승인된 live 평가에도 --confirm-billable 플래그가 필요합니다.")
+    elif is_eval:
+        safe_dry_run = (
+            argv is not None
+            and _eval_command(argv)
+            and "--dry-run" in argv
+            and "--no-dry-run" not in argv
+        )
+        if not safe_dry_run:
+            return _deny("dry-run은 다른 명령과 연결하지 않은 단순 명령으로 실행해야 합니다.")
     return None
 
 
 def _exit_code_zero(value: object) -> bool:
-    if isinstance(value, dict):
-        for key, nested in value.items():
-            if key == "exit_code" and type(nested) is int and nested == 0:
-                return True
-            if _exit_code_zero(nested):
-                return True
-    elif isinstance(value, list):
-        return any(_exit_code_zero(item) for item in value)
-    return False
+    return (
+        isinstance(value, dict) and type(value.get("exit_code")) is int and value["exit_code"] == 0
+    )
 
 
 def _post_tool(payload: dict[str, object]) -> dict[str, object] | None:
@@ -192,7 +254,7 @@ def _post_tool(payload: dict[str, object]) -> dict[str, object] | None:
         "edit",
         "write",
     }
-    verification = bool(_VERIFICATION.search(command))
+    verification = _verification_command(_simple_argv(command))
     if not mutation and not verification:
         return None
     observed_at = time.time_ns()
@@ -223,14 +285,12 @@ def _stop(payload: dict[str, object]) -> dict[str, object]:
     latest_pass = max((value for value in passes if isinstance(value, int)), default=None)
     if latest_mutation is None or (latest_pass is not None and latest_pass > latest_mutation):
         return {"continue": True}
-    if payload.get("stop_hook_active") is True:
-        return {
-            "continue": True,
-            "systemMessage": "Super SOL: 변경 후 성공한 검증은 확인되지 않았습니다.",
-        }
     return {
-        "decision": "block",
-        "reason": "변경 사항을 확인할 수 있는 가장 좁은 테스트를 실행하고 결과를 읽어주세요.",
+        "continue": True,
+        "systemMessage": (
+            "Super SOL: 변경 후 성공한 검증은 확인되지 않았습니다. "
+            "추가 사용량을 만들지 않도록 자동으로 계속하지 않습니다."
+        ),
     }
 
 

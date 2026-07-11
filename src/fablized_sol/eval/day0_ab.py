@@ -7,6 +7,7 @@ from typing import Annotated, assert_never, cast
 
 import anyio
 import typer
+from anyio import to_thread
 from pydantic import ValidationError
 
 from fablized_sol.engine.models import HoldoutArm, SessionId
@@ -24,7 +25,8 @@ from fablized_sol.eval.live import (
     finished_event,
 )
 from fablized_sol.eval.manifest import ArmDesign, EvalOptions, ReasoningEffort, TaskManifest
-from fablized_sol.harness.container_runtime import AnyioDockerRunner
+from fablized_sol.eval.provenance import build_run_provenance, session_digest
+from fablized_sol.harness.container_runtime import AnyioDockerRunner, preflight_local_images
 from fablized_sol.harness.run import RunCompleted, RunExhausted
 from fablized_sol.measure.holdout import assign_arm
 from fablized_sol.measure.shadow import RunPlanned, RunStarted, ShadowWriter
@@ -37,6 +39,7 @@ def _digest(value: str) -> str:
 
 def _planned_runs(options: EvalOptions, manifest: TaskManifest) -> tuple[PlannedRun, ...]:
     planned: list[PlannedRun] = []
+    provenance = build_run_provenance(options, manifest)
     for task in manifest.tasks:
         assignment_key = SessionId(_digest(f"{options.run_id}:{task.id}"))
         arms_by_design = {
@@ -55,8 +58,16 @@ def _planned_runs(options: EvalOptions, manifest: TaskManifest) -> tuple[Planned
                 task=task,
                 model=model,
                 reasoning_effort=effort,
-                session_id=SessionId(_digest(f"{options.run_id}:{task.id}:{model}:{effort}:{arm}")),
+                session_id=SessionId(session_digest(provenance, task.id, model, effort, arm)),
                 arm=arm,
+                run_digest=provenance.run_digest,
+                task_digest=provenance.digest_for_task(task.id),
+                preregistration_digest=provenance.preregistration_digest,
+                harness_version=provenance.harness_version,
+                agents_sdk_version=provenance.agents_sdk_version,
+                openai_sdk_version=provenance.openai_sdk_version,
+                verification_image=provenance.verification_image,
+                grader_image=provenance.grader_image,
             )
             for arm in arms
             for model, effort in model_efforts
@@ -76,6 +87,26 @@ def _grader_passed(
             return None
         case _:
             assert_never(result)
+
+
+async def _preflight_images(
+    planned: tuple[PlannedRun, ...],
+    writer: ShadowWriter,
+    images: tuple[str, str],
+) -> bool:
+    if await to_thread.run_sync(preflight_local_images, images):
+        return True
+    for item in planned:
+        writer.append(
+            RunStarted(
+                session_id=item.session_id,
+                arm=item.arm,
+                model=item.model,
+                reasoning_effort=item.reasoning_effort,
+            )
+        )
+        writer.append(empty_finished_event(item, "error", "ImagePreflightError"))
+    return False
 
 
 async def run_evaluation(options: EvalOptions) -> int:  # noqa: C901, PLR0912
@@ -100,6 +131,14 @@ async def run_evaluation(options: EvalOptions) -> int:  # noqa: C901, PLR0912
                 reasoning_effort=item.reasoning_effort,
                 profile=SUPER_SOL_PROFILE.name,
                 profile_version=SUPER_SOL_PROFILE.version,
+                run_digest=item.run_digest,
+                task_digest=item.task_digest,
+                preregistration_digest=item.preregistration_digest,
+                harness_version=item.harness_version,
+                agents_sdk_version=item.agents_sdk_version,
+                openai_sdk_version=item.openai_sdk_version,
+                verification_image=item.verification_image,
+                grader_image=item.grader_image,
             )
         )
     if options.dry_run:
@@ -107,6 +146,11 @@ async def run_evaluation(options: EvalOptions) -> int:  # noqa: C901, PLR0912
     if not os.environ.get("OPENAI_API_KEY"):
         for item in planned:
             writer.append(empty_finished_event(item, "error", "MissingApiKeyError"))
+        return 1
+
+    verification_image = cast("str", options.verification_image)
+    grader_image = cast("str", options.grader_image)
+    if not await _preflight_images(planned, writer, (verification_image, grader_image)):
         return 1
 
     (run_root / "workspaces").mkdir()
@@ -123,15 +167,7 @@ async def run_evaluation(options: EvalOptions) -> int:  # noqa: C901, PLR0912
         )
         run = create_live_run(item, run_root)
         try:
-            image = options.verification_image
-            grader_image = options.grader_image
-            if image is None or grader_image is None:
-                writer.append(
-                    finished_event(run, "error", "MissingImageError", grader_passed=False)
-                )
-                failed = True
-                continue
-            outcome = await execute_live(run, options.max_gate_retries, image)
+            outcome = await execute_live(run, options.max_gate_retries, verification_image)
             grader_result = await run_out_of_band_grader(
                 run.workspace,
                 grader_image,

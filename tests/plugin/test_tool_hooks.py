@@ -1,3 +1,4 @@
+import pytest
 from pydantic import JsonValue
 
 from .conftest import HookRunner, hook_input
@@ -74,7 +75,7 @@ def test_dry_run_is_allowed_without_billing_authorization(run_hook: HookRunner) 
 
 
 def test_authorized_live_eval_still_requires_confirmation_flag(run_hook: HookRunner) -> None:
-    _prime(run_hook, "과금 승인: live eval 실행해")
+    _prime(run_hook, "SUPER SOL 유료 실행 승인")
     without_flag = run_hook(
         hook_input(
             "PreToolUse",
@@ -96,19 +97,60 @@ def test_authorized_live_eval_still_requires_confirmation_flag(run_hook: HookRun
     assert with_flag.stdout is None
 
 
-def test_mutation_without_verification_requests_only_one_continuation(
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uv run super-sol-eval --tasks tasks.json --confirm-billable # --dry-run",
+        "uv run super-sol-eval --tasks tasks.json --no-dry-run",
+        "uv run super-sol-eval --tasks tasks.json --dry-run && echo done",
+    ],
+)
+def test_dry_run_allowance_rejects_comments_negation_and_shell_chains(
+    run_hook: HookRunner,
+    command: str,
+) -> None:
+    _prime(run_hook)
+    result = run_hook(
+        hook_input(
+            "PreToolUse",
+            tool_name="Bash",
+            tool_use_id="pre-bypass",
+            tool_input={"command": command},
+        )
+    )
+
+    assert result.stdout is not None
+    specific = result.stdout["hookSpecificOutput"]
+    assert isinstance(specific, dict)
+    assert specific["permissionDecision"] == "deny"
+
+
+def test_mutation_without_verification_warns_without_automatic_continuation(
     run_hook: HookRunner,
 ) -> None:
     _prime(run_hook)
     _post_tool(run_hook, "apply_patch", "*** Begin Patch", {}, "mutation-one")
 
-    first = _stop(run_hook)
-    second = _stop(run_hook, active=True)
+    result = _stop(run_hook)
 
-    assert first["decision"] == "block"
-    assert "테스트" in str(first["reason"])
-    assert second["continue"] is True
-    assert "확인되지" in str(second["systemMessage"])
+    assert result["continue"] is True
+    assert "자동으로 계속하지" in str(result["systemMessage"])
+
+
+@pytest.mark.parametrize(
+    "command",
+    ["rg pytest pyproject.toml", "echo pytest", "pytest -q || true"],
+)
+def test_verifier_mentions_and_masked_failures_do_not_count(
+    run_hook: HookRunner,
+    command: str,
+) -> None:
+    _prime(run_hook)
+    _post_tool(run_hook, "apply_patch", "*** Begin Patch", {}, "mutation-forged")
+    _post_tool(run_hook, "Bash", command, {"exit_code": 0}, "verify-forged")
+
+    result = _stop(run_hook)
+    assert "확인되지" in str(result["systemMessage"])
 
 
 def test_fresh_structured_verification_allows_stop(run_hook: HookRunner) -> None:
@@ -123,10 +165,10 @@ def test_stale_or_failed_verification_does_not_count(run_hook: HookRunner) -> No
     _prime(run_hook)
     _post_tool(run_hook, "Bash", "uv run pytest -q", {"exit_code": 0}, "verify-old")
     _post_tool(run_hook, "apply_patch", "*** Begin Patch", {}, "mutation-three")
-    assert _stop(run_hook)["decision"] == "block"
+    assert "확인되지" in str(_stop(run_hook)["systemMessage"])
 
     _post_tool(run_hook, "Bash", "uv run pytest -q", {"exit_code": 1}, "verify-failed")
-    assert _stop(run_hook)["decision"] == "block"
+    assert "확인되지" in str(_stop(run_hook)["systemMessage"])
 
 
 def test_conversation_profile_never_forces_verification(run_hook: HookRunner) -> None:

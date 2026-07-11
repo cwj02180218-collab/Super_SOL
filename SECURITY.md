@@ -16,11 +16,13 @@ may have been exposed before sharing a redacted reproduction.
 
 The Super SOL Codex plugin is local and has no OpenAI SDK, HTTP client, remote MCP server,
 background service, or automatic subagent. It does not read `OPENAI_API_KEY` and never initiates a
-billable model evaluation. State contains only a random-session hash, timestamps, route label, and
+billable model evaluation or automatic Stop continuation. State contains only a random-session hash, timestamps, route label, and
 verification booleans; prompts, commands, tool output, model output, paths, and environment values
 are not retained. State files are created owner-only under the plugin data directory.
 
-The hook blocks recognized direct OpenAI API and unconfirmed Super SOL live-evaluation commands,
+Billable authorization requires one exact standalone confirmation line plus the CLI's
+`--confirm-billable` flag. The hook blocks recognized simple direct OpenAI API and unconfirmed
+Super SOL live-evaluation commands,
 but hooks are quality guardrails rather than an operating-system security boundary. They cannot
 prove interception of every future tool, nested script, user-authored binary, or external
 integration. Use Codex permissions, sandboxing, network policy, and organization controls for hard
@@ -34,8 +36,9 @@ tests and output never return to the model. Only registered local tools with typ
 participate in the deterministic evidence gate; arbitrary hosted tools do not receive evidence
 credit.
 
-Both example images pin one reviewed base digest. The release audit builds each image, fails closed
-on Docker Scout Critical/High findings, and emits SPDX 2.3 SBOMs under `security/sbom`. Re-run the
+Both example images pin one reviewed base digest and a hash-locked Python dependency graph. The
+release audit builds each image, emits SPDX 2.3 SBOMs under `security/sbom`, runs both release scans,
+and then fails closed if either gate fails. Re-run the
 audit for every new digest or downstream image. The current SBOM is point-in-time evidence, not a
 guarantee that the same digest remains vulnerability-free forever.
 

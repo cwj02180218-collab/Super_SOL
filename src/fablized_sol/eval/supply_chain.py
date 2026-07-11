@@ -16,6 +16,7 @@ _GRADER_TAG: Final = "super-sol-grader:audit"
 _DEFAULT_REPO_ROOT: Final = Path()
 _DEFAULT_SBOM_DIR: Final = Path("security/sbom")
 _SHA_PIN = re.compile(r"^[^@\s]+@sha256:[0-9a-f]{64}$")
+_FROM_INSTRUCTION = re.compile(r"^from(?:\s|$)", re.IGNORECASE)
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,7 +35,9 @@ def validate_pinned_base(path: Path) -> str:
     """Require one exact reviewed Python Alpine base in a Dockerfile."""
     try:
         from_lines = [
-            line.strip() for line in path.read_text().splitlines() if line.startswith("FROM ")
+            stripped
+            for line in path.read_text().splitlines()
+            if _FROM_INSTRUCTION.match(stripped := line.strip())
         ]
     except OSError as error:
         raise SupplyChainPolicyError(path, str(error)) from error
@@ -82,7 +85,7 @@ def build_audit_commands(repo_root: Path, sbom_dir: Path) -> tuple[tuple[str, ..
             (_GRADER_TAG, "grader.spdx.json"),
         )
     )
-    return builds + scans + sboms
+    return builds + sboms + scans
 
 
 def run_audit(repo_root: Path, sbom_dir: Path) -> int:
@@ -91,16 +94,24 @@ def run_audit(repo_root: Path, sbom_dir: Path) -> int:
     _ = validate_pinned_base(root / "eval" / "verifier" / "Dockerfile")
     _ = validate_pinned_base(root / "eval" / "verifier" / "Dockerfile.grader")
     output = sbom_dir if sbom_dir.is_absolute() else root / sbom_dir
-    output.mkdir(mode=0o700, parents=True, exist_ok=True)
+    try:
+        output.mkdir(mode=0o700, parents=True, exist_ok=True)
+    except OSError as error:
+        typer.echo(f"container audit could not create SBOM directory: {error}", err=True)
+        return 73
+    first_failure = 0
     try:
         for command in build_audit_commands(root, output):
             completed = subprocess.run(command, cwd=root, check=False)  # noqa: S603
             if completed.returncode != 0:
-                return completed.returncode
+                if command[:2] == ("docker", "build"):
+                    return completed.returncode
+                if first_failure == 0:
+                    first_failure = completed.returncode
     except OSError as error:
         typer.echo(f"container audit could not start: {error}", err=True)
         return 127
-    return 0
+    return first_failure
 
 
 def audit_command(

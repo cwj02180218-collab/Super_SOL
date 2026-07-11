@@ -1,18 +1,23 @@
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
 
 from fablized_sol.eval.supply_chain import (
     BASE_IMAGE,
     SupplyChainPolicyError,
+    app,
     build_audit_commands,
+    run_audit,
     validate_pinned_base,
 )
 
 _EXPECTED_BASE = (
     "python:3.12-alpine@sha256:6d43704baacd1bfbe7c295d7f13079d5d8104ed33568873133f8fc69980419df"
 )
+_RUNNER = CliRunner()
 
 
 @pytest.mark.parametrize("name", ["Dockerfile", "Dockerfile.grader"])
@@ -32,6 +37,28 @@ def test_supply_chain_policy_rejects_mutable_or_wrong_base(tmp_path: Path) -> No
     for path in (mutable, wrong):
         with pytest.raises(SupplyChainPolicyError):
             _ = validate_pinned_base(path)
+
+
+def test_supply_chain_policy_rejects_case_insensitive_extra_stage(tmp_path: Path) -> None:
+    path = tmp_path / "Dockerfile"
+    _ = path.write_text(
+        f"FROM {_EXPECTED_BASE}\nfrom malicious.example/base@sha256:{'c' * 64}\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(SupplyChainPolicyError):
+        _ = validate_pinned_base(path)
+
+
+@pytest.mark.parametrize("name", ["Dockerfile", "Dockerfile.grader"])
+def test_verifier_dependencies_are_hash_locked(name: str) -> None:
+    dockerfile = (Path("eval/verifier") / name).read_text(encoding="utf-8")
+    lock = Path("eval/verifier/requirements.lock").read_text(encoding="utf-8")
+
+    assert "requirements.lock" in dockerfile
+    assert "--require-hashes" in dockerfile
+    assert "pytest==9.1.1" in lock
+    assert "--hash=sha256:" in lock
 
 
 def test_audit_plan_builds_scans_and_writes_two_spdx_files(tmp_path: Path) -> None:
@@ -57,6 +84,47 @@ def test_audit_plan_builds_scans_and_writes_two_spdx_files(tmp_path: Path) -> No
         "verifier.spdx.json",
         "grader.spdx.json",
     }
+    assert max(commands.index(command) for command in sboms) < min(
+        commands.index(command) for command in scans
+    )
+
+
+def test_audit_retains_both_scan_results_before_returning_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    observed: list[tuple[str, ...]] = []
+
+    def fake_run(
+        command: tuple[str, ...],
+        *,
+        cwd: Path,
+        check: bool,
+    ) -> subprocess.CompletedProcess[str]:
+        del cwd, check
+        observed.append(command)
+        is_scan = command[:3] == ("docker", "scout", "cves")
+        return subprocess.CompletedProcess(command, 9 if is_scan else 0)
+
+    monkeypatch.setattr("fablized_sol.eval.supply_chain.subprocess.run", fake_run)
+
+    assert run_audit(Path.cwd(), tmp_path / "sbom") == 9
+    assert sum(command[:3] == ("docker", "scout", "cves") for command in observed) == 2
+    assert sum(command[:3] == ("docker", "scout", "sbom") for command in observed) == 2
+
+
+def test_audit_cli_reports_output_directory_error_without_traceback(tmp_path: Path) -> None:
+    file_parent = tmp_path / "file"
+    _ = file_parent.write_text("not a directory", encoding="utf-8")
+
+    result = _RUNNER.invoke(
+        app,
+        ["--repo-root", ".", "--sbom-dir", str(file_parent / "sbom")],
+    )
+
+    assert result.exit_code != 0
+    assert "could not create SBOM directory" in result.output
+    assert "Traceback" not in result.output
 
 
 def test_container_security_workflow_pins_actions_and_gates_both_images() -> None:
@@ -69,3 +137,7 @@ def test_container_security_workflow_pins_actions_and_gates_both_images() -> Non
     assert workflow.count("command: sbom") == 2
     assert workflow.count("exit-code: true") == 2
     assert workflow.count("only-severities: critical,high") == 2
+    assert workflow.find("Generate verifier SBOM") < workflow.find("Scan verifier")
+    assert workflow.count("continue-on-error: true") == 2
+    assert "Enforce scan gate" in workflow
+    assert "if: always()" in workflow

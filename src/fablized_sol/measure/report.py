@@ -18,12 +18,13 @@ from fablized_sol.measure.report_models import (
     ReportInputError,
     ReportIssue,
 )
+from fablized_sol.measure.shadow import RunPlanned
 from fablized_sol.measure.super_sol import SUPER_SOL_PROFILE
 
 _MAX_EVIDENCE_BYTES: Final = 16 * 1024 * 1024
 
 
-def _load_grades(path: Path) -> dict[SessionId, bool]:
+def _load_grades(path: Path) -> tuple[GradeFile, dict[SessionId, bool]]:
     try:
         size = path.stat().st_size
     except OSError as error:
@@ -39,15 +40,46 @@ def _load_grades(path: Path) -> dict[SessionId, bool]:
         if grade.session_id in grades:
             raise ReportInputError(ReportIssue.DUPLICATE_GRADE, grade.session_id)
         grades[grade.session_id] = grade.final_defect_found
-    return grades
+    return payload, grades
 
 
-def _samples(events: Path, grades: Path) -> tuple[BenchmarkSample, ...]:
+def _validate_provenance(
+    plans: dict[SessionId, RunPlanned],
+    grade_file: GradeFile,
+) -> RunPlanned:
+    provenance = {
+        (
+            plan.run_digest,
+            plan.preregistration_digest,
+            plan.harness_version,
+            plan.agents_sdk_version,
+            plan.openai_sdk_version,
+            plan.verification_image,
+            plan.grader_image,
+            plan.profile,
+            plan.profile_version,
+        )
+        for plan in plans.values()
+    }
+    if len(provenance) != 1:
+        raise ReportInputError(ReportIssue.INCONSISTENT_PROVENANCE)
+    representative = next(iter(plans.values()))
+    if grade_file.run_digest != representative.run_digest:
+        raise ReportInputError(ReportIssue.RUN_DIGEST_MISMATCH)
+    task_digests: dict[str, str] = {}
+    for plan in plans.values():
+        previous_digest = task_digests.setdefault(plan.task_id, plan.task_digest)
+        if previous_digest != plan.task_digest:
+            raise ReportInputError(ReportIssue.INCONSISTENT_PROVENANCE, plan.task_id)
+    return representative
+
+
+def _samples(events: Path, grades: Path) -> tuple[tuple[BenchmarkSample, ...], RunPlanned]:
     event_index = load_events(events)
     plans = event_index.plans
     starts = event_index.starts
     finishes = event_index.finishes
-    grade_map = _load_grades(grades)
+    grade_file, grade_map = _load_grades(grades)
     if set(finishes) != set(plans):
         raise ReportInputError(ReportIssue.INCOMPLETE_TERMINAL_EVENTS)
     if set(grade_map) != set(plans):
@@ -57,6 +89,7 @@ def _samples(events: Path, grades: Path) -> tuple[BenchmarkSample, ...]:
         raise ReportInputError(ReportIssue.UNKNOWN_GRADE)
     if set(starts) != set(plans):
         raise ReportInputError(ReportIssue.INCOMPLETE_LIFECYCLE)
+    representative = _validate_provenance(plans, grade_file)
     samples: list[BenchmarkSample] = []
     for session_id, plan in plans.items():
         finish = finishes[session_id]
@@ -78,6 +111,8 @@ def _samples(events: Path, grades: Path) -> tuple[BenchmarkSample, ...]:
             raise ReportInputError(ReportIssue.PROFILE_MISMATCH, session_id)
         if finish.grader_passed is None:
             raise ReportInputError(ReportIssue.MISSING_GRADER_RESULT, session_id)
+        if finish.final_defect_found is not None:
+            raise ReportInputError(ReportIssue.EMBEDDED_FINAL_DEFECT, session_id)
         samples.append(
             BenchmarkSample(
                 task_id=plan.task_id,
@@ -95,7 +130,7 @@ def _samples(events: Path, grades: Path) -> tuple[BenchmarkSample, ...]:
                 final_defect_found=grade_map[session_id],
             )
         )
-    return tuple(samples)
+    return tuple(samples), representative
 
 
 def _cell(
@@ -169,7 +204,7 @@ def build_report(
     reference_model: str,
 ) -> BenchmarkReport:
     """Build a fail-closed crossover report and deployable lazy cascade."""
-    samples = _samples(events, grades)
+    samples, provenance = _samples(events, grades)
     tasks = validate_crossover(samples, baseline_model, reference_model)
     efforts: dict[str, ReasoningEffort] = {}
     for model in (baseline_model, reference_model):
@@ -194,6 +229,13 @@ def build_report(
         for arm in (HoldoutArm.ON, HoldoutArm.OFF)
     )
     return BenchmarkReport(
+        run_digest=provenance.run_digest,
+        preregistration_digest=provenance.preregistration_digest,
+        harness_version=provenance.harness_version,
+        agents_sdk_version=provenance.agents_sdk_version,
+        openai_sdk_version=provenance.openai_sdk_version,
+        verification_image=provenance.verification_image,
+        grader_image=provenance.grader_image,
         baseline_model=baseline_model,
         baseline_effort=efforts[baseline_model],
         reference_model=reference_model,

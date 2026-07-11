@@ -25,6 +25,22 @@ _IMAGE = "ghcr.io/example/verify@sha256:" + "a" * 64
 _GRADER_IMAGE = "ghcr.io/example/grader@sha256:" + "b" * 64
 
 
+def _images_ready(_images: tuple[str, ...]) -> bool:
+    return True
+
+
+def _images_missing(_images: tuple[str, ...]) -> bool:
+    return False
+
+
+@pytest.fixture(autouse=True)
+def local_image_preflight(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "fablized_sol.eval.day0_ab.preflight_local_images",
+        _images_ready,
+    )
+
+
 async def _pass_grader(
     workspace: Path,
     image: str,
@@ -94,6 +110,39 @@ def test_live_run_is_sequential_isolated_and_records_usage(
     for row in finished:
         ledger = output_dir / "live-offline" / "ledgers" / f"{row['session_id']}.jsonl"
         assert [event["event"] for event in read_jsonl(ledger)].count("classify") == 1
+
+
+def test_live_run_checks_both_images_before_first_model_call(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(
+        "fablized_sol.eval.day0_ab.preflight_local_images",
+        _images_missing,
+    )
+    model_called = False
+
+    async def execute(
+        self: SdkAttemptExecutor,
+        request: AttemptRequest,
+    ) -> AttemptCompleted:
+        del self, request
+        nonlocal model_called
+        model_called = True
+        return AttemptCompleted(output="must not run")
+
+    monkeypatch.setattr(SdkAttemptExecutor, "execute", execute)
+    output_dir = tmp_path / "out"
+
+    result = _invoke_live(tmp_path, output_dir, "missing-local-image")
+
+    assert result.exit_code != 0
+    assert model_called is False
+    rows = read_jsonl(output_dir / "missing-local-image" / "events.jsonl")
+    finished = [row for row in rows if row["event"] == "run_finished"]
+    assert all(row["error_type"] == "ImagePreflightError" for row in finished)
+    assert not (output_dir / "missing-local-image" / "workspaces").exists()
 
 
 def test_live_run_retains_error_and_continues_pair(
