@@ -1,6 +1,6 @@
 """Installed-package surface smoke tests."""
 
-from importlib.metadata import entry_points
+from importlib.metadata import distribution, entry_points
 from pathlib import Path
 from tomllib import load
 from typing import TypedDict
@@ -37,13 +37,29 @@ class _ProjectConfig(TypedDict):
 _PROJECT_ADAPTER = TypeAdapter[_ProjectConfig](_ProjectConfig)
 
 
-def test_console_script_is_registered() -> None:
+def test_console_scripts_are_registered() -> None:
     # Given the project is installed in the uv environment
-    # When its console-script metadata is selected
-    scripts = entry_points(group="console_scripts", name="fablized-sol-eval")
+    expected = {
+        "fablized-sol-eval",
+        "fablized-sol-report",
+        "super-sol-eval",
+        "super-sol-report",
+    }
 
-    # Then exactly one public CLI entry point is registered
-    assert len(scripts) == 1
+    # When its public console-script metadata is selected
+    scripts = {script.name for script in entry_points(group="console_scripts")}
+
+    # Then primary and compatibility entry points are registered
+    assert expected <= scripts
+
+
+def test_distribution_uses_super_sol_name() -> None:
+    # Given the project is installed in the uv environment
+    # When callers inspect its distribution metadata
+    name = distribution("super-sol-harness").metadata["Name"]
+
+    # Then the public package uses the Super SOL distribution name
+    assert name == "super-sol-harness"
 
 
 def test_package_exports_version() -> None:
@@ -52,7 +68,7 @@ def test_package_exports_version() -> None:
     version = fablized_sol.__version__
 
     # Then the package exports the distribution version
-    assert version == "0.1.0"
+    assert version == "0.2.0"
 
 
 def test_sdist_uses_an_explicit_source_allowlist() -> None:
