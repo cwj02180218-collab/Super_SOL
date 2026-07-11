@@ -16,7 +16,7 @@ from anyio.abc import ByteReceiveStream
 _CONTAINER_WORKSPACE: Final = "/workspace"
 _OUTPUT_LIMIT_BYTES: Final = 32 * 1024
 _PID_LIMIT: Final = "256"
-_TMPFS: Final = "/tmp:rw,noexec,nosuid,size=64m"  # noqa: S108 - isolated container path
+_TMPFS: Final = "/tmp:rw,noexec,nosuid,size=64m"  # noqa: S108  # nosec B108
 _IMAGE_PATTERN: Final = re.compile(r"^[^@\s]+@sha256:[0-9a-f]{64}$")
 _MEMORY_LIMIT: Final = "512m"
 _CPU_LIMIT: Final = "1.0"

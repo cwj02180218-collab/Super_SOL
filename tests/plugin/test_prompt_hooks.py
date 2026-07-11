@@ -60,7 +60,7 @@ def test_likely_api_key_is_blocked_without_echo_or_storage(
     run_hook: HookRunner,
     plugin_data: Path,
 ) -> None:
-    fake_key = "sk-example_abcdefghijklmnopqrstuvwxyz123456"
+    fake_key = "sk-" + ("x" * 30)
     result = run_hook(hook_input("UserPromptSubmit", prompt=f"use {fake_key}"))
 
     assert result.returncode == 0
