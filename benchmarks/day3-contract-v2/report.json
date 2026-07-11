@@ -1,0 +1,146 @@
+{
+  "baseline_model": "gpt-5.5",
+  "reference_model": "gpt-5.6-sol",
+  "cells": [
+    {
+      "model": "gpt-5.5",
+      "arm": "off",
+      "runs": 4,
+      "completed_runs": 4,
+      "grader_passed_runs": 4,
+      "defect_free_runs": 4,
+      "quality_rate": 1.0,
+      "token_volume": 10346,
+      "tokens_per_defect_free_run": 2586.5,
+      "mean_wall_time_seconds": 9.551046791500994,
+      "tool_calls": 21,
+      "failed_verifications": 0,
+      "gate_blocks": 0
+    },
+    {
+      "model": "gpt-5.5",
+      "arm": "on",
+      "runs": 4,
+      "completed_runs": 4,
+      "grader_passed_runs": 4,
+      "defect_free_runs": 4,
+      "quality_rate": 1.0,
+      "token_volume": 10586,
+      "tokens_per_defect_free_run": 2646.5,
+      "mean_wall_time_seconds": 8.950152823250392,
+      "tool_calls": 21,
+      "failed_verifications": 0,
+      "gate_blocks": 0
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "arm": "off",
+      "runs": 4,
+      "completed_runs": 4,
+      "grader_passed_runs": 4,
+      "defect_free_runs": 4,
+      "quality_rate": 1.0,
+      "token_volume": 11657,
+      "tokens_per_defect_free_run": 2914.25,
+      "mean_wall_time_seconds": 10.755955093482044,
+      "tool_calls": 22,
+      "failed_verifications": 0,
+      "gate_blocks": 0
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "arm": "on",
+      "runs": 4,
+      "completed_runs": 4,
+      "grader_passed_runs": 4,
+      "defect_free_runs": 4,
+      "quality_rate": 1.0,
+      "token_volume": 12439,
+      "tokens_per_defect_free_run": 3109.75,
+      "mean_wall_time_seconds": 11.392175604240038,
+      "tool_calls": 23,
+      "failed_verifications": 0,
+      "gate_blocks": 0
+    }
+  ],
+  "paired_effects": [
+    {
+      "model": "gpt-5.5",
+      "tasks": 4,
+      "quality_delta": 0.0,
+      "quality_ci_low": 0.0,
+      "quality_ci_high": 0.0,
+      "mean_token_delta": 60.0,
+      "token_ci_low": -75.95371955926765,
+      "token_ci_high": 195.95371955926765,
+      "mean_wall_time_delta": -0.6008939682506025,
+      "wall_time_ci_low": -3.3925800963554305,
+      "wall_time_ci_high": 2.1907921598542255
+    },
+    {
+      "model": "gpt-5.6-sol",
+      "tasks": 4,
+      "quality_delta": 0.0,
+      "quality_ci_low": 0.0,
+      "quality_ci_high": 0.0,
+      "mean_token_delta": 195.5,
+      "token_ci_low": -349.5616773983778,
+      "token_ci_high": 740.5616773983778,
+      "mean_wall_time_delta": 0.6362205107579939,
+      "wall_time_ci_low": -4.647181905661067,
+      "wall_time_ci_high": 5.919622927177055
+    }
+  ],
+  "model_effects": [
+    {
+      "arm": "on",
+      "tasks": 4,
+      "quality_delta": 0.0,
+      "quality_ci_low": 0.0,
+      "quality_ci_high": 0.0,
+      "mean_token_delta": 463.25,
+      "token_ci_low": -288.13712367344306,
+      "token_ci_high": 1214.637123673443,
+      "mean_wall_time_delta": 2.442022780989646,
+      "wall_time_ci_low": -3.932503923475884,
+      "wall_time_ci_high": 8.816549485455177
+    },
+    {
+      "arm": "off",
+      "tasks": 4,
+      "quality_delta": 0.0,
+      "quality_ci_low": 0.0,
+      "quality_ci_high": 0.0,
+      "mean_token_delta": 327.75,
+      "token_ci_low": -31.24385250110248,
+      "token_ci_high": 686.7438525011025,
+      "mean_wall_time_delta": 1.2049083019810496,
+      "wall_time_ci_low": -2.7234071430735294,
+      "wall_time_ci_high": 5.133223747035629
+    }
+  ],
+  "lazy_cascades": [
+    {
+      "arm": "on",
+      "tasks": 4,
+      "escalations": 0,
+      "escalation_rate": 0.0,
+      "defect_free_tasks": 4,
+      "quality_rate": 1.0,
+      "token_volume": 10586,
+      "always_reference_token_volume": 12439,
+      "token_savings_rate": 0.14896695875874266
+    },
+    {
+      "arm": "off",
+      "tasks": 4,
+      "escalations": 0,
+      "escalation_rate": 0.0,
+      "defect_free_tasks": 4,
+      "quality_rate": 1.0,
+      "token_volume": 10346,
+      "always_reference_token_volume": 11657,
+      "token_savings_rate": 0.1124646135369306
+    }
+  ]
+}

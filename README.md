@@ -1,11 +1,16 @@
-# Fablized SOL
+# Super SOL
 
-Fablized SOL is an evidence-gated procedure harness for GPT-5.5, with GPT-5.6
-Sol as a controlled same-adapter model comparator and GPT.C plus Codex CLI as a
-separate operational reference. It measures whether narrowly routed procedures
-improve outcomes; it does not claim to increase a model's capability ceiling.
+[![CI](https://github.com/cuj0218/Super-SOL/actions/workflows/ci.yml/badge.svg)](https://github.com/cuj0218/Super-SOL/actions/workflows/ci.yml)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-## Super Sol Profile
+Super SOL is an evidence-gated coding-agent harness for GPT-5.5, with GPT-5.6
+Sol as a controlled same-adapter reference comparator and GPT.C plus Codex CLI
+as a separate operational reference. It measures whether narrowly routed
+procedures improve observable outcomes; it does not claim to increase a model's
+capability ceiling.
+
+## Why Super SOL
 
 This repository now carries a Super Sol profile that merges the useful GPT.C
 Codex wrapper framing with this harness's stricter evidence boundary. In that
@@ -21,6 +26,13 @@ The Day 1-3 validation path adds a same-task ON/OFF crossover, verifier-private
 tests, and a report that measures quality, token volume, time, tool activity,
 and GPT-5.5-first lazy escalation. See
 [docs/DAY3_VALIDATION.md](docs/DAY3_VALIDATION.md).
+
+The final contract-v2 pilot completed and passed all 16 model/arm sessions. On
+the four pilot tasks, GPT-5.5-first routing used 11.2% to 14.9% fewer tokens than
+always using the reference model. Both models scored 100%, so this result is
+evidence for harness plumbing and a routing hypothesis, not Fable parity or
+model superiority. See the [published aggregate report](benchmarks/day3-contract-v2/)
+and [Day 7 review](docs/DAY7_REVIEW.md).
 
 ## Philosophy And Non-goals
 
@@ -87,7 +99,7 @@ Validate the manifest, deterministic model pairing, holdout assignment, and
 output path without API credentials or model calls:
 
 ```bash
-uv run fablized-sol-eval \
+uv run super-sol-eval \
   --tasks eval/tasks.example.json \
   --output-dir .fablized/smoke \
   --run-id day0-smoke \
@@ -110,7 +122,7 @@ requires `OPENAI_API_KEY`, access to both configured models, and distinct
 digest-pinned `VERIFICATION_IMAGE` and `GRADER_IMAGE` references:
 
 ```bash
-OPENAI_API_KEY=... uv run fablized-sol-eval \
+OPENAI_API_KEY=... uv run super-sol-eval \
   --tasks eval/tasks.example.json \
   --output-dir .fablized/live \
   --run-id day0-live \
@@ -154,11 +166,14 @@ unpublished test pack.
 
 ## Day 3 Report
 
-`fablized-sol-report` joins the append-only shadow stream with a separate
+`super-sol-report` joins the append-only shadow stream with a separate
 external grade file. It refuses incomplete or duplicate evidence and emits
 per-model/per-arm quality and resource cells plus a GPT-5.5-first lazy cascade.
 Token volume is reported as a cost proxy; it is not converted to dollars without
 actual billing data.
+
+Version 0.2.0 retains `fablized-sol-eval` and `fablized-sol-report` as
+compatibility aliases. New automation should use the `super-sol-*` names.
 
 ## Ledger And Shadow Stream
 

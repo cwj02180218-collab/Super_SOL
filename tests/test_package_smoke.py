@@ -83,7 +83,12 @@ def test_sdist_uses_an_explicit_source_allowlist() -> None:
     assert included == {
         "/.python-version",
         "/AGENTS.md",
+        "/CONTRIBUTING.md",
+        "/LICENSE",
+        "/NOTICE",
         "/README.md",
+        "/SECURITY.md",
+        "/benchmarks",
         "/docs",
         "/eval",
         "/pyproject.toml",

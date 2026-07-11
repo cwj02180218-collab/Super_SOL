@@ -44,7 +44,7 @@ are not completion evidence in the benchmark harness.
 4. Grade `final_defect_found` out of band; the runner intentionally records it as
    `null`.
 
-## Day 1-3 Validation
+## Day 1-7 Validation
 
 The next gate adds task-level ON/OFF crossover cells, an out-of-band grader,
 and a fail-closed quality and efficiency report. It also measures a lazy
@@ -53,3 +53,9 @@ reference instead of paying for the reference model on every task.
 
 See [DAY3_VALIDATION.md](DAY3_VALIDATION.md) for the commands, evidence boundary,
 and promotion threshold.
+
+The release decision and the benchmark-promotion decision are reviewed
+separately on Day 7. See [DAY7_REVIEW.md](DAY7_REVIEW.md): the open-source
+harness may ship after its offline quality gates pass, while Fable-parity and
+broad model claims remain on hold until the larger preregistered evidence gate
+is satisfied.

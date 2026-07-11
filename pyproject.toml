@@ -29,7 +29,12 @@ packages = ["src/fablized_sol"]
 include = [
   "/.python-version",
   "/AGENTS.md",
+  "/CONTRIBUTING.md",
+  "/LICENSE",
+  "/NOTICE",
   "/README.md",
+  "/SECURITY.md",
+  "/benchmarks",
   "/docs",
   "/eval",
   "/pyproject.toml",
