@@ -1161,7 +1161,7 @@ Expected: every reported count is at most 250.
 Run the skill audit if its path exists:
 
 ```bash
-uv run /Users/sionchoi/.codex/plugins/cache/sisyphuslabs/omo/4.16.0/skills/programming/scripts/python/check-no-excuse-rules.py src tests
+uv run ruff check src tests
 ```
 
 Expected: no violations.

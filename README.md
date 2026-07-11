@@ -40,9 +40,10 @@ The harness judges observed tool execution rather than claims in generated text.
 Deterministic code owns enforcement, experimental guidance is routed only when a
 task signal matches, and holdout labels stay outside model-visible context.
 
-This v0.2 release does not automatically grade defects, inspect hidden reasoning,
-support distributed ledgers, treat arbitrary remote tools as evidence, or infer
-statistical lift from an initial small sample.
+This v0.2 release runs an out-of-band machine grader but does not automatically
+produce the separate external `final_defect_found` label. It does not inspect
+hidden reasoning, support distributed ledgers, treat arbitrary remote tools as
+evidence, or infer statistical lift from an initial small sample.
 
 ## Experimental Packs Versus Always-on Rules
 
@@ -147,11 +148,15 @@ The example manifest can use the minimal verifier image in
 [`eval/verifier/`](eval/verifier/); its README shows how to build a local
 registry-backed `localhost:5050/...@sha256:...` reference for
 `VERIFICATION_IMAGE` and `GRADER_IMAGE`.
-The container receives only a read-write bind mount of the copied session
-workspace at `/workspace`. It receives no parent environment, no API keys, and
-no network. The root filesystem is read-only, Linux capabilities are dropped,
-privilege escalation is disabled, process count, memory, and CPU are limited,
-and only an isolated temporary filesystem is writable outside the workspace.
+The model-callable verifier receives a read-write bind mount of the copied
+session workspace at `/workspace` and drops all Linux capabilities. The grader
+receives the workspace read-only; it runs as root to read image-baked tests,
+drops all other capabilities, and retains only `SETUID` and `SETGID` so its
+subject worker can execute the model's code as `nobody`. Both containers receive
+no parent environment, no API keys, and no network. Their root filesystems are
+read-only, privilege escalation is disabled, process count, memory, and CPU are
+limited, and only an isolated temporary filesystem is writable outside the
+workspace.
 Image-baked environment defaults may still exist inside the container. A
 harness-generated container name supports forced cleanup if the Docker client is
 cancelled. Cleanup has its own bounded deadline; timeout or nonzero removal is a
@@ -202,7 +207,7 @@ tokens stay in harness context and are never exposed in model-visible tool outpu
 | No observed mutation | `ALLOW` |
 | Fresh successful verification after the latest code mutation | `ALLOW` |
 | QUICK task | `ALLOW` |
-| NORMAL task | `ALLOW` in v0.1 |
+| NORMAL task | `ALLOW` in the current policy |
 | DEEP task with documentation-only mutations | `ALLOW` |
 | DEEP task with code mutation and no fresh successful verification | `BLOCK` |
 | The same DEEP task reaches its gate retry limit | `EXHAUSTED` |
@@ -227,7 +232,7 @@ uv build
 ## Known Limitations
 
 Hosted tools and SDK built-ins that bypass the local function-tool lifecycle
-hooks cannot be observed as mutation or verification evidence in v0.1. They
+hooks cannot be observed as mutation or verification evidence in this release. They
 remain outside the enforcement boundary and must not be registered as though
 the harness can observe them. Ledger locking is process-local, every session
 must own a separate ledger, and final defect grading remains out of band. The

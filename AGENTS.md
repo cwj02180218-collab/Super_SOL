@@ -24,5 +24,4 @@ uv run basedpyright
 uv run pytest --cov=fablized_sol --cov-report=term-missing
 uv build
 find src tests -name '*.py' -print0 | xargs -0 -n1 sh -c 'printf "%s " "$0"; awk "NF && !/^[[:space:]]*#/ {n++} END {print n+0}" "$0"'
-uv run /Users/sionchoi/.codex/plugins/cache/sisyphuslabs/omo/4.16.0/skills/programming/scripts/python/check-no-excuse-rules.py src tests
 ```

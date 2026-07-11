@@ -8,7 +8,7 @@ Release candidate: `v0.2.0`
 
 | Gate | Decision | Evidence |
 | --- | --- | --- |
-| Open-source harness release | **PASS** | Strict typing, 131 tests, build, CLI QA, isolated verifier/grader, aggregate report |
+| Open-source harness release | **PASS** | Strict typing, 133 tests, build, CLI QA, isolated verifier/grader, aggregate report |
 | Reproducible pilot execution | **PASS** | 16/16 sessions completed; 16/16 out-of-band grader checks passed |
 | Baseline-first efficiency hypothesis | **PROMISING** | 11.2% to 14.9% token-volume savings with zero escalations in four tasks |
 | ON-arm quality uplift | **NOT OBSERVED** | Both arms scored 100%; ON used more tokens for both models |

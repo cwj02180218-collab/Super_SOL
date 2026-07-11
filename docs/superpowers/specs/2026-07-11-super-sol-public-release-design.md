@@ -92,8 +92,9 @@ names remain functional as compatibility aliases for this release.
 
 - The complete offline quality gate passes.
 - Both primary and compatibility CLI commands render help and perform a dry run.
-- The wheel and source archive contain the intended license, docs, evaluation
-  fixtures, and package sources, but no local secrets or runtime evidence.
+- The wheel contains the runtime package and license files. The source archive
+  additionally contains docs, benchmarks, evaluation fixtures, and tests. Neither
+  archive contains local secrets or runtime evidence.
 - Five independent final review lanes pass: goal, QA, code quality, security,
   and repository context.
 - `cuj0218/Super-SOL` is public, `main` contains the preserved history, CI is
