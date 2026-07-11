@@ -111,8 +111,10 @@ privilege escalation is disabled, process count, memory, and CPU are limited,
 and only an isolated temporary filesystem is writable outside the workspace.
 Image-baked environment defaults may still exist inside the container. A
 harness-generated container name supports forced cleanup if the Docker client is
-cancelled. Missing Docker or a missing verification image fails closed and
-cannot produce successful evidence.
+cancelled. Cleanup has its own bounded deadline; timeout or nonzero removal is a
+typed evaluation error with bounded diagnostics rather than a silent success.
+Missing Docker or a missing verification image fails closed and cannot produce
+successful evidence.
 
 ## Ledger And Shadow Stream
 

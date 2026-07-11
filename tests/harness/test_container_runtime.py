@@ -5,6 +5,7 @@ import anyio
 import pytest
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 
+from fablized_sol.harness import container_runtime
 from fablized_sol.harness.container_runtime import (
     AnyioDockerRunner,
     DockerInvocation,
@@ -39,6 +40,11 @@ with open({str(log)!r}, "a", encoding="utf-8") as stream:
     stream.write(json.dumps(record) + "\\n")
 if sys.argv[1] == "run" and "--sleep" in sys.argv:
     time.sleep(30)
+if sys.argv[1] == "rm" and os.path.exists({str(tmp_path / "hang-cleanup")!r}):
+    time.sleep(30)
+if sys.argv[1] == "rm" and os.path.exists({str(tmp_path / "fail-cleanup")!r}):
+    os.write(2, b"X" * 50000 + b"cleanup failed")
+    raise SystemExit(9)
 print("captured")
 """
     _ = executable.write_text(script, encoding="utf-8")
@@ -110,3 +116,39 @@ def test_cancelled_client_force_removes_named_container(
     assert calls[-1].executable == str(executable)
     assert "PATH" not in calls[-1].env
     assert "OPENAI_API_KEY" not in calls[-1].env
+
+
+def test_hanging_cleanup_raises_typed_timeout(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Given both the run and its forced cleanup outlive their independent deadlines
+    _, _ = _write_fake_docker(tmp_path)
+    _ = (tmp_path / "hang-cleanup").touch()
+    monkeypatch.setenv("PATH", str(tmp_path))
+    monkeypatch.setattr(container_runtime, "_CLEANUP_TIMEOUT_SECONDS", 0.05)
+    invocation = build_docker_invocation(tmp_path, _IMAGE, ("--sleep",))
+
+    # When the outer client is cancelled, then cleanup cannot hang indefinitely
+    with pytest.raises(container_runtime.DockerCleanupTimeoutError) as captured:
+        anyio.run(_cancel_run, invocation)
+    assert captured.value.container_name == invocation.container_name
+
+
+def test_nonzero_cleanup_raises_typed_bounded_diagnostics(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Given cleanup emits excessive diagnostics and exits unsuccessfully
+    _, _ = _write_fake_docker(tmp_path)
+    _ = (tmp_path / "fail-cleanup").touch()
+    monkeypatch.setenv("PATH", str(tmp_path))
+    invocation = build_docker_invocation(tmp_path, _IMAGE, ("--sleep",))
+
+    # When outer cancellation triggers cleanup, then the failure remains observable
+    with pytest.raises(container_runtime.DockerCleanupError) as captured:
+        anyio.run(_cancel_run, invocation)
+    assert captured.value.container_name == invocation.container_name
+    assert captured.value.exit_code == 9
+    assert len(captured.value.stderr.encode()) <= 32 * 1024
+    assert captured.value.stderr.endswith("cleanup failed")

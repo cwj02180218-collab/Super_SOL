@@ -7,7 +7,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from secrets import token_hex
-from typing import Final, Protocol
+from typing import Final, Protocol, override
 
 import anyio
 from anyio import to_thread
@@ -20,6 +20,34 @@ _TMPFS: Final = "/tmp:rw,noexec,nosuid,size=64m"  # noqa: S108 - isolated contai
 _IMAGE_PATTERN: Final = re.compile(r"^[^@\s]+@sha256:[0-9a-f]{64}$")
 _MEMORY_LIMIT: Final = "512m"
 _CPU_LIMIT: Final = "1.0"
+_CLEANUP_TIMEOUT_SECONDS: Final = 10.0
+
+
+@dataclass(slots=True)
+class DockerCleanupTimeoutError(Exception):
+    """A forced container removal exceeded its independent deadline."""
+
+    container_name: str
+
+    @override
+    def __str__(self) -> str:
+        return f"docker cleanup timed out for container {self.container_name}"
+
+
+@dataclass(slots=True)
+class DockerCleanupError(Exception):
+    """A forced container removal failed with bounded diagnostics."""
+
+    container_name: str
+    exit_code: int
+    stderr: str
+
+    @override
+    def __str__(self) -> str:
+        return (
+            f"docker cleanup failed for container {self.container_name} "
+            f"with exit code {self.exit_code}: {self.stderr}"
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -157,10 +185,27 @@ def _resolve_docker_executable() -> Path:
 
 
 async def _force_remove(docker: Path, invocation: DockerInvocation) -> None:
-    _ = await anyio.run_process(
-        (str(docker), "rm", "-f", invocation.container_name),
-        env=dict(invocation.environment),
-        check=False,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+    stderr = bytearray()
+    exit_code = 127
+    try:
+        with anyio.fail_after(_CLEANUP_TIMEOUT_SECONDS):
+            async with (
+                await anyio.open_process(
+                    (str(docker), "rm", "-f", invocation.container_name),
+                    env=dict(invocation.environment),
+                    stdin=None,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,
+                ) as process,
+                anyio.create_task_group() as task_group,
+            ):
+                _ = task_group.start_soon(_drain_tail, process.stderr, stderr)
+                exit_code = await process.wait()
+    except TimeoutError as error:
+        raise DockerCleanupTimeoutError(invocation.container_name) from error
+    if exit_code != 0:
+        raise DockerCleanupError(
+            container_name=invocation.container_name,
+            exit_code=exit_code,
+            stderr=stderr.decode("utf-8", errors="replace"),
+        )

@@ -134,6 +134,8 @@ environment, a read-only root filesystem, and the copied workspace as its sole
 bind mount. Image-baked `ENV` defaults may still exist inside the container.
 Every container has a harness-generated name, immutable local-only image policy,
 CPU/memory/PID caps, and shielded forced-removal cleanup after client cancellation.
+Forced removal has an independent deadline, and timeout or nonzero cleanup is a
+typed error with bounded stderr so evaluation cannot silently claim containment.
 
 Hosted tools and SDK built-ins that do not pass through local function-tool
 hooks are outside the enforcement boundary in this slice. The CLI must reject a
