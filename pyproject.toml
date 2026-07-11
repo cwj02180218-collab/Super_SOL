@@ -1,6 +1,6 @@
 [project]
 name = "super-sol-harness"
-version = "0.3.0"
+version = "0.3.1"
 description = "Evidence-gated coding-agent harness with reproducible model comparisons"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -23,10 +23,10 @@ super-sol-report = "fablized_sol.measure.report_cli:main"
 super-sol-container-audit = "fablized_sol.eval.supply_chain:main"
 
 [project.urls]
-Homepage = "https://github.com/cuj0218/Super-SOL"
-Repository = "https://github.com/cuj0218/Super-SOL"
-Documentation = "https://github.com/cuj0218/Super-SOL#readme"
-Issues = "https://github.com/cuj0218/Super-SOL/issues"
+Homepage = "https://github.com/cwj02180218-collab/Super_SOL"
+Repository = "https://github.com/cwj02180218-collab/Super_SOL"
+Documentation = "https://github.com/cwj02180218-collab/Super_SOL#readme"
+Issues = "https://github.com/cwj02180218-collab/Super_SOL/issues"
 
 [build-system]
 requires = ["hatchling"]

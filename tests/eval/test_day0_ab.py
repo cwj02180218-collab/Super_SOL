@@ -86,7 +86,7 @@ def test_dry_run_emits_two_models_without_api_key(
     assert {_text(row, "verification_image") for row in planned} == {"dry-run"}
     assert {_text(row, "grader_image") for row in planned} == {"dry-run"}
     assert all(_text(row, "preregistration_digest") for row in planned)
-    assert all(_text(row, "harness_version") == "0.3.0" for row in planned)
+    assert all(_text(row, "harness_version") == "0.3.1" for row in planned)
     assert all(_text(row, "agents_sdk_version") for row in planned)
     assert all(_text(row, "openai_sdk_version") for row in planned)
 

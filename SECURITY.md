@@ -6,7 +6,7 @@ Security fixes target the latest tagged release and `main`.
 
 ## Reporting a vulnerability
 
-Use [GitHub private vulnerability reporting](https://github.com/cuj0218/Super-SOL/security/advisories/new).
+Use [GitHub private vulnerability reporting](https://github.com/cwj02180218-collab/Super_SOL/security/advisories/new).
 
 Do not open a public issue containing API keys, environment files, raw live workspaces, model output
 that may contain private data, or verifier/grader bypass instructions. Revoke any credential that
