@@ -33,7 +33,7 @@ an automatic router and not a benchmark result from this release.
 | `uv run ruff format --check .` | 89 files already formatted |
 | `uv run ruff check .` | All checks passed |
 | `uv run basedpyright` | 0 errors, 0 warnings, 0 notes; shipped hook scripts included |
-| `uv run pytest --cov=fablized_sol --cov-report=term-missing` | 195 passed; 93% total coverage |
+| `uv run pytest --cov=fablized_sol --cov-report=term-missing` | 198 passed; 93% total coverage |
 | `uv build` | `super_sol_harness-0.3.0` wheel and source archive built |
 | plugin validator | `Plugin validation passed` |
 | skill validator | `Skill is valid!` |
@@ -65,7 +65,7 @@ and hands-on QA. The final tag is created only after the table below contains no
 
 | Lane | Latest result | Disposition |
 | --- | --- | --- |
-| Code correctness | Recheck pending | complete current `uv run` value-option parser fix added |
+| Code correctness | PASS | all 48 current value-taking `uv run` options and short aliases reviewed |
 | Beginner experience | Conditional | all documentation findings resolved; formal tag must exist before public install |
 | Reproducibility | PASS | canonical run/session/cell/role/arm identities reject coordinated substitution |
 | Release/package | PASS | archives, versions, install flow and this observed evidence record verified |
