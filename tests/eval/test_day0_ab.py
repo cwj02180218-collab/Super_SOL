@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -179,7 +180,8 @@ def test_live_cli_rejects_missing_billable_confirmation_before_creating_run(
     )
 
     assert result.exit_code != 0
-    assert "confirm-billable" in result.output.replace("\n", "")
+    plain_output = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
+    assert "confirm-billable" in "".join(plain_output.split())
     assert not output_dir.exists()
 
 
