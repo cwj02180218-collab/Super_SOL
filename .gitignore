@@ -8,3 +8,6 @@ __pycache__/
 .fablized/
 dist/
 *.egg-info/
+.env
+.env.*
+!.env.example
