@@ -65,10 +65,10 @@ and hands-on QA. The final tag is created only after the table below contains no
 
 | Lane | Latest result | Disposition |
 | --- | --- | --- |
-| Code correctness | Recheck pending | final `uv run` option parser fix added |
+| Code correctness | Recheck pending | complete current `uv run` value-option parser fix added |
 | Beginner experience | Conditional | all documentation findings resolved; formal tag must exist before public install |
-| Reproducibility | Recheck pending | observed model/effort cells are now checked against canonical identity |
-| Release/package | Recheck pending | this observed record replaces the previously deferred evidence |
+| Reproducibility | PASS | canonical run/session/cell/role/arm identities reject coordinated substitution |
+| Release/package | PASS | archives, versions, install flow and this observed evidence record verified |
 | Hands-on QA | PASS | changed surface, full suite, build, validators, install and CLI behavior observed |
 
 ## Known limits

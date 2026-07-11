@@ -65,6 +65,9 @@ def test_unapproved_live_eval_and_direct_api_are_denied(run_hook: HookRunner) ->
         "uv run --project . super-sol-eval --tasks tasks.json",
         "uv run --locked super-sol-eval --tasks tasks.json",
         "uv run --with typer --with pydantic super-sol-eval --tasks tasks.json",
+        "uv run --config-file uv.toml super-sol-eval --tasks tasks.json",
+        "uv run --env-file .env super-sol-eval --tasks tasks.json",
+        "uv run --default-index https://pypi.org/simple super-sol-eval --tasks tasks.json",
     ],
 )
 def test_uv_run_options_cannot_bypass_live_eval_consent(
