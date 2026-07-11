@@ -20,6 +20,7 @@ fablized-sol-eval = "fablized_sol.eval.day0_ab:main"
 fablized-sol-report = "fablized_sol.measure.report_cli:main"
 super-sol-eval = "fablized_sol.eval.day0_ab:main"
 super-sol-report = "fablized_sol.measure.report_cli:main"
+super-sol-container-audit = "fablized_sol.eval.supply_chain:main"
 
 [project.urls]
 Homepage = "https://github.com/cuj0218/Super-SOL"
