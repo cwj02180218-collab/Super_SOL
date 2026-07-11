@@ -1,8 +1,9 @@
 # Fablized SOL
 
-Fablized SOL is an evidence-gated procedure harness for paired GPT-5.6 Sol
-evaluations. It measures whether narrowly routed procedures improve outcomes; it
-does not claim to increase a model's capability ceiling.
+Fablized SOL is an evidence-gated procedure harness for GPT-5.5, with GPT-5.6
+Sol as a controlled same-adapter model comparator and GPT.C plus Codex CLI as a
+separate operational reference. It measures whether narrowly routed procedures
+improve outcomes; it does not claim to increase a model's capability ceiling.
 
 ## Super Sol Profile
 
@@ -15,6 +16,11 @@ without exposing measurement labels to the model.
 
 See [docs/SUPER_SOL.md](docs/SUPER_SOL.md) for the adopted, parked, and rejected
 GPT.C decisions.
+
+The Day 1-3 validation path adds a same-task ON/OFF crossover, verifier-private
+tests, and a report that measures quality, token volume, time, tool activity,
+and GPT-5.5-first lazy escalation. See
+[docs/DAY3_VALIDATION.md](docs/DAY3_VALIDATION.md).
 
 ## Philosophy And Non-goals
 
@@ -62,17 +68,18 @@ The CLI accepts a strict JSON manifest with one or more tasks:
       "id": "python-logic",
       "prompt": "Diagnose and fix the failing test, then verify the result.",
       "fixture": "fixtures/python_logic",
-      "verify_argv": ["uv", "run", "pytest", "-q"]
+      "verify_argv": ["uv", "run", "pytest", "-q"],
+      "grader_argv": ["uv", "run", "pytest", "-q", "/opt/grader/tests/task"]
     }
   ]
 }
 ```
 
-Each task has a non-empty `id`, `prompt`, fixture directory, and
-`verify_argv`. Relative fixtures resolve from the manifest directory. Verification
-commands are argument arrays, never shell strings: each array element is passed
-as one process argument without shell interpolation. Fixtures containing symbolic
-links are rejected before they can be copied into a session workspace.
+Each task has a non-empty `id`, `prompt`, fixture directory, model-callable
+`verify_argv`, and post-turn `grader_argv`. Relative fixtures resolve from the
+manifest directory and cannot escape it. Commands are argument arrays, never
+shell strings: each element is passed without shell interpolation. Fixtures
+containing symbolic links are rejected before they can be copied.
 
 ## Dry Run
 
@@ -92,34 +99,42 @@ The command creates
 task, one for each configured model. Run IDs cannot be reused within the same
 output directory.
 
+For small, directly comparable experiments, pass `--arm-design crossover`.
+This plans each task for both models in both ON and OFF arms. The default
+`holdout` design remains appropriate for longer operational sampling.
+
 ## Live Paired Evaluation
 
 Live execution is billable and may modify the copied task workspaces. It
-requires `OPENAI_API_KEY`, access to both configured models, and
-`VERIFICATION_IMAGE` set to a complete digest-pinned image reference:
+requires `OPENAI_API_KEY`, access to both configured models, and distinct
+digest-pinned `VERIFICATION_IMAGE` and `GRADER_IMAGE` references:
 
 ```bash
 OPENAI_API_KEY=... uv run fablized-sol-eval \
   --tasks eval/tasks.example.json \
   --output-dir .fablized/live \
   --run-id day0-live \
-  --verification-image "$VERIFICATION_IMAGE"
+  --verification-image "$VERIFICATION_IMAGE" \
+  --grader-image "$GRADER_IMAGE"
 ```
 
-The defaults are `gpt-5.6-sol` and `gpt-5.5`, with two gate correction retries.
+The defaults are product model `gpt-5.5` followed by controlled reference model
+`gpt-5.6-sol`, with two gate correction retries.
 GPT-5.6 Sol is a limited preview, so API access is not implied by installing this
-package. Use `--sol-model`, `--baseline-model`, and `--max-gate-retries` to
+package. Use `--product-model`, `--reference-model`, and `--max-gate-retries` to
 override the defaults. A live run should be an explicit quota and workspace
 decision, not part of routine verification or CI.
 
-Live verification requires a working Docker runtime and an image pinned by an
-immutable `sha256` digest. The image must already contain every dependency named
-by `verify_argv` and must already exist locally because pulls are disabled; the
-harness does not install dependencies during verification.
+Live evaluation requires a working Docker runtime and two images pinned by
+immutable `sha256` digests. The verifier image is model-callable and contains
+only visible checks. The grader image runs once after the model turn, returns
+only a boolean to the shadow stream, and is never exposed through a tool result.
+Both images must already contain every dependency named by their manifest argv
+and must already exist locally because pulls are disabled.
 The example manifest can use the minimal verifier image in
 [`eval/verifier/`](eval/verifier/); its README shows how to build a local
 registry-backed `localhost:5050/...@sha256:...` reference for
-`VERIFICATION_IMAGE`.
+`VERIFICATION_IMAGE` and `GRADER_IMAGE`.
 The container receives only a read-write bind mount of the copied session
 workspace at `/workspace`. It receives no parent environment, no API keys, and
 no network. The root filesystem is read-only, Linux capabilities are dropped,
@@ -129,8 +144,21 @@ Image-baked environment defaults may still exist inside the container. A
 harness-generated container name supports forced cleanup if the Docker client is
 cancelled. Cleanup has its own bounded deadline; timeout or nonzero removal is a
 typed evaluation error with bounded diagnostics rather than a silent success.
-Missing Docker or a missing verification image fails closed and cannot produce
-successful evidence.
+Missing Docker, a missing image, or image reuse between verifier and grader
+fails closed and cannot produce successful evidence.
+
+The example grader image bakes task-specific pilot checks into root-only `/opt/grader/tests`.
+They are absent from the model-callable verifier image. Published checks validate
+instrumentation only; a promoted benchmark must build its grader image from an
+unpublished test pack.
+
+## Day 3 Report
+
+`fablized-sol-report` joins the append-only shadow stream with a separate
+external grade file. It refuses incomplete or duplicate evidence and emits
+per-model/per-arm quality and resource cells plus a GPT-5.5-first lazy cascade.
+Token volume is reported as a cost proxy; it is not converted to dollars without
+actual billing data.
 
 ## Ledger And Shadow Stream
 

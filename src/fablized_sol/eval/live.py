@@ -174,7 +174,13 @@ def _ledger_counts(ledger: Ledger) -> tuple[int, int, int]:
     return tool_calls, failed_verifications, gate_blocks
 
 
-def finished_event(run: LiveRun, status: RunStatus, error_type: str | None) -> RunFinished:
+def finished_event(
+    run: LiveRun,
+    status: RunStatus,
+    error_type: str | None,
+    *,
+    grader_passed: bool | None,
+) -> RunFinished:
     """Build one terminal event from ledger and response usage evidence."""
     tool_calls, failed_verifications, gate_blocks = _ledger_counts(run.ledger)
     return RunFinished(
@@ -188,6 +194,7 @@ def finished_event(run: LiveRun, status: RunStatus, error_type: str | None) -> R
         gate_blocks=gate_blocks,
         input_tokens=run.usage.input_tokens,
         output_tokens=run.usage.output_tokens,
+        grader_passed=grader_passed,
         final_defect_found=None,
         error_type=error_type,
     )
@@ -210,6 +217,7 @@ def empty_finished_event(
         gate_blocks=0,
         input_tokens=0,
         output_tokens=0,
+        grader_passed=None,
         final_defect_found=None,
         error_type=error_type,
     )

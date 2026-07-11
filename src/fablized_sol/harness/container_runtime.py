@@ -138,6 +138,55 @@ def build_docker_invocation(
     )
 
 
+def build_grader_invocation(
+    workspace: Path,
+    image: str,
+    grader_argv: tuple[str, ...],
+) -> DockerInvocation:
+    """Build a read-only grader container with one-way privilege dropping."""
+    root = workspace.resolve()
+    mount = f"type=bind,src={root},dst={_CONTAINER_WORKSPACE},readonly"
+    container_name = f"fablized-grader-{token_hex(12)}"
+    return DockerInvocation(
+        argv=(
+            "docker",
+            "run",
+            "--rm",
+            "--pull=never",
+            "--name",
+            container_name,
+            "--network",
+            "none",
+            "--read-only",
+            "--cap-drop",
+            "ALL",
+            "--cap-add",
+            "SETUID",
+            "--cap-add",
+            "SETGID",
+            "--security-opt",
+            "no-new-privileges",
+            "--user",
+            "0:0",
+            "--pids-limit",
+            _PID_LIMIT,
+            "--memory",
+            _MEMORY_LIMIT,
+            "--cpus",
+            _CPU_LIMIT,
+            "--tmpfs",
+            _TMPFS,
+            "--mount",
+            mount,
+            "--workdir",
+            _CONTAINER_WORKSPACE,
+            image,
+            *grader_argv,
+        ),
+        container_name=container_name,
+    )
+
+
 def _append_tail(output: bytearray, chunk: bytes) -> None:
     if len(chunk) >= _OUTPUT_LIMIT_BYTES:
         output[:] = chunk[-_OUTPUT_LIMIT_BYTES:]

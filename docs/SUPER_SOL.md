@@ -3,17 +3,21 @@
 Super Sol is the merged operating profile for `fablized-sol` and
 `cuj0218/GPT.C`.
 
-It keeps `fablized-sol` as the measured product surface and treats GPT.C as the
-Codex operational reference surface. That split matters: GPT.C's wrapper and
-ontology are useful for how Codex work should feel, while `fablized-sol` owns the
-stricter benchmark evidence boundary.
+It keeps GPT-5.5 plus `fablized-sol` as the measured product surface. GPT-5.6
+Sol uses the same adapter only as a controlled model comparator, while GPT.C
+plus Codex CLI remains a separate operational reference whose scores are never
+pooled with this benchmark. GPT.C's wrapper and ontology inform procedure
+choices; `fablized-sol` owns the stricter benchmark evidence boundary.
 
 ## Adopt Now
 
 - Verification must be newer than the latest code mutation.
-- Live verification must run inside a digest-pinned Docker image.
+- Model-callable verification and out-of-band grading must use separate,
+  digest-pinned Docker images.
 - Only typed local tool results receive mutation or verification credit.
 - Holdout labels and shadow-stream measurements stay outside model context.
+- Lazy routing is measured as a GPT-5.5-first operational cascade, with GPT-5.6
+  Sol selected only when completion or the out-of-band grader fails.
 
 ## Park For Evidence
 
@@ -34,8 +38,18 @@ are not completion evidence in the benchmark harness.
 
 1. Run dry-run smoke to confirm manifest parsing, paired model assignment, and
    Super Sol profile metadata.
-2. Build or load a local verifier image pinned by immutable digest.
-3. Run a small live pilot with `OPENAI_API_KEY` and `VERIFICATION_IMAGE` set only
-   in the local shell.
+2. Build separate verifier and grader images pinned by immutable digests.
+3. Run a small live pilot with `OPENAI_API_KEY`, `VERIFICATION_IMAGE`, and
+   `GRADER_IMAGE` set only in the local shell.
 4. Grade `final_defect_found` out of band; the runner intentionally records it as
    `null`.
+
+## Day 1-3 Validation
+
+The next gate adds task-level ON/OFF crossover cells, an out-of-band grader,
+and a fail-closed quality and efficiency report. It also measures a lazy
+baseline-first cascade that escalates GPT-5.5 failures to the GPT-5.6 Sol
+reference instead of paying for the reference model on every task.
+
+See [DAY3_VALIDATION.md](DAY3_VALIDATION.md) for the commands, evidence boundary,
+and promotion threshold.

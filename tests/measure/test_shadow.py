@@ -5,6 +5,7 @@ from pydantic import JsonValue, TypeAdapter, ValidationError
 
 from fablized_sol.engine.models import HoldoutArm, SessionId
 from fablized_sol.measure.shadow import RunFinished, RunPlanned, RunStarted, ShadowWriter
+from fablized_sol.measure.super_sol import SUPER_SOL_PROFILE
 
 _ROW_ADAPTER = TypeAdapter[dict[str, JsonValue]](dict[str, JsonValue])
 
@@ -31,6 +32,8 @@ def test_shadow_schemas_exclude_model_visible_content(tmp_path: Path) -> None:
             task_id="task-1",
             arm=HoldoutArm.ON,
             model="gpt-5.6-sol",
+            profile=SUPER_SOL_PROFILE.name,
+            profile_version=SUPER_SOL_PROFILE.version,
         ),
         RunStarted(session_id=SessionId("s1"), arm=HoldoutArm.ON, model="gpt-5.6-sol"),
         RunFinished(

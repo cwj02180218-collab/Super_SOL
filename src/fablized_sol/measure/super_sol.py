@@ -22,6 +22,7 @@ class SuperSolProfile:
     name: str
     version: str
     product_surface: str
+    model_comparator_surface: str
     reference_surface: str
     adopt_now: tuple[SuperSolDecision, ...]
     park_for_evidence: tuple[SuperSolDecision, ...]
@@ -31,8 +32,9 @@ class SuperSolProfile:
 SUPER_SOL_PROFILE: Final = SuperSolProfile(
     name="super-sol",
     version="2026-07-11",
-    product_surface="fablized-sol",
-    reference_surface="GPT.C",
+    product_surface="gpt-5.5 + fablized-sol",
+    model_comparator_surface="gpt-5.6-sol + fablized-sol",
+    reference_surface="GPT.C + Codex CLI",
     adopt_now=(
         SuperSolDecision(
             name="verification-after-latest-code-mutation",
@@ -46,8 +48,16 @@ SUPER_SOL_PROFILE: Final = SuperSolProfile(
             name="digest-pinned-docker-verifier",
             status="adopt_now",
             rationale=(
-                "Live verification runs in a local, immutable, no-network Docker image "
-                "rather than the parent process environment."
+                "Model-callable verification runs in a local, immutable, no-network "
+                "Docker image rather than the parent process environment."
+            ),
+        ),
+        SuperSolDecision(
+            name="out-of-band-bool-only-grader",
+            status="adopt_now",
+            rationale=(
+                "A distinct digest-pinned image grades the final workspace after the model "
+                "turn and exposes only pass or fail to the shadow stream."
             ),
         ),
         SuperSolDecision(
@@ -56,6 +66,15 @@ SUPER_SOL_PROFILE: Final = SuperSolProfile(
             rationale=(
                 "Only registered local tools returning typed mutation or verification "
                 "results receive ledger credit."
+            ),
+        ),
+        SuperSolDecision(
+            name="lazy-baseline-first-escalation-analysis",
+            status="adopt_now",
+            rationale=(
+                "Measure GPT-5.5-first routing and escalate only failed or defective tasks "
+                "to the GPT-5.6 Sol reference; keep observed cells separate from the "
+                "counterfactual cascade."
             ),
         ),
     ),

@@ -1,6 +1,7 @@
 """Strict task-manifest parsing at the evaluation trust boundary."""
 
 from dataclasses import dataclass
+from enum import StrEnum, unique
 from pathlib import Path
 from typing import Annotated, ClassVar, Self, override
 
@@ -51,6 +52,14 @@ type VerificationImage = Annotated[
 ]
 
 
+@unique
+class ArmDesign(StrEnum):
+    """Experiment assignment design selected at the CLI boundary."""
+
+    HOLDOUT = "holdout"
+    CROSSOVER = "crossover"
+
+
 def _contains_symlink(path: Path) -> bool:
     return path.is_symlink() or any(candidate.is_symlink() for candidate in path.rglob("*"))
 
@@ -64,6 +73,7 @@ class TaskSpec(BaseModel):
     prompt: StrictStr = Field(min_length=1)
     fixture: Path
     verify_argv: tuple[StrictStr, ...] = Field(min_length=1)
+    grader_argv: tuple[StrictStr, ...] = Field(min_length=1)
 
 
 class TaskManifest(BaseModel):
@@ -81,21 +91,30 @@ class TaskManifest(BaseModel):
         except (OSError, ValidationError) as error:
             raise ManifestParseError(path=path, detail=str(error)) from error
 
+        manifest_root = path.parent.resolve()
         seen: set[str] = set()
         resolved_tasks: list[TaskSpec] = []
         for task in manifest.tasks:
             if task.id in seen:
                 raise ManifestParseError(path=path, detail=f"duplicate task id: {task.id}")
             seen.add(task.id)
-            fixture_input = (
-                task.fixture if task.fixture.is_absolute() else path.parent / task.fixture
-            )
+            if task.fixture.is_absolute():
+                raise ManifestParseError(
+                    path=path,
+                    detail=f"fixture must stay under manifest root: {task.fixture}",
+                )
+            fixture_input = path.parent / task.fixture
+            fixture = fixture_input.resolve()
+            if not fixture.is_relative_to(manifest_root):
+                raise ManifestParseError(
+                    path=path,
+                    detail=f"fixture must stay under manifest root: {fixture}",
+                )
             if _contains_symlink(fixture_input):
                 raise ManifestParseError(
                     path=path,
                     detail=f"fixture must not contain symlinks: {fixture_input}",
                 )
-            fixture = fixture_input.resolve()
             if not fixture.is_dir():
                 raise ManifestParseError(
                     path=path,
@@ -116,16 +135,26 @@ class EvalOptions(BaseModel):
     models: ComparisonModels
     max_gate_retries: int = Field(ge=0, le=5)
     dry_run: bool
+    arm_design: ArmDesign = ArmDesign.HOLDOUT
     verification_image: VerificationImage | None = None
+    grader_image: VerificationImage | None = None
 
     @model_validator(mode="after")
     def require_live_verification_image(self) -> Self:
         """Require a digest-pinned sandbox image for billable live runs."""
-        if not self.dry_run and self.verification_image is None:
-            error_code = "missing_verification_image"
-            message = "verification image is required for live evaluation"
-            raise PydanticCustomError(
-                error_code,
-                message,
-            )
+        if not self.dry_run:
+            if self.verification_image is None:
+                error_code = "missing_verification_image"
+                message = "verification image is required for live evaluation"
+                raise PydanticCustomError(error_code, message)
+            if self.grader_image is None:
+                error_code = "missing_grader_image"
+                message = "grader image is required for live evaluation"
+                raise PydanticCustomError(error_code, message)
+            verification_digest = self.verification_image.rsplit("@", maxsplit=1)[1]
+            grader_digest = self.grader_image.rsplit("@", maxsplit=1)[1]
+            if verification_digest == grader_digest:
+                error_code = "shared_verification_grader_image"
+                message = "verification and grader images must be distinct"
+                raise PydanticCustomError(error_code, message)
         return self

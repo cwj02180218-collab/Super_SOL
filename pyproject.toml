@@ -14,6 +14,7 @@ dependencies = [
 
 [project.scripts]
 fablized-sol-eval = "fablized_sol.eval.day0_ab:main"
+fablized-sol-report = "fablized_sol.measure.report_cli:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -47,7 +48,7 @@ dev = [
 typeCheckingMode = "all"
 pythonVersion = "3.12"
 pythonPlatform = "All"
-include = ["src", "tests"]
+include = ["src", "tests", "eval/verifier/subject_worker.py", "eval/verifier/hidden/support.py"]
 exclude = ["**/__pycache__", "**/.venv", "**/build", "**/dist"]
 reportUnusedCallResult = "warning"
 reportUnnecessaryTypeIgnoreComment = "error"
@@ -67,6 +68,7 @@ ignore = ["COM812", "ISC001", "D203", "D213", "CPY001", "FBT001", "FBT002"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["S101", "ARG", "PLR2004", "SLF001", "D"]
+"eval/**/*.py" = ["D", "INP001", "S101", "PLR2004"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

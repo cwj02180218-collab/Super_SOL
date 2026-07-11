@@ -21,8 +21,22 @@ Compare ON versus OFF within each model. Separately compare GPT-5.6 Sol versus t
 within the same arm. Pair comparisons by task and deterministic assignment key; do not pool across
 arms or models in a way that breaks the pairing.
 
+For the Day 1-3 pilot, use the crossover arm design so each task has all four model/arm cells.
+Report the GPT-5.5-first lazy cascade separately from the observed cells: a baseline result is used
+only when it completed and the out-of-band machine grader passed; otherwise the reference result is
+selected. The external final-defect label scores the selected route but never controls selection.
+Report escalation rate, cascade quality, token volume, and token-volume savings against always
+selecting the reference result.
+
 ## Retention And Interpretation
 
-Include completed, exhausted, error, and abandoned runs in the analysis. Report effect sizes and
+Retain completed, exhausted, error, and abandoned runs in the raw event record. The confirmatory
+report fails closed unless every preregistered crossover session starts, finishes, and receives an
+external grade; it never silently drops abandoned or incomplete sessions. Report effect sizes and
 uncertainty for quality and cost outcomes. A count of 50 sessions alone is not evidence and cannot
 support a claim without an effect estimate and uncertainty interval.
+
+The four-task Day 1-3 pilot validates instrumentation only. Fable parity or model-uplift claims
+require at least fifty completed crossover task groups, frozen verifier and grader digests, an
+unpublished grader pack, externally graded outcomes, paired effect sizes with uncertainty, and a
+leakage review.

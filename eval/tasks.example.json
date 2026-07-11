@@ -4,7 +4,29 @@
       "id": "python-logic",
       "prompt": "Diagnose and fix the failing test in this Python fixture, then run the configured verification.",
       "fixture": "fixtures/python_logic",
-      "verify_argv": ["uv", "run", "--with", "pytest", "pytest", "-q"]
+      "verify_argv": ["uv", "run", "--with", "pytest", "pytest", "-q", "-p", "no:cacheprovider", "/workspace"],
+      "grader_argv": ["uv", "run", "--with", "pytest", "pytest", "-q", "-p", "no:cacheprovider", "/opt/grader/tests/python_logic"]
+    },
+    {
+      "id": "cache-invalidation",
+      "prompt": "Fix the stale inventory total after restock, preserving the cache, then run the configured verification.",
+      "fixture": "fixtures/cache_invalidation",
+      "verify_argv": ["uv", "run", "--with", "pytest", "pytest", "-q", "-p", "no:cacheprovider", "/workspace"],
+      "grader_argv": ["uv", "run", "--with", "pytest", "pytest", "-q", "-p", "no:cacheprovider", "/opt/grader/tests/cache_invalidation"]
+    },
+    {
+      "id": "path-guard",
+      "prompt": "Make resolve_under reject absolute paths and parent traversal outside root with PathTraversalError while allowing normal children, then verify.",
+      "fixture": "fixtures/path_guard",
+      "verify_argv": ["uv", "run", "--with", "pytest", "pytest", "-q", "-p", "no:cacheprovider", "/workspace"],
+      "grader_argv": ["uv", "run", "--with", "pytest", "pytest", "-q", "-p", "no:cacheprovider", "/opt/grader/tests/path_guard"]
+    },
+    {
+      "id": "multi-file-tax",
+      "prompt": "Fix checkout so integer basis-point tax is applied to the subtotal across the pricing and order modules with integer-cent rounding, then verify.",
+      "fixture": "fixtures/multi_file",
+      "verify_argv": ["uv", "run", "--with", "pytest", "pytest", "-q", "-p", "no:cacheprovider", "/workspace"],
+      "grader_argv": ["uv", "run", "--with", "pytest", "pytest", "-q", "-p", "no:cacheprovider", "/opt/grader/tests/multi_file"]
     }
   ]
 }

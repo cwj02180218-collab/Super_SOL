@@ -6,6 +6,9 @@ from pydantic import ValidationError
 
 from fablized_sol.eval.manifest import EvalOptions, ManifestParseError, TaskManifest
 
+_VERIFY_IMAGE = "ghcr.io/example/verify@sha256:" + "a" * 64
+_GRADER_IMAGE = "ghcr.io/example/grader@sha256:" + "b" * 64
+
 
 def _write_manifest(
     tmp_path: Path,
@@ -24,6 +27,7 @@ def _write_manifest(
                 "prompt": "Diagnose and fix the failing test.",
                 "fixture": fixture,
                 "verify_argv": verify_argv or ["uv", "run", "pytest", "-q"],
+                "grader_argv": ["uv", "run", "pytest", "-q"],
             }
         ]
     }
@@ -59,6 +63,7 @@ def test_manifest_rejects_duplicate_task_ids(tmp_path: Path) -> None:
         "prompt": "Diagnose and fix the failing test.",
         "fixture": "fixture",
         "verify_argv": ["uv", "run", "pytest", "-q"],
+        "grader_argv": ["uv", "run", "pytest", "-q"],
     }
     _ = path.write_text(json.dumps({"tasks": [task, task]}), encoding="utf-8")
 
@@ -79,6 +84,7 @@ def test_manifest_rejects_fixture_file(tmp_path: Path) -> None:
                 "prompt": "Diagnose and fix the failing test.",
                 "fixture": fixture.name,
                 "verify_argv": ["uv", "run", "pytest", "-q"],
+                "grader_argv": ["uv", "run", "pytest", "-q"],
             }
         ]
     }
@@ -98,6 +104,31 @@ def test_manifest_rejects_symlink_inside_fixture(tmp_path: Path) -> None:
 
     # When the manifest crosses the trust boundary, then copying is refused
     with pytest.raises(ManifestParseError, match="symlink"):
+        _ = TaskManifest.load(path)
+
+
+def test_manifest_rejects_fixture_outside_manifest_root(tmp_path: Path) -> None:
+    # Given a manifest that tries to copy a readable directory outside its root
+    manifest_root = tmp_path / "manifest"
+    manifest_root.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    path = manifest_root / "tasks.json"
+    payload = {
+        "tasks": [
+            {
+                "id": "escape",
+                "prompt": "Read the fixture.",
+                "fixture": "../outside",
+                "verify_argv": ["pytest", "-q"],
+                "grader_argv": ["pytest", "-q"],
+            }
+        ]
+    }
+    _ = path.write_text(json.dumps(payload), encoding="utf-8")
+
+    # When the manifest crosses the trust boundary, then host path escape is refused
+    with pytest.raises(ManifestParseError, match="manifest root"):
         _ = TaskManifest.load(path)
 
 
@@ -123,6 +154,7 @@ def test_eval_options_reject_identical_comparison_models(tmp_path: Path) -> None
             max_gate_retries=2,
             dry_run=True,
             verification_image=None,
+            grader_image=None,
         )
 
 
@@ -138,6 +170,7 @@ def test_live_eval_options_require_digest_pinned_verification_image(tmp_path: Pa
             max_gate_retries=2,
             dry_run=False,
             verification_image=None,
+            grader_image=None,
         )
 
 
@@ -153,4 +186,34 @@ def test_eval_options_reject_mutable_verification_image_tag(tmp_path: Path) -> N
             max_gate_retries=2,
             dry_run=False,
             verification_image="python:3.12",
+            grader_image=_GRADER_IMAGE,
+        )
+
+
+def test_live_eval_options_require_distinct_verifier_and_grader_images(tmp_path: Path) -> None:
+    # Given a live run that exposes the grader image to the model-callable verifier
+    # When options cross the trust boundary, then image reuse is rejected
+    with pytest.raises(ValidationError, match="distinct"):
+        _ = EvalOptions(
+            tasks=tmp_path / "tasks.json",
+            output_dir=tmp_path / "out",
+            run_id="live",
+            models=("gpt-5.6-sol", "gpt-5.5"),
+            max_gate_retries=2,
+            dry_run=False,
+            verification_image=_VERIFY_IMAGE,
+            grader_image=_VERIFY_IMAGE,
+        )
+
+    aliased_grader = "ghcr.io/other/grader@sha256:" + "a" * 64
+    with pytest.raises(ValidationError, match="distinct"):
+        _ = EvalOptions(
+            tasks=tmp_path / "tasks.json",
+            output_dir=tmp_path / "out",
+            run_id="aliased-live",
+            models=("gpt-5.6-sol", "gpt-5.5"),
+            max_gate_retries=2,
+            dry_run=False,
+            verification_image=_VERIFY_IMAGE,
+            grader_image=aliased_grader,
         )

@@ -8,8 +8,9 @@ def test_super_sol_profile_keeps_product_and_reference_surfaces_separate() -> No
     # When its benchmark claim boundaries are inspected
     # Then the harness product and Codex reference comparator are not conflated
     assert profile.name == "super-sol"
-    assert profile.product_surface == "fablized-sol"
-    assert profile.reference_surface == "GPT.C"
+    assert profile.product_surface == "gpt-5.5 + fablized-sol"
+    assert profile.model_comparator_surface == "gpt-5.6-sol + fablized-sol"
+    assert profile.reference_surface == "GPT.C + Codex CLI"
 
 
 def test_super_sol_profile_promotes_strict_evidence_and_parks_text_heuristics() -> None:
@@ -22,5 +23,7 @@ def test_super_sol_profile_promotes_strict_evidence_and_parks_text_heuristics() 
     # Then strict evidence becomes policy while GPT.C's weaker heuristics stay experimental
     assert "verification-after-latest-code-mutation" in adopted
     assert "digest-pinned-docker-verifier" in adopted
+    assert "out-of-band-bool-only-grader" in adopted
+    assert "lazy-baseline-first-escalation-analysis" in adopted
     assert "promise-without-action-regex" in parked
     assert "command-output-regex-as-verification-credit" in rejected

@@ -9,7 +9,13 @@ import anyio
 import typer
 from pydantic import ValidationError
 
-from fablized_sol.engine.models import SessionId
+from fablized_sol.engine.models import HoldoutArm, SessionId
+from fablized_sol.eval.grader import (
+    GraderFailed,
+    GraderInfrastructureError,
+    GraderPassed,
+    run_out_of_band_grader,
+)
 from fablized_sol.eval.live import (
     PlannedRun,
     create_live_run,
@@ -17,10 +23,12 @@ from fablized_sol.eval.live import (
     execute_live,
     finished_event,
 )
-from fablized_sol.eval.manifest import EvalOptions, TaskManifest
+from fablized_sol.eval.manifest import ArmDesign, EvalOptions, TaskManifest
+from fablized_sol.harness.container_runtime import AnyioDockerRunner
 from fablized_sol.harness.run import RunCompleted, RunExhausted
 from fablized_sol.measure.holdout import assign_arm
 from fablized_sol.measure.shadow import RunPlanned, RunStarted, ShadowWriter
+from fablized_sol.measure.super_sol import SUPER_SOL_PROFILE
 
 
 def _digest(value: str) -> str:
@@ -31,17 +39,42 @@ def _planned_runs(options: EvalOptions, manifest: TaskManifest) -> tuple[Planned
     planned: list[PlannedRun] = []
     for task in manifest.tasks:
         assignment_key = SessionId(_digest(f"{options.run_id}:{task.id}"))
-        arm = assign_arm(assignment_key)
+        arms_by_design = {
+            ArmDesign.HOLDOUT: (assign_arm(assignment_key),),
+            ArmDesign.CROSSOVER: (HoldoutArm.ON, HoldoutArm.OFF),
+        }
+        arms = arms_by_design[options.arm_design]
+        models = options.models
+        if options.arm_design is ArmDesign.CROSSOVER:
+            if int(assignment_key[-1], 16) % 2:
+                arms = tuple(reversed(arms))
+            if int(_digest(f"{assignment_key}:model-order")[-1], 16) % 2:
+                models = tuple(reversed(models))
         planned.extend(
             PlannedRun(
                 task=task,
                 model=model,
-                session_id=SessionId(_digest(f"{options.run_id}:{task.id}:{model}")),
+                session_id=SessionId(_digest(f"{options.run_id}:{task.id}:{model}:{arm}")),
                 arm=arm,
             )
-            for model in options.models
+            for arm in arms
+            for model in models
         )
     return tuple(planned)
+
+
+def _grader_passed(
+    result: GraderPassed | GraderFailed | GraderInfrastructureError,
+) -> bool | None:
+    match result:
+        case GraderPassed():
+            return True
+        case GraderFailed():
+            return False
+        case GraderInfrastructureError():
+            return None
+        case _:
+            assert_never(result)
 
 
 async def run_evaluation(options: EvalOptions) -> int:  # noqa: C901, PLR0912
@@ -63,6 +96,8 @@ async def run_evaluation(options: EvalOptions) -> int:  # noqa: C901, PLR0912
                 task_id=item.task.id,
                 arm=item.arm,
                 model=item.model,
+                profile=SUPER_SOL_PROFILE.name,
+                profile_version=SUPER_SOL_PROFILE.version,
             )
         )
     if options.dry_run:
@@ -80,27 +115,50 @@ async def run_evaluation(options: EvalOptions) -> int:  # noqa: C901, PLR0912
         run = create_live_run(item, run_root)
         try:
             image = options.verification_image
-            if image is None:
-                writer.append(finished_event(run, "error", "MissingVerificationImageError"))
+            grader_image = options.grader_image
+            if image is None or grader_image is None:
+                writer.append(
+                    finished_event(run, "error", "MissingImageError", grader_passed=False)
+                )
                 failed = True
                 continue
             outcome = await execute_live(run, options.max_gate_retries, image)
+            grader_result = await run_out_of_band_grader(
+                run.workspace,
+                grader_image,
+                item.task.grader_argv,
+                AnyioDockerRunner(),
+            )
         except Exception as error:  # noqa: BLE001 - CLI boundary; # noqa: BROAD_EXCEPT_OK
-            writer.append(finished_event(run, "error", type(error).__name__))
+            writer.append(finished_event(run, "error", type(error).__name__, grader_passed=False))
             failed = True
             continue
         except BaseException as error:  # noqa: BLE001 - CLI boundary; # noqa: BROAD_EXCEPT_OK
             error_type = type(error).__name__
-            writer.append(finished_event(run, "abandoned", error_type))
+            writer.append(finished_event(run, "abandoned", error_type, grader_passed=False))
             for remaining in planned[index + 1 :]:
                 writer.append(empty_finished_event(remaining, "abandoned", error_type))
             return 1
 
+        grader_passed = _grader_passed(grader_result)
+        if grader_passed is None:
+            writer.append(
+                finished_event(
+                    run,
+                    "error",
+                    "GraderInfrastructureError",
+                    grader_passed=None,
+                )
+            )
+            failed = True
+            continue
+
         match outcome:
             case RunCompleted():
-                writer.append(finished_event(run, "completed", None))
+                writer.append(finished_event(run, "completed", None, grader_passed=grader_passed))
+                failed = failed or not grader_passed
             case RunExhausted():
-                writer.append(finished_event(run, "exhausted", None))
+                writer.append(finished_event(run, "exhausted", None, grader_passed=grader_passed))
                 failed = True
             case _:
                 assert_never(outcome)
@@ -111,11 +169,13 @@ def evaluate(  # noqa: PLR0913
     tasks: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
     output_dir: Annotated[Path, typer.Option()],
     run_id: Annotated[str, typer.Option()],
-    sol_model: Annotated[str, typer.Option()] = "gpt-5.6-sol",
-    baseline_model: Annotated[str, typer.Option()] = "gpt-5.5",
+    product_model: Annotated[str, typer.Option()] = "gpt-5.5",
+    reference_model: Annotated[str, typer.Option()] = "gpt-5.6-sol",
     max_gate_retries: Annotated[int, typer.Option(min=0, max=5)] = 2,
+    arm_design: Annotated[ArmDesign, typer.Option()] = ArmDesign.HOLDOUT,
     dry_run: Annotated[bool, typer.Option()] = False,
     verification_image: Annotated[str | None, typer.Option()] = None,
+    grader_image: Annotated[str | None, typer.Option()] = None,
 ) -> None:
     """Run a paired model evaluation; the CLI signature is the option contract."""
     try:
@@ -123,10 +183,12 @@ def evaluate(  # noqa: PLR0913
             tasks=tasks,
             output_dir=output_dir,
             run_id=run_id,
-            models=(sol_model, baseline_model),
+            models=(product_model, reference_model),
             max_gate_retries=max_gate_retries,
             dry_run=dry_run,
+            arm_design=arm_design,
             verification_image=verification_image,
+            grader_image=grader_image,
         )
     except ValidationError as error:
         raise typer.BadParameter(str(error), param_hint="evaluation options") from error
