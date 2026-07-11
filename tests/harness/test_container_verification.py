@@ -149,9 +149,10 @@ def test_verification_uses_hardened_docker_without_parent_secrets(
 
     invocation = runner.invocations[0]
     assert invocation.environment == ()
-    assert invocation.argv[:5] == ("docker", "run", "--rm", "--network", "none")
-    assert invocation.argv[6:8] == ("--cap-drop", "ALL")
-    assert invocation.argv[8:10] == ("--security-opt", "no-new-privileges")
+    assert invocation.argv[:3] == ("docker", "run", "--rm")
+    assert invocation.argv[invocation.argv.index("--network") + 1] == "none"
+    assert invocation.argv[invocation.argv.index("--cap-drop") + 1] == "ALL"
+    assert invocation.argv[invocation.argv.index("--security-opt") + 1] == "no-new-privileges"
     mounts = [
         invocation.argv[index + 1]
         for index, value in enumerate(invocation.argv)

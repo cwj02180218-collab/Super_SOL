@@ -1,11 +1,16 @@
 """Hardened, secret-free Docker process boundary for verification."""
 
+import os
 import re
+import shutil
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from secrets import token_hex
 from typing import Final, Protocol
 
 import anyio
+from anyio import to_thread
 from anyio.abc import ByteReceiveStream
 
 _CONTAINER_WORKSPACE: Final = "/workspace"
@@ -13,6 +18,8 @@ _OUTPUT_LIMIT_BYTES: Final = 32 * 1024
 _PID_LIMIT: Final = "256"
 _TMPFS: Final = "/tmp:rw,noexec,nosuid,size=64m"  # noqa: S108 - isolated container path
 _IMAGE_PATTERN: Final = re.compile(r"^[^@\s]+@sha256:[0-9a-f]{64}$")
+_MEMORY_LIMIT: Final = "512m"
+_CPU_LIMIT: Final = "1.0"
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,6 +36,7 @@ class DockerInvocation:
     """A complete secret-free Docker invocation."""
 
     argv: tuple[str, ...]
+    container_name: str
     environment: tuple[tuple[str, str], ...] = ()
 
 
@@ -53,11 +61,15 @@ def build_docker_invocation(
     """Build fixed Docker policy flags around manifest-owned verification argv."""
     root = workspace.resolve()
     mount = f"type=bind,src={root},dst={_CONTAINER_WORKSPACE}"
+    container_name = f"fablized-{token_hex(12)}"
     return DockerInvocation(
         argv=(
             "docker",
             "run",
             "--rm",
+            "--pull=never",
+            "--name",
+            container_name,
             "--network",
             "none",
             "--read-only",
@@ -67,6 +79,10 @@ def build_docker_invocation(
             "no-new-privileges",
             "--pids-limit",
             _PID_LIMIT,
+            "--memory",
+            _MEMORY_LIMIT,
+            "--cpus",
+            _CPU_LIMIT,
             "--tmpfs",
             _TMPFS,
             "--mount",
@@ -75,7 +91,8 @@ def build_docker_invocation(
             _CONTAINER_WORKSPACE,
             image,
             *verify_argv,
-        )
+        ),
+        container_name=container_name,
     )
 
 
@@ -97,22 +114,53 @@ async def _drain_tail(stream: ByteReceiveStream | None, output: bytearray) -> No
 
 
 class AnyioDockerRunner:
-    """Production runner that launches Docker without inheriting parent env."""
+    """Production runner that launches Docker without parent environment data."""
 
     async def run(self, invocation: DockerInvocation) -> ProcessCapture:
-        """Launch Docker with an explicitly empty environment."""
+        """Resolve Docker from the parent PATH, then launch without inheriting it."""
+        docker = await to_thread.run_sync(_resolve_docker_executable)
+        argv = (str(docker), *invocation.argv[1:])
         stdout = bytearray()
         stderr = bytearray()
         exit_code = 127
-        async with (
-            await anyio.open_process(
-                invocation.argv,
-                stdin=None,
-                env=dict(invocation.environment),
-            ) as process,
-            anyio.create_task_group() as task_group,
-        ):
-            _ = task_group.start_soon(_drain_tail, process.stdout, stdout)
-            _ = task_group.start_soon(_drain_tail, process.stderr, stderr)
-            exit_code = await process.wait()
+        completed = False
+        try:
+            async with (
+                await anyio.open_process(
+                    argv,
+                    stdin=None,
+                    env=dict(invocation.environment),
+                ) as process,
+                anyio.create_task_group() as task_group,
+            ):
+                _ = task_group.start_soon(_drain_tail, process.stdout, stdout)
+                _ = task_group.start_soon(_drain_tail, process.stderr, stderr)
+                exit_code = await process.wait()
+                completed = True
+        finally:
+            if not completed:
+                with anyio.CancelScope(shield=True):
+                    await _force_remove(docker, invocation)
         return ProcessCapture(exit_code, bytes(stdout), bytes(stderr))
+
+
+def _resolve_docker_executable() -> Path:
+    executable = shutil.which("docker")
+    if executable is None:
+        message = "docker executable was not found on parent PATH"
+        raise FileNotFoundError(message)
+    resolved = Path(executable).resolve(strict=True)
+    if not resolved.is_file() or not os.access(resolved, os.X_OK):
+        message = f"docker executable is not executable: {resolved}"
+        raise PermissionError(message)
+    return resolved
+
+
+async def _force_remove(docker: Path, invocation: DockerInvocation) -> None:
+    _ = await anyio.run_process(
+        (str(docker), "rm", "-f", invocation.container_name),
+        env=dict(invocation.environment),
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )

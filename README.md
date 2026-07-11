@@ -102,13 +102,17 @@ decision, not part of routine verification or CI.
 
 Live verification requires a working Docker runtime and an image pinned by an
 immutable `sha256` digest. The image must already contain every dependency named
-by `verify_argv`; the harness does not install dependencies during verification.
+by `verify_argv` and must already exist locally because pulls are disabled; the
+harness does not install dependencies during verification.
 The container receives only a read-write bind mount of the copied session
 workspace at `/workspace`. It receives no parent environment, no API keys, and
 no network. The root filesystem is read-only, Linux capabilities are dropped,
-privilege escalation is disabled, process count is limited, and only an isolated
-temporary filesystem is writable outside the workspace. Missing Docker or a
-missing verification image fails closed and cannot produce successful evidence.
+privilege escalation is disabled, process count, memory, and CPU are limited,
+and only an isolated temporary filesystem is writable outside the workspace.
+Image-baked environment defaults may still exist inside the container. A
+harness-generated container name supports forced cleanup if the Docker client is
+cancelled. Missing Docker or a missing verification image fails closed and
+cannot produce successful evidence.
 
 ## Ledger And Shadow Stream
 

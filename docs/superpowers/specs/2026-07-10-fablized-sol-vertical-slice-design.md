@@ -129,8 +129,11 @@ parsed to infer success.
 Mutation and verification results receive monotonic completion tokens in a
 context-owned identity map. The mandatory hook consumes each token once into the
 ledger; tokens never appear in model-visible tool results. Verification runs only
-inside a digest-pinned Docker image with no network, an empty environment, a
-read-only root filesystem, and the copied workspace as its sole bind mount.
+inside a digest-pinned Docker image with no network, no parent-process
+environment, a read-only root filesystem, and the copied workspace as its sole
+bind mount. Image-baked `ENV` defaults may still exist inside the container.
+Every container has a harness-generated name, immutable local-only image policy,
+CPU/memory/PID caps, and shielded forced-removal cleanup after client cancellation.
 
 Hosted tools and SDK built-ins that do not pass through local function-tool
 hooks are outside the enforcement boundary in this slice. The CLI must reject a
