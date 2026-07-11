@@ -44,6 +44,16 @@ def _load_grades(path: Path) -> tuple[GradeFile, dict[SessionId, bool]]:
     return payload, grades
 
 
+def _validate_identity_cells(
+    plans: dict[SessionId, RunPlanned], representative: RunPlanned
+) -> None:
+    identity = representative.run_identity
+    observed_cells = {(plan.model, plan.reasoning_effort) for plan in plans.values()}
+    expected_cells = set(zip(identity.models, identity.efforts, strict=True))
+    if observed_cells != expected_cells or identity.arm_design != "crossover":
+        raise ReportInputError(ReportIssue.IDENTITY_MISMATCH, "model, effort, or arm design")
+
+
 def _validate_provenance(
     plans: dict[SessionId, RunPlanned],
     grade_file: GradeFile,
@@ -90,6 +100,7 @@ def _validate_provenance(
             raise ReportInputError(ReportIssue.IDENTITY_MISMATCH, plan.session_id)
     if tuple(task_digests.items()) != identity.task_digests:
         raise ReportInputError(ReportIssue.IDENTITY_MISMATCH, "task digests")
+    _validate_identity_cells(plans, representative)
     duplicated_identity = (
         representative.preregistration_digest,
         representative.harness_version,
@@ -246,6 +257,8 @@ def build_report(
 ) -> BenchmarkReport:
     """Build a fail-closed crossover report and deployable lazy cascade."""
     samples, provenance = _samples(events, grades)
+    if (baseline_model, reference_model) != provenance.run_identity.models:
+        raise ReportInputError(ReportIssue.IDENTITY_MISMATCH, "report model roles")
     tasks = validate_crossover(samples, baseline_model, reference_model)
     efforts: dict[str, ReasoningEffort] = {}
     for model in (baseline_model, reference_model):

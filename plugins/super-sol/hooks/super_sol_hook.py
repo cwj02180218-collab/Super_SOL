@@ -72,6 +72,21 @@ _ACTION_SIGNALS = (
     "추가",
 )
 _SHELL_OPERATORS = {"&", "&&", ";", "|", "||"}
+_UV_RUN_VALUE_OPTIONS = {
+    "--directory",
+    "--extra",
+    "--group",
+    "--index",
+    "--index-strategy",
+    "--package",
+    "--project",
+    "--python",
+    "--python-platform",
+    "--with",
+    "--with-editable",
+    "--with-requirements",
+    "-p",
+}
 _EVAL_COMMAND_NAMES = r"(?:super-sol-eval|fablized-sol-eval)"
 _EVAL_INVOCATION_PATTERN = (  # noqa: UP032 - avoids pyright implicit-concat error
     r"^\s*(?:(?:\S*/)?{0}|uv\s+run(?:\s+--with\s+\S+)?\s+(?:\S*/)?{0})(?:\s|$)"
@@ -200,8 +215,22 @@ def _command_parts(argv: tuple[str, ...]) -> tuple[str, tuple[str, ...]]:
     if arguments[:1] != ("run",):
         return "", ()
     arguments = arguments[1:]
-    if arguments[:1] == ("--with",):
-        arguments = arguments[2:]
+    index = 0
+    while index < len(arguments) and arguments[index].startswith("-"):
+        option = arguments[index]
+        if option == "--":
+            index += 1
+            break
+        if "=" in option:
+            index += 1
+            continue
+        if option in _UV_RUN_VALUE_OPTIONS:
+            if index + 1 >= len(arguments):
+                return "", ()
+            index += 2
+            continue
+        index += 1
+    arguments = arguments[index:]
     if not arguments:
         return "", ()
     return arguments[0].rsplit("/", maxsplit=1)[-1].casefold(), arguments[1:]

@@ -267,6 +267,45 @@ def test_report_recomputes_run_and_session_identity(tmp_path: Path, tamper: str)
         _ = build_report(events, grades, "gpt-5.6-terra", "gpt-5.6-sol")
 
 
+def test_report_rejects_coordinated_model_and_session_substitution(tmp_path: Path) -> None:
+    events, grades = write_inputs(tmp_path)
+    rows = _event_rows(events)
+    grade_payload = GradeFile.model_validate_json(grades.read_text(encoding="utf-8"))
+    replacements: dict[str, str] = {}
+    for row in rows:
+        if row["event"] != "run_planned" or row["model"] != "gpt-5.6-terra":
+            continue
+        old_session = row["session_id"]
+        task_content_digest = row["task_digest"]
+        assert isinstance(old_session, str)
+        assert isinstance(task_content_digest, str)
+        arm = row["arm"]
+        assert isinstance(arm, str)
+        new_session = session_identity_digest(
+            _RUN_DIGEST, task_content_digest, "model-x", "medium", arm
+        )
+        replacements[old_session] = new_session
+    for row in rows:
+        session = row.get("session_id")
+        if isinstance(session, str) and session in replacements:
+            row["session_id"] = replacements[session]
+            row["model"] = "model-x"
+    updated_grades = tuple(
+        grade.model_copy(update={"session_id": SessionId(replacements[grade.session_id])})
+        if grade.session_id in replacements
+        else grade
+        for grade in grade_payload.grades
+    )
+    _ = events.write_text("".join(f"{json.dumps(row)}\n" for row in rows), encoding="utf-8")
+    _ = grades.write_text(
+        grade_payload.model_copy(update={"grades": updated_grades}).model_dump_json(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ReportInputError, match="identity"):
+        _ = build_report(events, grades, "model-x", "gpt-5.6-sol")
+
+
 def test_report_rejects_embedded_final_defect_label(tmp_path: Path) -> None:
     events, grades = write_inputs(tmp_path)
     rows = _event_rows(events)

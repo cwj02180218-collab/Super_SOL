@@ -59,6 +59,34 @@ def test_unapproved_live_eval_and_direct_api_are_denied(run_hook: HookRunner) ->
         assert specific["permissionDecision"] == "deny"
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        "uv run --project . super-sol-eval --tasks tasks.json",
+        "uv run --locked super-sol-eval --tasks tasks.json",
+        "uv run --with typer --with pydantic super-sol-eval --tasks tasks.json",
+    ],
+)
+def test_uv_run_options_cannot_bypass_live_eval_consent(
+    run_hook: HookRunner,
+    command: str,
+) -> None:
+    _prime(run_hook)
+    result = run_hook(
+        hook_input(
+            "PreToolUse",
+            tool_name="Bash",
+            tool_use_id="pre-uv-options",
+            tool_input={"command": command},
+        )
+    )
+
+    assert result.stdout is not None
+    specific = result.stdout["hookSpecificOutput"]
+    assert isinstance(specific, dict)
+    assert specific["permissionDecision"] == "deny"
+
+
 def test_dry_run_is_allowed_without_billing_authorization(run_hook: HookRunner) -> None:
     _prime(run_hook)
     result = run_hook(
