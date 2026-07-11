@@ -1,0 +1,18 @@
+{
+  "name": "super-sol",
+  "version": "0.1.0",
+  "description": "Super Sol plugin",
+  "author": {
+    "name": "Local developer"
+  },
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Super Sol",
+    "shortDescription": "Use Super Sol in Codex.",
+    "longDescription": "Super Sol adds a local Codex plugin scaffold.",
+    "developerName": "Local developer",
+    "category": "Productivity",
+    "capabilities": [],
+    "defaultPrompt": "Help me use Super Sol."
+  }
+}

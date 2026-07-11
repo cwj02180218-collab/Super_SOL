@@ -1,0 +1,4 @@
+interface:
+  display_name: "Super SOL"
+  short_description: "검증까지 챙기는 초보자용 Codex 작업 도우미"
+  default_prompt: "Use $super-sol to complete and verify this task in plain language."
