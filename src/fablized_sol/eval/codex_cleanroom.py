@@ -11,14 +11,25 @@ import shutil
 import stat
 import subprocess
 import tempfile
+import time
 from dataclasses import asdict, dataclass
 from enum import StrEnum
 from hashlib import sha256
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, ClassVar, Final, Protocol, cast, final
 
+import anyio
 import typer
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, ValidationError, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    StrictStr,
+    TypeAdapter,
+    ValidationError,
+    model_validator,
+)
 from pydantic_core import PydanticCustomError
 
 from fablized_sol.eval.codex_cleanroom_home import (
@@ -28,15 +39,27 @@ from fablized_sol.eval.codex_cleanroom_home import (
     build_cleanroom_homes,
     remove_cleanroom_homes,
 )
+from fablized_sol.eval.codex_telemetry import (
+    CodexInfrastructureFailure,
+    InfrastructureKind,
+    parse_codex_capture,
+)
+from fablized_sol.eval.grader import (
+    GraderInfrastructureError,
+    GraderPassed,
+    GraderResult,
+    run_out_of_band_grader,
+)
 from fablized_sol.eval.manifest import ReasoningEffort, TaskManifest, TaskSpec, VerificationImage
 from fablized_sol.eval.provenance import digest_json, task_digest
 from fablized_sol.harness.container_runtime import (
     AnyioDockerRunner,
     VerificationProcessRunner,
+    preflight_local_images,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Callable, Mapping
 
 _RUN_SCHEMA: Final = "super-sol-codex-ab/v1"
 _SLOT_SCHEMA: Final = "super-sol-codex-slot/v1"
@@ -53,6 +76,7 @@ _ENVIRONMENT_NAMES: Final = (
     "TMPDIR",
     "TZ",
 )
+_OBJECT_ADAPTER = TypeAdapter[dict[str, JsonValue]](dict[str, JsonValue])
 
 
 @final
@@ -86,6 +110,7 @@ class CodexABOptions(BaseModel):
     timeout_seconds: int = Field(ge=30, le=3600)
     dry_run: bool
     confirm_billable: bool = False
+    resume: bool = False
 
     @model_validator(mode="after")
     def validate_paths_and_live_consent(self) -> CodexABOptions:
@@ -120,6 +145,11 @@ class CodexABOptions(BaseModel):
                     "missing_auth_source",
                     "live clean-room evaluation requires a regular auth source",
                 )
+        elif self.resume:
+            raise PydanticCustomError(
+                "dry_resume_forbidden",
+                "--resume is only valid for an explicitly approved live run",
+            )
         return self
 
 
@@ -415,28 +445,300 @@ def _write_plan(
     _write_private(run_root / "events.jsonl", f"{events}\n")
 
 
+def _append_event(path: Path, payload: Mapping[str, object]) -> None:
+    encoded = json.dumps(
+        payload,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    with path.open("a", encoding="utf-8") as stream:
+        _ = stream.write(f"{encoded}\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+
+
+def _read_objects(path: Path) -> tuple[dict[str, JsonValue], ...]:
+    try:
+        return tuple(
+            _OBJECT_ADAPTER.validate_json(line)
+            for line in path.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        )
+    except (OSError, ValidationError) as error:
+        raise CodexABError("invalid existing clean-room evidence") from error
+
+
+def _validate_resume(  # noqa: C901, PLR0912 - fail-closed event-state parser
+    run_root: Path,
+    identity: CodexRunIdentity,
+    slots: tuple[CodexSlot, ...],
+    homes: CleanroomHomes,
+) -> tuple[CodexSlot, ...]:
+    records = _read_objects(run_root / "run.json")
+    if len(records) != 1:
+        raise CodexABError("resume run identity is missing")
+    record = records[0]
+    if digest_json(record.get("identity")) != digest_json(identity.model_dump(mode="json")):
+        raise CodexABError("resume run identity does not match")
+    if digest_json(record.get("raw_home")) != digest_json(_home_payload(homes.raw_evidence)):
+        raise CodexABError("resume raw home digest does not match")
+    if digest_json(record.get("lean_home")) != digest_json(_home_payload(homes.lean_evidence)):
+        raise CodexABError("resume lean home digest does not match")
+
+    expected = {slot.slot_id for slot in slots}
+    planned: set[str] = set()
+    missing: set[str] = set()
+    completed: set[str] = set()
+    events = _read_objects(run_root / "events.jsonl")
+    for event in events:
+        event_type = event.get("type")
+        slot_id = event.get("slot_id")
+        if (
+            not isinstance(event_type, str)
+            or not isinstance(slot_id, str)
+            or slot_id not in expected
+        ):
+            raise CodexABError("resume event is outside the preregistered slot lattice")
+        if event_type == "slot.planned":
+            if slot_id in planned:
+                raise CodexABError("resume evidence contains a duplicate planned slot")
+            planned.add(slot_id)
+        elif event_type == "slot.missing":
+            missing.add(slot_id)
+        elif event_type == "slot.completed":
+            completed.add(slot_id)
+        elif event_type not in {"slot.started", "slot.resumed"}:
+            raise CodexABError("resume evidence contains an unknown event")
+    if planned != expected:
+        raise CodexABError("resume evidence has an incomplete planned lattice")
+    if missing & completed:
+        resumed_ids: set[str] = set()
+        for event in events:
+            resumed_slot = event.get("slot_id")
+            if event.get("type") == "slot.resumed" and isinstance(resumed_slot, str):
+                resumed_ids.add(resumed_slot)
+        if not (missing & completed) <= resumed_ids:
+            raise CodexABError("completed slot lacks a valid resume transition")
+    unresolved = missing - completed
+    if not unresolved:
+        raise CodexABError("resume has no infrastructure-missing slots")
+    if expected - completed - missing:
+        raise CodexABError("resume accepts only explicitly missing slots")
+    return tuple(slot for slot in slots if slot.slot_id in unresolved)
+
+
+def _snapshot(root: Path) -> dict[str, str]:
+    entries: dict[str, str] = {}
+    for path in sorted(root.rglob("*"), key=lambda item: item.relative_to(root).as_posix()):
+        relative = path.relative_to(root).as_posix()
+        if path.is_symlink():
+            raise CodexABError("model workspace contains a symlink")
+        if path.is_file():
+            entries[relative] = digest_json(
+                {
+                    "content_sha256": sha256(path.read_bytes()).hexdigest(),
+                    "mode": stat.S_IMODE(path.stat().st_mode),
+                }
+            )
+    return entries
+
+
+def _changed_files(before: Mapping[str, str], after: Mapping[str, str]) -> tuple[str, ...]:
+    return tuple(
+        path for path in sorted(set(before) | set(after)) if before.get(path) != after.get(path)
+    )
+
+
+def _slot_environment(slot_runtime: Path, home: Path) -> dict[str, str]:
+    home_directory = slot_runtime / "home"
+    plugin_data = slot_runtime / "plugin-data"
+    temporary = slot_runtime / "tmp"
+    for directory in (home_directory, plugin_data, temporary):
+        directory.mkdir(parents=True)
+    return {
+        "CODEX_HOME": str(home),
+        "HOME": str(home_directory),
+        "LANG": "C",
+        "LC_ALL": "C",
+        "PATH": os.environ.get("PATH", ""),
+        "PLUGIN_DATA": str(plugin_data),
+        "PYTHONUTF8": "1",
+        "SHELL": "/bin/sh",
+        "TMPDIR": str(temporary),
+        "TZ": "UTC",
+    }
+
+
+async def _grade(
+    workspace: Path,
+    image: str,
+    argv: tuple[str, ...],
+    runner: VerificationProcessRunner,
+) -> GraderResult:
+    return await run_out_of_band_grader(workspace, image, argv, runner)
+
+
+def _missing_event(slot: CodexSlot, kind: InfrastructureKind | str) -> dict[str, object]:
+    return {
+        "arm": slot.arm,
+        "infrastructure_kind": str(kind),
+        "repetition": slot.repetition,
+        "run_digest": slot.run_digest,
+        "slot_id": slot.slot_id,
+        "task_digest": slot.task_content_digest,
+        "task_id": slot.task.id,
+        "type": "slot.missing",
+    }
+
+
+def _execute_slots(  # noqa: PLR0913 - sequential trust boundary
+    options: CodexABOptions,
+    slots: tuple[CodexSlot, ...],
+    run_root: Path,
+    homes: CleanroomHomes,
+    process_runner: CodexProcessRunner,
+    grader_runner: VerificationProcessRunner,
+    *,
+    resumed: bool,
+) -> int:
+    events_path = run_root / "events.jsonl"
+    workspaces = run_root / "workspaces"
+    workspaces.mkdir(exist_ok=True)
+    failed = False
+    grader_image = cast("str", options.grader_image)
+    template = _command_template(options)
+    for slot in slots:
+        workspace = workspaces / slot.slot_id
+        if workspace.exists():
+            shutil.rmtree(workspace)
+        _ = shutil.copytree(slot.task.fixture, workspace)
+        before = _snapshot(workspace)
+        runtime = homes.root / "runtime" / slot.slot_id
+        if runtime.exists():
+            shutil.rmtree(runtime)
+        selected_home = homes.raw if slot.arm is CodexArm.RAW else homes.lean
+        environment = _slot_environment(runtime, selected_home)
+        argv = tuple(str(workspace) if value == "<WORKSPACE>" else value for value in template)
+        _append_event(
+            events_path,
+            {
+                "arm": slot.arm,
+                "repetition": slot.repetition,
+                "slot_id": slot.slot_id,
+                "task_id": slot.task.id,
+                "type": "slot.resumed" if resumed else "slot.started",
+            },
+        )
+        started = time.monotonic()
+        try:
+            capture = process_runner.run(
+                CodexProcessCall(
+                    slot_id=slot.slot_id,
+                    argv=argv,
+                    cwd=workspace,
+                    env=environment,
+                    stdin=slot.task.prompt,
+                    timeout_seconds=options.timeout_seconds,
+                )
+            )
+        except Exception:  # noqa: BLE001 - process seam becomes missing infrastructure
+            _append_event(events_path, _missing_event(slot, InfrastructureKind.NONZERO_EXIT))
+            failed = True
+            continue
+        telemetry = parse_codex_capture(capture.stdout, capture.stderr, capture.returncode)
+        if isinstance(telemetry, CodexInfrastructureFailure):
+            _append_event(events_path, _missing_event(slot, telemetry.kind))
+            failed = True
+            continue
+        grader_result = anyio.run(
+            _grade,
+            workspace,
+            grader_image,
+            slot.task.grader_argv,
+            grader_runner,
+        )
+        if isinstance(grader_result, GraderInfrastructureError):
+            _append_event(events_path, _missing_event(slot, "grader_infrastructure"))
+            failed = True
+            continue
+        grader_passed = isinstance(grader_result, GraderPassed)
+        try:
+            changed = _changed_files(before, _snapshot(workspace))
+        except CodexABError:
+            _append_event(events_path, _missing_event(slot, "artifact_violation"))
+            failed = True
+            continue
+        usage = telemetry.usage
+        _append_event(
+            events_path,
+            {
+                "arm": slot.arm,
+                "cached_input_tokens": usage.cached_input_tokens,
+                "changed_files": changed,
+                "changed_files_digest": digest_json(changed),
+                "full_pass": grader_passed,
+                "grader_passed": grader_passed,
+                "input_tokens": usage.input_tokens,
+                "output_tokens": usage.output_tokens,
+                "public_verification": "unobserved",
+                "reasoning_output_tokens": usage.reasoning_output_tokens,
+                "repetition": slot.repetition,
+                "run_digest": slot.run_digest,
+                "score": 100.0 if grader_passed else 0.0,
+                "slot_id": slot.slot_id,
+                "task_digest": slot.task_content_digest,
+                "task_id": slot.task.id,
+                "total_tokens": usage.total_tokens,
+                "type": "slot.completed",
+                "wall_time_seconds": max(0.0, time.monotonic() - started),
+            },
+        )
+        failed = failed or not grader_passed
+    return int(failed)
+
+
 def run_codex_ab(
     options: CodexABOptions,
     process_runner: CodexProcessRunner,
     home_factory: CleanroomHomeFactory,
     grader_runner: VerificationProcessRunner,
+    *,
+    image_preflight: Callable[[tuple[str, ...]], bool] = preflight_local_images,
 ) -> int:
-    """Validate, preflight, and dry-plan a comparison without an implicit model call."""
+    """Validate, preflight, and execute only preregistered clean-room slots."""
     run_root = options.output_dir / options.run_id
-    if run_root.exists():
+    if run_root.exists() and not options.resume:
+        return 2
+    if options.resume and not run_root.is_dir():
         return 2
     manifest = TaskManifest.load(options.tasks)
     identity = build_run_identity(options, manifest)
     slots = _slots_from_identity(options, manifest, identity)
     homes = home_factory.build(options, include_auth=not options.dry_run)
     try:
-        run_root.mkdir(parents=True)
-        _write_plan(run_root, identity, slots, homes)
+        selected = slots
+        if options.resume:
+            selected = _validate_resume(run_root, identity, slots, homes)
+        else:
+            run_root.mkdir(parents=True)
+            _write_plan(run_root, identity, slots, homes)
         if options.dry_run:
             return 0
-        _ = process_runner
-        _ = grader_runner
-        return 1
+        grader_image = cast("str", options.grader_image)
+        if not image_preflight((grader_image,)):
+            for slot in selected:
+                _append_event(run_root / "events.jsonl", _missing_event(slot, "image_preflight"))
+            return 1
+        return _execute_slots(
+            options,
+            selected,
+            run_root,
+            homes,
+            process_runner,
+            grader_runner,
+            resumed=options.resume,
+        )
     finally:
         home_factory.remove(homes)
 
@@ -456,6 +758,7 @@ def evaluate(  # noqa: PLR0913 - Typer option signature is the CLI contract
     timeout_seconds: Annotated[int, typer.Option(min=30, max=3600)] = 900,
     dry_run: Annotated[bool, typer.Option()] = False,
     confirm_billable: Annotated[bool, typer.Option()] = False,
+    resume: Annotated[bool, typer.Option()] = False,
 ) -> None:
     """Plan or run a symmetric stock Codex raw-versus-Super-SOL comparison."""
     binary_value = codex_binary or Path(shutil.which("codex") or "codex")
@@ -475,6 +778,7 @@ def evaluate(  # noqa: PLR0913 - Typer option signature is the CLI contract
             timeout_seconds=timeout_seconds,
             dry_run=dry_run,
             confirm_billable=confirm_billable,
+            resume=resume,
         )
     except ValidationError as error:
         raise typer.BadParameter(str(error), param_hint="clean-room options") from error
