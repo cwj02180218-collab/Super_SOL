@@ -7,7 +7,7 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from secrets import token_hex
-from typing import Final, Protocol, override
+from typing import Final, Protocol, final, override
 
 import anyio
 from anyio import to_thread
@@ -23,24 +23,38 @@ _CPU_LIMIT: Final = "1.0"
 _CLEANUP_TIMEOUT_SECONDS: Final = 10.0
 
 
-@dataclass(slots=True)
+@final
 class DockerCleanupTimeoutError(Exception):
     """A forced container removal exceeded its independent deadline."""
 
-    container_name: str
+    __slots__ = ("container_name",)
+
+    def __init__(self, container_name: str) -> None:
+        """Retain the container identity for the evaluation boundary."""
+        self.container_name = container_name
+        super().__init__(container_name)
 
     @override
     def __str__(self) -> str:
         return f"docker cleanup timed out for container {self.container_name}"
 
 
-@dataclass(slots=True)
+@final
 class DockerCleanupError(Exception):
     """A forced container removal failed with bounded diagnostics."""
+
+    __slots__ = ("container_name", "exit_code", "stderr")
 
     container_name: str
     exit_code: int
     stderr: str
+
+    def __init__(self, container_name: str, exit_code: int, stderr: str) -> None:
+        """Retain typed bounded cleanup diagnostics."""
+        self.container_name = container_name
+        self.exit_code = exit_code
+        self.stderr = stderr
+        super().__init__(container_name, exit_code, stderr)
 
     @override
     def __str__(self) -> str:
