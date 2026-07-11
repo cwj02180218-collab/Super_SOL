@@ -7,6 +7,7 @@ from typing import ClassVar, override
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
 from fablized_sol.engine.models import HoldoutArm, SessionId
+from fablized_sol.eval.manifest import ReasoningEffort
 
 
 @unique
@@ -33,6 +34,7 @@ class ReportIssue(StrEnum):
     INSUFFICIENT_PAIRS = "at least two paired tasks are required"
     INVALID_MODEL_ROLES = "baseline and reference models must be distinct"
     UNEXPECTED_MODELS = "evidence models do not match report roles"
+    INCONSISTENT_EFFORT = "each model must use exactly one reasoning effort"
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,6 +72,7 @@ class BenchmarkCell(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")
 
     model: str
+    reasoning_effort: ReasoningEffort
     arm: HoldoutArm
     runs: int
     completed_runs: int
@@ -106,6 +109,7 @@ class PairedEffect(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")
 
     model: str
+    reasoning_effort: ReasoningEffort
     tasks: int
     quality_delta: float
     quality_ci_low: float
@@ -142,7 +146,9 @@ class BenchmarkReport(BaseModel):
     model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid")
 
     baseline_model: str
+    baseline_effort: ReasoningEffort
     reference_model: str
+    reference_effort: ReasoningEffort
     cells: tuple[BenchmarkCell, ...]
     paired_effects: tuple[PairedEffect, ...]
     model_effects: tuple[ModelEffect, ...]
@@ -157,6 +163,7 @@ class BenchmarkSample:
     session_id: SessionId
     arm: HoldoutArm
     model: str
+    reasoning_effort: ReasoningEffort
     status: str
     wall_time_seconds: float
     tool_calls: int

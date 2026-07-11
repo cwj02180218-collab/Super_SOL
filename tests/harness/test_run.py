@@ -134,6 +134,7 @@ def test_runner_budget_exhaustion_cannot_turn_block_into_success() -> None:
 @dataclass(frozen=True, slots=True)
 class _OfflineModel(Model):
     error: ModelBehaviorError | None = None
+    expected_effort: str | None = None
 
     @override
     async def get_response(
@@ -150,10 +151,12 @@ class _OfflineModel(Model):
         conversation_id: str | None,
         prompt: ResponsePromptParam | None,
     ) -> ModelResponse:
+        if self.expected_effort is not None:
+            assert model_settings.reasoning is not None
+            assert model_settings.reasoning.effort == self.expected_effort
         del (
             system_instructions,
             input,
-            model_settings,
             tools,
             output_schema,
             handoffs,
@@ -284,7 +287,8 @@ def test_sdk_executor_off_arm_has_no_output_guardrails(tmp_path: Path) -> None:
     # Given an OFF-arm run whose ledger would otherwise block
     executor = SdkAttemptExecutor(
         context=_context(tmp_path, HoldoutArm.OFF),
-        model=_OfflineModel(),
+        model=_OfflineModel(expected_effort="high"),
+        reasoning_effort="high",
         tools=(),
         instructions="Base instructions",
     )

@@ -3,7 +3,7 @@
 import os
 from hashlib import sha256
 from pathlib import Path
-from typing import Annotated, assert_never
+from typing import Annotated, assert_never, cast
 
 import anyio
 import typer
@@ -23,7 +23,7 @@ from fablized_sol.eval.live import (
     execute_live,
     finished_event,
 )
-from fablized_sol.eval.manifest import ArmDesign, EvalOptions, TaskManifest
+from fablized_sol.eval.manifest import ArmDesign, EvalOptions, ReasoningEffort, TaskManifest
 from fablized_sol.harness.container_runtime import AnyioDockerRunner
 from fablized_sol.harness.run import RunCompleted, RunExhausted
 from fablized_sol.measure.holdout import assign_arm
@@ -44,21 +44,22 @@ def _planned_runs(options: EvalOptions, manifest: TaskManifest) -> tuple[Planned
             ArmDesign.CROSSOVER: (HoldoutArm.ON, HoldoutArm.OFF),
         }
         arms = arms_by_design[options.arm_design]
-        models = options.models
+        model_efforts = tuple(zip(options.models, options.efforts, strict=True))
         if options.arm_design is ArmDesign.CROSSOVER:
             if int(assignment_key[-1], 16) % 2:
                 arms = tuple(reversed(arms))
             if int(_digest(f"{assignment_key}:model-order")[-1], 16) % 2:
-                models = tuple(reversed(models))
+                model_efforts = tuple(reversed(model_efforts))
         planned.extend(
             PlannedRun(
                 task=task,
                 model=model,
-                session_id=SessionId(_digest(f"{options.run_id}:{task.id}:{model}:{arm}")),
+                reasoning_effort=effort,
+                session_id=SessionId(_digest(f"{options.run_id}:{task.id}:{model}:{effort}:{arm}")),
                 arm=arm,
             )
             for arm in arms
-            for model in models
+            for model, effort in model_efforts
         )
     return tuple(planned)
 
@@ -96,6 +97,7 @@ async def run_evaluation(options: EvalOptions) -> int:  # noqa: C901, PLR0912
                 task_id=item.task.id,
                 arm=item.arm,
                 model=item.model,
+                reasoning_effort=item.reasoning_effort,
                 profile=SUPER_SOL_PROFILE.name,
                 profile_version=SUPER_SOL_PROFILE.version,
             )
@@ -111,7 +113,14 @@ async def run_evaluation(options: EvalOptions) -> int:  # noqa: C901, PLR0912
     (run_root / "ledgers").mkdir()
     failed = False
     for index, item in enumerate(planned):
-        writer.append(RunStarted(session_id=item.session_id, arm=item.arm, model=item.model))
+        writer.append(
+            RunStarted(
+                session_id=item.session_id,
+                arm=item.arm,
+                model=item.model,
+                reasoning_effort=item.reasoning_effort,
+            )
+        )
         run = create_live_run(item, run_root)
         try:
             image = options.verification_image
@@ -169,11 +178,14 @@ def evaluate(  # noqa: PLR0913
     tasks: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
     output_dir: Annotated[Path, typer.Option()],
     run_id: Annotated[str, typer.Option()],
-    product_model: Annotated[str, typer.Option()] = "gpt-5.5",
+    product_model: Annotated[str, typer.Option()] = "gpt-5.6-terra",
     reference_model: Annotated[str, typer.Option()] = "gpt-5.6-sol",
+    product_effort: Annotated[str, typer.Option()] = "medium",
+    reference_effort: Annotated[str, typer.Option()] = "medium",
     max_gate_retries: Annotated[int, typer.Option(min=0, max=5)] = 2,
     arm_design: Annotated[ArmDesign, typer.Option()] = ArmDesign.HOLDOUT,
     dry_run: Annotated[bool, typer.Option()] = False,
+    confirm_billable: Annotated[bool, typer.Option()] = False,
     verification_image: Annotated[str | None, typer.Option()] = None,
     grader_image: Annotated[str | None, typer.Option()] = None,
 ) -> None:
@@ -184,8 +196,13 @@ def evaluate(  # noqa: PLR0913
             output_dir=output_dir,
             run_id=run_id,
             models=(product_model, reference_model),
+            efforts=(
+                cast("ReasoningEffort", product_effort),
+                cast("ReasoningEffort", reference_effort),
+            ),
             max_gate_retries=max_gate_retries,
             dry_run=dry_run,
+            confirm_billable=confirm_billable,
             arm_design=arm_design,
             verification_image=verification_image,
             grader_image=grader_image,

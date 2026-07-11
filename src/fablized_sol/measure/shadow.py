@@ -8,6 +8,7 @@ from typing import Annotated, ClassVar, Literal, final
 from pydantic import BaseModel, ConfigDict, Field
 
 from fablized_sol.engine.models import HoldoutArm, SessionId
+from fablized_sol.eval.manifest import ReasoningEffort
 
 type RunStatus = Literal["completed", "exhausted", "error", "abandoned"]
 
@@ -23,6 +24,7 @@ class _ShadowBase(BaseModel):
     session_id: SessionId
     arm: HoldoutArm
     model: str = Field(min_length=1)
+    reasoning_effort: ReasoningEffort
 
 
 class RunPlanned(_ShadowBase):

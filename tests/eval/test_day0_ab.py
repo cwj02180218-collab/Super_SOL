@@ -73,7 +73,10 @@ def test_dry_run_emits_two_models_without_api_key(
     assert result.exit_code == 0
     rows = read_jsonl(output_dir / "day0-test" / "events.jsonl")
     planned = [row for row in rows if row["event"] == "run_planned"]
-    assert {_text(row, "model") for row in planned} == {"gpt-5.6-sol", "gpt-5.5"}
+    assert {(_text(row, "model"), _text(row, "reasoning_effort")) for row in planned} == {
+        ("gpt-5.6-terra", "medium"),
+        ("gpt-5.6-sol", "medium"),
+    }
     assert {_text(row, "profile") for row in planned} == {SUPER_SOL_PROFILE.name}
     assert {_text(row, "profile_version") for row in planned} == {SUPER_SOL_PROFILE.version}
 
@@ -102,6 +105,31 @@ def test_dry_run_pairs_arms_and_separates_sessions(tmp_path: Path) -> None:
     planned = [row for row in rows if row["event"] == "run_planned"]
     assert len({_text(row, "arm") for row in planned}) == 1
     assert len({_text(row, "session_id") for row in planned}) == 2
+
+
+def test_live_cli_rejects_missing_billable_confirmation_before_creating_run(
+    tmp_path: Path,
+) -> None:
+    output_dir = tmp_path / "out"
+    result = RUNNER.invoke(
+        app,
+        [
+            "--tasks",
+            str(example_manifest(tmp_path)),
+            "--output-dir",
+            str(output_dir),
+            "--run-id",
+            "unconfirmed",
+            "--verification-image",
+            "ghcr.io/example/verify@sha256:" + "a" * 64,
+            "--grader-image",
+            "ghcr.io/example/grader@sha256:" + "b" * 64,
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "confirm-billable" in result.output
+    assert not output_dir.exists()
 
 
 def test_dry_run_rejects_identical_comparison_models_before_writing(tmp_path: Path) -> None:

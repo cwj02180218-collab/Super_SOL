@@ -1,11 +1,12 @@
 """Fail-closed Day 3 benchmark analysis over out-of-band evidence."""
 
 from pathlib import Path
-from typing import Final
+from typing import Final, cast
 
 from pydantic import ValidationError
 
 from fablized_sol.engine.models import HoldoutArm, SessionId
+from fablized_sol.eval.manifest import ReasoningEffort
 from fablized_sol.measure.report_effects import model_effects, paired_effects, validate_crossover
 from fablized_sol.measure.report_events import load_events
 from fablized_sol.measure.report_models import (
@@ -60,10 +61,15 @@ def _samples(events: Path, grades: Path) -> tuple[BenchmarkSample, ...]:
     for session_id, plan in plans.items():
         finish = finishes[session_id]
         start = starts[session_id]
-        if (plan.model, plan.arm) != (start.model, start.arm) or (
+        if (plan.model, plan.arm, plan.reasoning_effort) != (
+            start.model,
+            start.arm,
+            start.reasoning_effort,
+        ) or (
             plan.model,
             plan.arm,
-        ) != (finish.model, finish.arm):
+            plan.reasoning_effort,
+        ) != (finish.model, finish.arm, finish.reasoning_effort):
             raise ReportInputError(ReportIssue.PLAN_FINISH_MISMATCH, session_id)
         if (
             plan.profile,
@@ -78,6 +84,7 @@ def _samples(events: Path, grades: Path) -> tuple[BenchmarkSample, ...]:
                 session_id=session_id,
                 arm=plan.arm,
                 model=plan.model,
+                reasoning_effort=plan.reasoning_effort,
                 status=finish.status,
                 wall_time_seconds=finish.wall_time_seconds,
                 tool_calls=finish.tool_calls,
@@ -91,12 +98,18 @@ def _samples(events: Path, grades: Path) -> tuple[BenchmarkSample, ...]:
     return tuple(samples)
 
 
-def _cell(model: str, arm: HoldoutArm, samples: tuple[BenchmarkSample, ...]) -> BenchmarkCell:
+def _cell(
+    model: str,
+    effort: ReasoningEffort,
+    arm: HoldoutArm,
+    samples: tuple[BenchmarkSample, ...],
+) -> BenchmarkCell:
     runs = len(samples)
     defect_free = sum(sample.defect_free for sample in samples)
     tokens = sum(sample.token_volume for sample in samples)
     return BenchmarkCell(
         model=model,
+        reasoning_effort=effort,
         arm=arm,
         runs=runs,
         completed_runs=sum(sample.status == "completed" for sample in samples),
@@ -158,12 +171,18 @@ def build_report(
     """Build a fail-closed crossover report and deployable lazy cascade."""
     samples = _samples(events, grades)
     tasks = validate_crossover(samples, baseline_model, reference_model)
-    grouped: dict[tuple[str, HoldoutArm], list[BenchmarkSample]] = {}
+    efforts: dict[str, ReasoningEffort] = {}
+    for model in (baseline_model, reference_model):
+        observed = {sample.reasoning_effort for sample in samples if sample.model == model}
+        if len(observed) != 1:
+            raise ReportInputError(ReportIssue.INCONSISTENT_EFFORT, model)
+        efforts[model] = cast("ReasoningEffort", observed.pop())
+    grouped: dict[tuple[str, ReasoningEffort, HoldoutArm], list[BenchmarkSample]] = {}
     for sample in samples:
-        grouped.setdefault((sample.model, sample.arm), []).append(sample)
+        grouped.setdefault((sample.model, sample.reasoning_effort, sample.arm), []).append(sample)
     cells = tuple(
-        _cell(model, arm, tuple(cell_samples))
-        for (model, arm), cell_samples in sorted(grouped.items())
+        _cell(model, effort, arm, tuple(cell_samples))
+        for (model, effort, arm), cell_samples in sorted(grouped.items())
     )
     cascades = tuple(
         _cascade(
@@ -176,7 +195,9 @@ def build_report(
     )
     return BenchmarkReport(
         baseline_model=baseline_model,
+        baseline_effort=efforts[baseline_model],
         reference_model=reference_model,
+        reference_effort=efforts[reference_model],
         cells=cells,
         paired_effects=paired_effects(samples, tasks, (baseline_model, reference_model)),
         model_effects=model_effects(samples, tasks, baseline_model, reference_model),

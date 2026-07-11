@@ -12,19 +12,19 @@ from fablized_sol.measure.report_models import BenchmarkReport, GradeFile
 _RUNNER = CliRunner()
 
 
-def _write_inputs(tmp_path: Path) -> tuple[Path, Path]:
+def write_inputs(tmp_path: Path) -> tuple[Path, Path]:
     events = tmp_path / "events.jsonl"
     grades = tmp_path / "grades.json"
     rows: list[dict[str, str | int | float | bool | None]] = []
     grade_rows: list[dict[str, str | bool]] = []
     samples = (
-        ("task-a", "gpt-5.5", "on", "a-base", "completed", 100, False),
+        ("task-a", "gpt-5.6-terra", "on", "a-base", "completed", 100, False),
         ("task-a", "gpt-5.6-sol", "on", "a-ref", "completed", 200, False),
-        ("task-b", "gpt-5.5", "on", "b-base", "completed", 100, True),
+        ("task-b", "gpt-5.6-terra", "on", "b-base", "completed", 100, True),
         ("task-b", "gpt-5.6-sol", "on", "b-ref", "completed", 200, False),
-        ("task-a", "gpt-5.5", "off", "a-base-off", "completed", 120, False),
+        ("task-a", "gpt-5.6-terra", "off", "a-base-off", "completed", 120, False),
         ("task-a", "gpt-5.6-sol", "off", "a-ref-off", "completed", 220, False),
-        ("task-b", "gpt-5.5", "off", "b-base-off", "completed", 120, False),
+        ("task-b", "gpt-5.6-terra", "off", "b-base-off", "completed", 120, False),
         ("task-b", "gpt-5.6-sol", "off", "b-ref-off", "completed", 220, True),
     )
     for task_id, model, arm, session_id, status, tokens, defect in samples:
@@ -37,6 +37,7 @@ def _write_inputs(tmp_path: Path) -> tuple[Path, Path]:
                 "task_id": task_id,
                 "arm": arm,
                 "model": model,
+                "reasoning_effort": "medium",
                 "profile": "super-sol",
                 "profile_version": "2026-07-11",
             }
@@ -48,6 +49,7 @@ def _write_inputs(tmp_path: Path) -> tuple[Path, Path]:
                 "session_id": session_id,
                 "arm": arm,
                 "model": model,
+                "reasoning_effort": "medium",
             }
         )
         rows.append(
@@ -57,6 +59,7 @@ def _write_inputs(tmp_path: Path) -> tuple[Path, Path]:
                 "session_id": session_id,
                 "arm": arm,
                 "model": model,
+                "reasoning_effort": "medium",
                 "status": status,
                 "wall_time_seconds": 1.0,
                 "tool_calls": 2,
@@ -80,7 +83,7 @@ def _write_inputs(tmp_path: Path) -> tuple[Path, Path]:
 
 def test_report_quantifies_quality_efficiency_and_lazy_escalation(tmp_path: Path) -> None:
     # Given complete out-of-band grades for paired baseline and reference runs
-    events, grades = _write_inputs(tmp_path)
+    events, grades = write_inputs(tmp_path)
     output = tmp_path / "report.json"
 
     # When the Day 3 analyzer builds a machine-readable report
@@ -94,7 +97,7 @@ def test_report_quantifies_quality_efficiency_and_lazy_escalation(tmp_path: Path
             "--output",
             str(output),
             "--baseline-model",
-            "gpt-5.5",
+            "gpt-5.6-terra",
             "--reference-model",
             "gpt-5.6-sol",
         ],
@@ -104,7 +107,7 @@ def test_report_quantifies_quality_efficiency_and_lazy_escalation(tmp_path: Path
     assert result.exit_code == 0
     report = BenchmarkReport.model_validate_json(output.read_text(encoding="utf-8"))
     cells = {(cell.model, cell.arm): cell for cell in report.cells}
-    assert cells[("gpt-5.5", HoldoutArm.ON)].quality_rate == 0.5
+    assert cells[("gpt-5.6-terra", HoldoutArm.ON)].quality_rate == 0.5
     assert cells[("gpt-5.6-sol", HoldoutArm.ON)].quality_rate == 1.0
     cascades = {cascade.arm: cascade for cascade in report.lazy_cascades}
     cascade = cascades[HoldoutArm.ON]
@@ -115,14 +118,14 @@ def test_report_quantifies_quality_efficiency_and_lazy_escalation(tmp_path: Path
     assert cascade.always_reference_token_volume == 400
     assert cascade.token_savings_rate == 0.0
     effects = {effect.model: effect for effect in report.paired_effects}
-    assert effects["gpt-5.5"].quality_delta == -0.5
-    assert effects["gpt-5.5"].mean_token_delta == -20.0
+    assert effects["gpt-5.6-terra"].quality_delta == -0.5
+    assert effects["gpt-5.6-terra"].mean_token_delta == -20.0
     assert effects["gpt-5.6-sol"].quality_delta == 0.5
 
 
 def test_report_fails_closed_when_an_out_of_band_grade_is_missing(tmp_path: Path) -> None:
     # Given one omitted human grade
-    events, grades = _write_inputs(tmp_path)
+    events, grades = write_inputs(tmp_path)
     payload = GradeFile.model_validate_json(grades.read_text(encoding="utf-8"))
     incomplete = payload.model_copy(update={"grades": payload.grades[:-1]})
     _ = grades.write_text(incomplete.model_dump_json(), encoding="utf-8")
@@ -147,7 +150,7 @@ def test_report_fails_closed_when_an_out_of_band_grade_is_missing(tmp_path: Path
 
 def test_report_rejects_identical_model_roles_and_markdown_output_path(tmp_path: Path) -> None:
     # Given complete crossover evidence but invalid report options
-    events, grades = _write_inputs(tmp_path)
+    events, grades = write_inputs(tmp_path)
 
     # When model roles collide or the JSON output uses a Markdown suffix
     duplicate = _RUNNER.invoke(
@@ -160,9 +163,9 @@ def test_report_rejects_identical_model_roles_and_markdown_output_path(tmp_path:
             "--output",
             str(tmp_path / "duplicate.json"),
             "--baseline-model",
-            "gpt-5.5",
+            "gpt-5.6-terra",
             "--reference-model",
-            "gpt-5.5",
+            "gpt-5.6-terra",
         ],
     )
     collision = _RUNNER.invoke(
@@ -203,7 +206,7 @@ def test_report_rejects_identical_model_roles_and_markdown_output_path(tmp_path:
 
 def test_report_rejects_out_of_order_lifecycle_events(tmp_path: Path) -> None:
     # Given complete crossover records with one finish placed before its start
-    events, grades = _write_inputs(tmp_path)
+    events, grades = write_inputs(tmp_path)
     lines = events.read_text(encoding="utf-8").splitlines()
     lines[:3] = (lines[2], lines[1], lines[0])
     _ = events.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -231,7 +234,7 @@ def test_report_rolls_back_json_if_markdown_creation_races(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Given valid evidence and a competing Markdown creator after initial validation
-    events, grades = _write_inputs(tmp_path)
+    events, grades = write_inputs(tmp_path)
     markdown = tmp_path / "race.md"
 
     def racing_build(

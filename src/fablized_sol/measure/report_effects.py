@@ -137,6 +137,7 @@ def paired_effects(
         effects.append(
             PairedEffect(
                 model=model,
+                reasoning_effort=pairs[0][0].reasoning_effort,
                 tasks=len(tasks),
                 quality_delta=quality.mean,
                 quality_ci_low=max(-1.0, quality.low),

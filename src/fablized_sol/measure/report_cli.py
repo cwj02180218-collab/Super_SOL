@@ -15,11 +15,11 @@ def _markdown(report: BenchmarkReport) -> str:
     lines = [
         "# Super Sol Day 3 Report",
         "",
-        f"Baseline: `{baseline}`  ",
-        f"Reference: `{reference}`",
+        f"Baseline: `{baseline}` (`{report.baseline_effort}`)  ",
+        f"Reference: `{reference}` (`{report.reference_effort}`)",
         "",
-        "| Model | Arm | Quality | Tokens | Tokens / good run | Mean seconds |",
-        "| --- | --- | ---: | ---: | ---: | ---: |",
+        "| Model | Effort | Arm | Quality | Tokens | Tokens / good run | Mean seconds |",
+        "| --- | --- | --- | ---: | ---: | ---: | ---: |",
     ]
     for cell in report.cells:
         model = cell.model.replace("|", "\\|").replace("\n", " ")
@@ -29,7 +29,7 @@ def _markdown(report: BenchmarkReport) -> str:
             else "n/a"
         )
         row = (
-            f"| {model} | {cell.arm} | {cell.quality_rate:.1%} | "
+            f"| {model} | {cell.reasoning_effort} | {cell.arm} | {cell.quality_rate:.1%} | "
             f"{cell.token_volume} | {efficiency} | {cell.mean_wall_time_seconds:.2f} |"
         )
         lines.append(row)
@@ -93,7 +93,7 @@ def report_command(
     events: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
     grades: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
     output: Annotated[Path, typer.Option(dir_okay=False)],
-    baseline_model: Annotated[str, typer.Option()] = "gpt-5.5",
+    baseline_model: Annotated[str, typer.Option()] = "gpt-5.6-terra",
     reference_model: Annotated[str, typer.Option()] = "gpt-5.6-sol",
 ) -> None:
     """Analyze complete shadow events and external quality grades."""

@@ -15,7 +15,14 @@ def test_shadow_event_keeps_arm_out_of_instruction_payload(tmp_path: Path) -> No
     writer = ShadowWriter(tmp_path / "events.jsonl")
 
     # When an OFF-arm run starts
-    writer.append(RunStarted(session_id=SessionId("s1"), arm=HoldoutArm.OFF, model="gpt-5.5"))
+    writer.append(
+        RunStarted(
+            session_id=SessionId("s1"),
+            arm=HoldoutArm.OFF,
+            model="gpt-5.6-terra",
+            reasoning_effort="medium",
+        )
+    )
 
     # Then the arm is recorded without any model-visible payload field
     raw = (tmp_path / "events.jsonl").read_text(encoding="utf-8")
@@ -32,14 +39,21 @@ def test_shadow_schemas_exclude_model_visible_content(tmp_path: Path) -> None:
             task_id="task-1",
             arm=HoldoutArm.ON,
             model="gpt-5.6-sol",
+            reasoning_effort="medium",
             profile=SUPER_SOL_PROFILE.name,
             profile_version=SUPER_SOL_PROFILE.version,
         ),
-        RunStarted(session_id=SessionId("s1"), arm=HoldoutArm.ON, model="gpt-5.6-sol"),
+        RunStarted(
+            session_id=SessionId("s1"),
+            arm=HoldoutArm.ON,
+            model="gpt-5.6-sol",
+            reasoning_effort="medium",
+        ),
         RunFinished(
             session_id=SessionId("s1"),
             arm=HoldoutArm.ON,
             model="gpt-5.6-sol",
+            reasoning_effort="medium",
             status="abandoned",
             wall_time_seconds=1.25,
             tool_calls=3,
@@ -78,6 +92,7 @@ def test_shadow_finished_rejects_coercive_metrics(
         session_id=SessionId("s1"),
         arm=HoldoutArm.ON,
         model="gpt-5.6-sol",
+        reasoning_effort="medium",
         status="completed",
         wall_time_seconds=1.25,
         tool_calls=3,

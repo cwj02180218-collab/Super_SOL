@@ -78,11 +78,12 @@ def test_live_run_is_sequential_isolated_and_records_usage(
             _IMAGE,
             "--grader-image",
             _GRADER_IMAGE,
+            "--confirm-billable",
         ],
     )
 
     assert result.exit_code == 0
-    assert [model for model, _workspace in observed] == ["gpt-5.5", "gpt-5.6-sol"]
+    assert [model for model, _workspace in observed] == ["gpt-5.6-terra", "gpt-5.6-sol"]
     assert observed[0][1] != observed[1][1]
     rows = read_jsonl(output_dir / "live-offline" / "events.jsonl")
     finished = [row for row in rows if row["event"] == "run_finished"]
@@ -173,5 +174,6 @@ def _invoke_live(tmp_path: Path, output_dir: Path, run_id: str) -> Result:
             _IMAGE,
             "--grader-image",
             _GRADER_IMAGE,
+            "--confirm-billable",
         ],
     )
