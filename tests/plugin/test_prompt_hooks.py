@@ -40,7 +40,9 @@ def test_korean_debug_prompt_routes_without_persisting_prompt(
     assert "재현" in _context(result.stdout)
     payloads = _state_payloads(plugin_data)
     assert payloads == [{"billable_authorized": False, "profile": "debug", "schema_version": 1}]
-    assert prompt not in "".join(path.read_text(encoding="utf-8") for path in plugin_data.rglob("*.*"))
+    assert prompt not in "".join(
+        path.read_text(encoding="utf-8") for path in plugin_data.rglob("*.*")
+    )
 
 
 def test_explanation_prompt_uses_conversation_profile(

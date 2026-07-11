@@ -88,9 +88,7 @@ def test_authorized_live_eval_still_requires_confirmation_flag(run_hook: HookRun
             "PreToolUse",
             tool_name="Bash",
             tool_use_id="pre-four",
-            tool_input={
-                "command": "uv run super-sol-eval --tasks tasks.json --confirm-billable"
-            },
+            tool_input={"command": "uv run super-sol-eval --tasks tasks.json --confirm-billable"},
         )
     )
 

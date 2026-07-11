@@ -1,18 +1,28 @@
 {
   "name": "super-sol",
-  "version": "0.1.0",
-  "description": "Super Sol plugin",
+  "version": "0.3.0",
+  "description": "Beginner-friendly automatic verification for stock Codex",
   "author": {
-    "name": "Local developer"
+    "name": "cuj0218",
+    "url": "https://github.com/cuj0218"
   },
+  "homepage": "https://github.com/cuj0218/Super-SOL",
+  "repository": "https://github.com/cuj0218/Super-SOL",
+  "license": "MIT",
+  "keywords": ["codex", "verification", "beginner", "automation"],
   "skills": "./skills/",
   "interface": {
-    "displayName": "Super Sol",
-    "shortDescription": "Use Super Sol in Codex.",
-    "longDescription": "Super Sol adds a local Codex plugin scaffold.",
-    "developerName": "Local developer",
+    "displayName": "Super SOL",
+    "shortDescription": "검증까지 챙기는 초보자용 Codex 도우미",
+    "longDescription": "평소처럼 요청하면 작업 유형을 가볍게 분류하고, 변경 후 검증 누락과 알려진 자동 과금 경로를 확인합니다. 별도 API 키나 외부 서버가 필요하지 않습니다.",
+    "developerName": "cuj0218",
     "category": "Productivity",
-    "capabilities": [],
-    "defaultPrompt": "Help me use Super Sol."
+    "capabilities": ["Interactive", "Write"],
+    "websiteURL": "https://github.com/cuj0218/Super-SOL",
+    "defaultPrompt": [
+      "이 작업을 완료하고 필요한 검증까지 해줘.",
+      "이 오류의 원인을 찾아 고치고 테스트해줘.",
+      "공개 배포 전에 안정성을 점검해줘."
+    ]
   }
 }
