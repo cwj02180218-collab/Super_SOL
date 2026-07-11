@@ -89,6 +89,18 @@ def test_manifest_rejects_fixture_file(tmp_path: Path) -> None:
         _ = TaskManifest.load(path)
 
 
+def test_manifest_rejects_symlink_inside_fixture(tmp_path: Path) -> None:
+    # Given a fixture that contains a symlink to an external file
+    path = _write_manifest(tmp_path)
+    outside = tmp_path / "outside.py"
+    _ = outside.write_text("secret", encoding="utf-8")
+    (tmp_path / "fixture" / "linked.py").symlink_to(outside)
+
+    # When the manifest crosses the trust boundary, then copying is refused
+    with pytest.raises(ManifestParseError, match="symlink"):
+        _ = TaskManifest.load(path)
+
+
 def test_manifest_wraps_invalid_json_with_path(tmp_path: Path) -> None:
     # Given malformed JSON at the manifest boundary
     path = tmp_path / "tasks.json"
@@ -110,4 +122,35 @@ def test_eval_options_reject_identical_comparison_models(tmp_path: Path) -> None
             models=("gpt-5.5", "gpt-5.5"),
             max_gate_retries=2,
             dry_run=True,
+            verification_image=None,
+        )
+
+
+def test_live_eval_options_require_digest_pinned_verification_image(tmp_path: Path) -> None:
+    # Given live evaluation options without a verification container image
+    # When options cross the trust boundary, then validation fails closed
+    with pytest.raises(ValidationError, match="verification image"):
+        _ = EvalOptions(
+            tasks=tmp_path / "tasks.json",
+            output_dir=tmp_path / "out",
+            run_id="live",
+            models=("gpt-5.6-sol", "gpt-5.5"),
+            max_gate_retries=2,
+            dry_run=False,
+            verification_image=None,
+        )
+
+
+def test_eval_options_reject_mutable_verification_image_tag(tmp_path: Path) -> None:
+    # Given a mutable image tag
+    # When options cross the trust boundary, then only a digest is accepted
+    with pytest.raises(ValidationError, match="sha256"):
+        _ = EvalOptions(
+            tasks=tmp_path / "tasks.json",
+            output_dir=tmp_path / "out",
+            run_id="live",
+            models=("gpt-5.6-sol", "gpt-5.5"),
+            max_gate_retries=2,
+            dry_run=False,
+            verification_image="python:3.12",
         )

@@ -2,9 +2,17 @@
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Annotated, ClassVar, override
+from typing import Annotated, ClassVar, Self, override
 
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StrictStr, ValidationError
+from pydantic import (
+    AfterValidator,
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictStr,
+    ValidationError,
+    model_validator,
+)
 from pydantic_core import PydanticCustomError
 
 
@@ -37,6 +45,14 @@ type ComparisonModels = Annotated[
     tuple[StrictStr, StrictStr],
     AfterValidator(_require_distinct_models),
 ]
+type VerificationImage = Annotated[
+    StrictStr,
+    Field(pattern=r"^[^@\s]+@sha256:[0-9a-f]{64}$"),
+]
+
+
+def _contains_symlink(path: Path) -> bool:
+    return path.is_symlink() or any(candidate.is_symlink() for candidate in path.rglob("*"))
 
 
 class TaskSpec(BaseModel):
@@ -71,11 +87,15 @@ class TaskManifest(BaseModel):
             if task.id in seen:
                 raise ManifestParseError(path=path, detail=f"duplicate task id: {task.id}")
             seen.add(task.id)
-            fixture = (
-                task.fixture.resolve()
-                if task.fixture.is_absolute()
-                else (path.parent / task.fixture).resolve()
+            fixture_input = (
+                task.fixture if task.fixture.is_absolute() else path.parent / task.fixture
             )
+            if _contains_symlink(fixture_input):
+                raise ManifestParseError(
+                    path=path,
+                    detail=f"fixture must not contain symlinks: {fixture_input}",
+                )
+            fixture = fixture_input.resolve()
             if not fixture.is_dir():
                 raise ManifestParseError(
                     path=path,
@@ -96,3 +116,16 @@ class EvalOptions(BaseModel):
     models: ComparisonModels
     max_gate_retries: int = Field(ge=0, le=5)
     dry_run: bool
+    verification_image: VerificationImage | None = None
+
+    @model_validator(mode="after")
+    def require_live_verification_image(self) -> Self:
+        """Require a digest-pinned sandbox image for billable live runs."""
+        if not self.dry_run and self.verification_image is None:
+            error_code = "missing_verification_image"
+            message = "verification image is required for live evaluation"
+            raise PydanticCustomError(
+                error_code,
+                message,
+            )
+        return self

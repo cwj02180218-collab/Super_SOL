@@ -26,19 +26,25 @@ class ModelResponseObserver(Protocol):
         ...
 
 
-def _mutation_event(name: ToolName, result: MutationToolResult) -> MutationToolEvent:
+def _mutation_event(
+    name: ToolName,
+    result: MutationToolResult,
+    sequence: int,
+) -> MutationToolEvent:
     return MutationToolEvent(
         tool=name,
         path=result.path,
         change_kind=result.change_kind,
+        sequence=sequence,
     )
 
 
 def _verification_event(
     name: ToolName,
     result: VerificationToolResult,
+    sequence: int,
 ) -> VerificationToolEvent:
-    return VerificationToolEvent(tool=name, success=result.success)
+    return VerificationToolEvent(tool=name, success=result.success, sequence=sequence)
 
 
 def _rejected_result(name: ToolName, kind: ToolKind) -> EvidenceRejectedEvent:
@@ -64,17 +70,25 @@ class LedgerHooks(RunHooks[FablizedContext]):
             case ToolKind.READ:
                 event = ReadToolEvent(tool=name)
             case ToolKind.MUTATION:
-                event = (
-                    _mutation_event(name, result)
-                    if isinstance(result, MutationToolResult)
-                    else _rejected_result(name, ToolKind.MUTATION)
-                )
+                if isinstance(result, MutationToolResult):
+                    sequence = context.context.completions.consume(result)
+                    event = (
+                        _mutation_event(name, result, sequence)
+                        if sequence is not None
+                        else _rejected_result(name, ToolKind.MUTATION)
+                    )
+                else:
+                    event = _rejected_result(name, ToolKind.MUTATION)
             case ToolKind.VERIFICATION:
-                event = (
-                    _verification_event(name, result)
-                    if isinstance(result, VerificationToolResult)
-                    else _rejected_result(name, ToolKind.VERIFICATION)
-                )
+                if isinstance(result, VerificationToolResult):
+                    sequence = context.context.completions.consume(result)
+                    event = (
+                        _verification_event(name, result, sequence)
+                        if sequence is not None
+                        else _rejected_result(name, ToolKind.VERIFICATION)
+                    )
+                else:
+                    event = _rejected_result(name, ToolKind.VERIFICATION)
             case ToolKind.UNKNOWN:
                 event = EvidenceRejectedEvent(
                     tool=name,

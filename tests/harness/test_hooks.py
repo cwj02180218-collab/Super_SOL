@@ -73,10 +73,40 @@ def _invoke_hook(
     anyio.run(hooks.on_tool_end, wrapped, agent, tool, result)
 
 
+def _record_result(
+    context: FablizedContext, result: MutationToolResult | VerificationToolResult
+) -> None:
+    context.completions.record(result)
+
+
+async def _append_hooks_in_reverse_completion_order(
+    context: FablizedContext,
+    mutation: MutationToolResult,
+    verification: VerificationToolResult,
+) -> None:
+    hooks = LedgerHooks()
+    wrapped = RunContextWrapper(context=context, usage=Usage())
+    agent = Agent[FablizedContext](name="test")
+    mutation_appended = anyio.Event()
+
+    async def append_mutation() -> None:
+        await hooks.on_tool_end(wrapped, agent, write_file, mutation)
+        mutation_appended.set()
+
+    async def append_verification() -> None:
+        await mutation_appended.wait()
+        await hooks.on_tool_end(wrapped, agent, run_verification, verification)
+
+    async with anyio.create_task_group() as task_group:
+        _ = task_group.start_soon(append_verification)
+        _ = task_group.start_soon(append_mutation)
+
+
 def test_hook_records_typed_mutation_result(tmp_path: Path) -> None:
     # Given a registered mutation tool returning its typed result
     context = _context(tmp_path)
     result = MutationToolResult(path="src/x.py", change_kind=ChangeKind.CODE)
+    _record_result(context, result)
 
     # When the real SDK hook adapter observes the tool ending
     _invoke_hook(context, write_file, result)
@@ -106,6 +136,7 @@ def test_hook_records_failed_verification_result(tmp_path: Path) -> None:
     # Given a registered verification tool returning exit code one
     context = _context(tmp_path)
     result = VerificationToolResult(exit_code=1, stdout="", stderr="failed")
+    _record_result(context, result)
 
     # When the hook observes the tool ending
     _invoke_hook(context, run_verification, result)
@@ -131,8 +162,8 @@ def test_hook_rejects_unregistered_tool_without_evidence_credit(tmp_path: Path) 
     assert event.tool == ToolName("unregistered_tool")
     assert event.claimed_kind is ToolKind.UNKNOWN
     assert event.reason == "unknown_tool"
-    assert context.ledger.state().latest_mutation_index is None
-    assert context.ledger.state().latest_successful_verification_index is None
+    assert context.ledger.state().latest_code_mutation_sequence is None
+    assert context.ledger.state().latest_successful_verification_sequence is None
 
 
 def test_hook_rejects_malformed_mutation_without_evidence_credit(tmp_path: Path) -> None:
@@ -148,7 +179,7 @@ def test_hook_rejects_malformed_mutation_without_evidence_credit(tmp_path: Path)
     assert event.tool == ToolName("write_file")
     assert event.claimed_kind is ToolKind.MUTATION
     assert event.reason == "malformed_result"
-    assert context.ledger.state().latest_mutation_index is None
+    assert context.ledger.state().latest_code_mutation_sequence is None
 
 
 def test_hook_rejects_malformed_verification_without_evidence_credit(tmp_path: Path) -> None:
@@ -164,4 +195,39 @@ def test_hook_rejects_malformed_verification_without_evidence_credit(tmp_path: P
     assert event.tool == ToolName("run_verification")
     assert event.claimed_kind is ToolKind.VERIFICATION
     assert event.reason == "malformed_result"
-    assert context.ledger.state().latest_successful_verification_index is None
+    assert context.ledger.state().latest_successful_verification_sequence is None
+
+
+def test_hook_rejects_typed_mutation_without_completion_token(tmp_path: Path) -> None:
+    # Given a typed result that did not complete through the confined workspace tool
+    context = _context(tmp_path)
+    result = MutationToolResult(path="src/x.py", change_kind=ChangeKind.CODE)
+
+    # When the mandatory hook receives it, then it receives no evidence credit
+    _invoke_hook(context, write_file, result)
+    event = context.ledger.read()[-1]
+    assert isinstance(event, EvidenceRejectedEvent)
+    assert event.reason == "malformed_result"
+
+
+def test_completion_sequence_defeats_reverse_hook_append_order(tmp_path: Path) -> None:
+    # Given verification completed before a later code mutation
+    context = _context(tmp_path)
+    verification = VerificationToolResult(exit_code=0, stdout="", stderr="")
+    mutation = MutationToolResult(path="src/x.py", change_kind=ChangeKind.CODE)
+    _record_result(context, verification)
+    _record_result(context, mutation)
+
+    # When concurrent SDK hooks append those results in reverse completion order
+    anyio.run(
+        _append_hooks_in_reverse_completion_order,
+        context,
+        mutation,
+        verification,
+    )
+
+    # Then append order cannot make stale verification appear fresh
+    state = context.ledger.state()
+    assert state.latest_code_mutation_sequence == 2
+    assert state.latest_successful_verification_sequence == 1
+    assert state.has_fresh_verification is False

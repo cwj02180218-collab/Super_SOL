@@ -44,7 +44,7 @@ def _planned_runs(options: EvalOptions, manifest: TaskManifest) -> tuple[Planned
     return tuple(planned)
 
 
-async def run_evaluation(options: EvalOptions) -> int:  # noqa: C901
+async def run_evaluation(options: EvalOptions) -> int:  # noqa: C901, PLR0912
     """Own evaluation filesystem I/O and sequential live execution."""
     manifest = TaskManifest.load(options.tasks)
     options.output_dir.mkdir(parents=True, exist_ok=True)
@@ -79,7 +79,12 @@ async def run_evaluation(options: EvalOptions) -> int:  # noqa: C901
         writer.append(RunStarted(session_id=item.session_id, arm=item.arm, model=item.model))
         run = create_live_run(item, run_root)
         try:
-            outcome = await execute_live(run, options.max_gate_retries)
+            image = options.verification_image
+            if image is None:
+                writer.append(finished_event(run, "error", "MissingVerificationImageError"))
+                failed = True
+                continue
+            outcome = await execute_live(run, options.max_gate_retries, image)
         except Exception as error:  # noqa: BLE001 - CLI boundary; # noqa: BROAD_EXCEPT_OK
             writer.append(finished_event(run, "error", type(error).__name__))
             failed = True
@@ -96,6 +101,7 @@ async def run_evaluation(options: EvalOptions) -> int:  # noqa: C901
                 writer.append(finished_event(run, "completed", None))
             case RunExhausted():
                 writer.append(finished_event(run, "exhausted", None))
+                failed = True
             case _:
                 assert_never(outcome)
     return int(failed)
@@ -109,6 +115,7 @@ def evaluate(  # noqa: PLR0913
     baseline_model: Annotated[str, typer.Option()] = "gpt-5.5",
     max_gate_retries: Annotated[int, typer.Option(min=0, max=5)] = 2,
     dry_run: Annotated[bool, typer.Option()] = False,
+    verification_image: Annotated[str | None, typer.Option()] = None,
 ) -> None:
     """Run a paired model evaluation; the CLI signature is the option contract."""
     try:
@@ -119,6 +126,7 @@ def evaluate(  # noqa: PLR0913
             models=(sol_model, baseline_model),
             max_gate_retries=max_gate_retries,
             dry_run=dry_run,
+            verification_image=verification_image,
         )
     except ValidationError as error:
         raise typer.BadParameter(str(error), param_hint="evaluation options") from error

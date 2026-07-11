@@ -18,6 +18,7 @@ from fablized_sol.harness.run import (
 _RUNNER = CliRunner()
 _ROW_ADAPTER = TypeAdapter[dict[str, JsonValue]](dict[str, JsonValue])
 _STRING_ADAPTER = TypeAdapter[str](str)
+_IMAGE = "ghcr.io/example/verify@sha256:" + "a" * 64
 
 
 def _example_manifest(tmp_path: Path) -> Path:
@@ -205,6 +206,8 @@ def test_live_run_is_sequential_isolated_and_records_usage(
             str(output_dir),
             "--run-id",
             "live-offline",
+            "--verification-image",
+            _IMAGE,
         ],
     )
 
@@ -253,6 +256,8 @@ def test_live_run_retains_error_and_continues_pair(
             str(output_dir),
             "--run-id",
             "error-pair",
+            "--verification-image",
+            _IMAGE,
         ],
     )
 
@@ -295,11 +300,13 @@ def test_live_run_retains_exhaustion(
             str(output_dir),
             "--run-id",
             "exhausted-pair",
+            "--verification-image",
+            _IMAGE,
         ],
     )
 
     # Then exhaustion is retained rather than converted to completion or error
-    assert result.exit_code == 0
+    assert result.exit_code != 0
     rows = _read_jsonl(output_dir / "exhausted-pair" / "events.jsonl")
     finished = [row for row in rows if row["event"] == "run_finished"]
     assert [row["status"] for row in finished] == ["exhausted", "exhausted"]

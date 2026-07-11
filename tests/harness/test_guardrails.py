@@ -37,6 +37,7 @@ def _context(tmp_path: Path, *, arm: HoldoutArm, retry_limit: int = 2) -> Fabliz
             tool=ToolName("write_file"),
             path="src/x.py",
             change_kind=ChangeKind.CODE,
+            sequence=1,
         )
     )
     registry = ToolRegistry.create(

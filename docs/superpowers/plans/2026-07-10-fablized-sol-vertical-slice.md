@@ -1,5 +1,12 @@
 # Fablized SOL Minimum Vertical Slice Implementation Plan
 
+> Final-review hardening supersedes the original host-process sketch below:
+> live verification requires a digest-pinned Docker image and runs with no
+> network or inherited environment; mutation and verification chronology uses
+> context-only workspace-lock completion sequences rather than JSONL append
+> indices; freshness is relative to the latest code mutation only. Fixture
+> symlinks are rejected before copy and exhausted runs are evaluation failures.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a publishable Python package that routes procedural packs, records observed tool evidence, blocks unverified deep-task completion, assigns an out-of-band 80/20 holdout, and dry-runs a GPT-5.6 Sol versus GPT-5.5 evaluation.

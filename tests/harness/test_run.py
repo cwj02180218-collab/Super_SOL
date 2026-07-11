@@ -224,6 +224,7 @@ def _context(tmp_path: Path, arm: HoldoutArm) -> FablizedContext:
             tool=ToolName("write_file"),
             path="src/x.py",
             change_kind=ChangeKind.CODE,
+            sequence=1,
         )
     )
     registry = ToolRegistry.create(

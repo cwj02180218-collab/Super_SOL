@@ -2,20 +2,25 @@
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Final, override
+from threading import Lock
+from typing import Final, final, override
 
 import anyio
 from agents import function_tool
 from agents.tool_context import ToolContext
 from anyio import to_thread
-from anyio.abc import ByteReceiveStream
 
 from fablized_sol.engine.ledger import Ledger
 from fablized_sol.engine.models import ChangeKind, HoldoutArm
+from fablized_sol.harness.container_runtime import (
+    AnyioDockerRunner,
+    VerificationProcessRunner,
+    build_docker_invocation,
+    is_digest_pinned_image,
+)
 from fablized_sol.harness.registry import ToolRegistry
 
 _DOC_SUFFIXES: Final = frozenset({".md", ".rst", ".txt"})
-_OUTPUT_LIMIT_BYTES: Final = 32 * 1024
 _VERIFICATION_TIMEOUT_SECONDS: Final = 120
 
 
@@ -41,6 +46,33 @@ class MutationToolResult:
     change_kind: ChangeKind
 
 
+type EvidenceToolResult = MutationToolResult | VerificationToolResult
+
+
+@final
+class CompletionSequencer:
+    """Mutable identity map that keeps ordering out of model-visible results."""
+
+    __slots__ = ("_lock", "_next", "_sequences")
+
+    def __init__(self) -> None:
+        """Start an empty monotonic completion map."""
+        self._lock = Lock()
+        self._next = 1
+        self._sequences: dict[int, int] = {}
+
+    def record(self, result: EvidenceToolResult) -> None:
+        """Assign the next completion sequence to one raw result identity."""
+        with self._lock:
+            self._sequences[id(result)] = self._next
+            self._next += 1
+
+    def consume(self, result: EvidenceToolResult) -> int | None:
+        """Consume one sequence exactly once when the mandatory hook runs."""
+        with self._lock:
+            return self._sequences.pop(id(result), None)
+
+
 @dataclass(frozen=True, slots=True)
 class FablizedContext:
     """Manifest-owned state made available to local SDK function tools."""
@@ -51,6 +83,17 @@ class FablizedContext:
     registry: ToolRegistry
     arm: HoldoutArm
     retry_limit: int
+    verification_image: str | None = None
+    process_runner: VerificationProcessRunner = field(
+        default_factory=AnyioDockerRunner,
+        compare=False,
+        repr=False,
+    )
+    completions: CompletionSequencer = field(
+        default_factory=CompletionSequencer,
+        compare=False,
+        repr=False,
+    )
     workspace_lock: anyio.Lock = field(default_factory=anyio.Lock, compare=False, repr=False)
 
 
@@ -123,67 +166,50 @@ async def write_text(
 ) -> MutationToolResult:
     """Resolve and write UTF-8 text under the process-local workspace lock."""
     async with context.workspace_lock:
-        return await to_thread.run_sync(_write_text, context, path, content)
+        result = await to_thread.run_sync(_write_text, context, path, content)
+        context.completions.record(result)
+        return result
 
 
-def _append_tail(output: bytearray, chunk: bytes) -> None:
-    if len(chunk) >= _OUTPUT_LIMIT_BYTES:
-        output[:] = chunk[-_OUTPUT_LIMIT_BYTES:]
-        return
-    overflow = len(output) + len(chunk) - _OUTPUT_LIMIT_BYTES
-    if overflow > 0:
-        del output[:overflow]
-    output.extend(chunk)
-
-
-async def _drain_tail(stream: ByteReceiveStream | None, output: bytearray) -> None:
-    if stream is None:
-        return
-    async for chunk in stream:
-        _append_tail(output, chunk)
-
-
-async def _capture_process(context: FablizedContext) -> tuple[int, bytearray, bytearray]:
-    stdout = bytearray()
-    stderr = bytearray()
-    exit_code = 127
-    async with (
-        await anyio.open_process(
-            context.verify_argv,
-            stdin=None,
-            cwd=context.workspace.resolve(),
-        ) as process,
-        anyio.create_task_group() as task_group,
-    ):
-        _ = task_group.start_soon(_drain_tail, process.stdout, stdout)
-        _ = task_group.start_soon(_drain_tail, process.stderr, stderr)
-        exit_code = await process.wait()
-    return exit_code, stdout, stderr
-
-
-def _decode(output: bytearray) -> str:
+def _decode(output: bytes) -> str:
     return output.decode("utf-8", errors="replace")
 
 
 async def run_verification_process(context: FablizedContext) -> VerificationToolResult:
-    """Run only manifest-owned argv and preserve a bounded typed process result."""
+    """Run manifest argv in a hardened container and retain typed evidence."""
     async with context.workspace_lock:
+        image = context.verification_image
+        if image is None or not is_digest_pinned_image(image):
+            result = VerificationToolResult(
+                exit_code=127,
+                stdout="",
+                stderr="digest-pinned verification image is required",
+            )
+            context.completions.record(result)
+            return result
+        invocation = build_docker_invocation(context.workspace, image, context.verify_argv)
         try:
             with anyio.fail_after(_VERIFICATION_TIMEOUT_SECONDS):
-                exit_code, stdout, stderr = await _capture_process(context)
+                capture = await context.process_runner.run(invocation)
         except TimeoutError:
-            return VerificationToolResult(
+            result = VerificationToolResult(
                 exit_code=124,
                 stdout="",
                 stderr="verification timed out",
             )
+            context.completions.record(result)
+            return result
         except (FileNotFoundError, PermissionError) as error:
-            return VerificationToolResult(exit_code=127, stdout="", stderr=str(error))
-    return VerificationToolResult(
-        exit_code=exit_code,
-        stdout=_decode(stdout),
-        stderr=_decode(stderr),
-    )
+            result = VerificationToolResult(exit_code=127, stdout="", stderr=str(error))
+            context.completions.record(result)
+            return result
+        result = VerificationToolResult(
+            exit_code=capture.exit_code,
+            stdout=_decode(capture.stdout),
+            stderr=_decode(capture.stderr),
+        )
+        context.completions.record(result)
+        return result
 
 
 @function_tool(failure_error_function=None)

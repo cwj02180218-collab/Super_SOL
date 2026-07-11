@@ -26,6 +26,7 @@ def test_append_preserves_event_order_and_writes_one_json_line_per_event(tmp_pat
             tool=ToolName("write_file"),
             path="src/x.py",
             change_kind=ChangeKind.CODE,
+            sequence=1,
         ),
     )
 
@@ -73,6 +74,7 @@ def test_coercive_verification_success_reports_line_number(
             "tool": "test",
             "kind": "verification",
             "success": coercive_success,
+            "sequence": 1,
         }
     )
     _ = path.write_text(f"{classify}\n{verification}\n", encoding="utf-8")
@@ -124,15 +126,17 @@ def test_state_tracks_latest_mutation_and_successful_verification(tmp_path: Path
             tool=ToolName("write_file"),
             path="README.md",
             change_kind=ChangeKind.DOCS,
+            sequence=1,
         )
     )
-    ledger.append(VerificationToolEvent(tool=ToolName("test"), success=False))
-    ledger.append(VerificationToolEvent(tool=ToolName("test"), success=True))
+    ledger.append(VerificationToolEvent(tool=ToolName("test"), success=False, sequence=2))
+    ledger.append(VerificationToolEvent(tool=ToolName("test"), success=True, sequence=3))
     ledger.append(
         MutationToolEvent(
             tool=ToolName("write_file"),
             path="src/x.py",
             change_kind=ChangeKind.CODE,
+            sequence=4,
         )
     )
     ledger.append(GateFireEvent(reason="verification required"))
@@ -144,8 +148,8 @@ def test_state_tracks_latest_mutation_and_successful_verification(tmp_path: Path
     assert state.task_mode is TaskMode.DEEP
     assert state.changed_files_seen is True
     assert state.change_kinds == frozenset({ChangeKind.CODE, ChangeKind.DOCS})
-    assert state.latest_mutation_index == 4
-    assert state.latest_successful_verification_index == 3
+    assert state.latest_code_mutation_sequence == 4
+    assert state.latest_successful_verification_sequence == 3
     assert state.has_fresh_verification is False
     assert state.stop_blocks == 1
 
@@ -176,5 +180,31 @@ def test_rejected_evidence_is_observable_but_has_zero_state_credit(tmp_path: Pat
     assert events == (classify, rejected_mutation, rejected_verification)
     assert state.changed_files_seen is False
     assert state.change_kinds == frozenset()
-    assert state.latest_mutation_index is None
-    assert state.latest_successful_verification_index is None
+    assert state.latest_code_mutation_sequence is None
+    assert state.latest_successful_verification_sequence is None
+
+
+def test_docs_mutation_after_verified_code_preserves_fresh_evidence(tmp_path: Path) -> None:
+    # Given code verification completed before a later documentation-only change
+    ledger = Ledger(tmp_path / "ledger.jsonl")
+    ledger.append(ClassifyEvent(mode=TaskMode.DEEP, risk_flags=()))
+    ledger.append(
+        MutationToolEvent(
+            tool=ToolName("write_file"),
+            path="src/x.py",
+            change_kind=ChangeKind.CODE,
+            sequence=1,
+        )
+    )
+    ledger.append(VerificationToolEvent(tool=ToolName("test"), success=True, sequence=2))
+    ledger.append(
+        MutationToolEvent(
+            tool=ToolName("write_file"),
+            path="README.md",
+            change_kind=ChangeKind.DOCS,
+            sequence=3,
+        )
+    )
+
+    # When state is aggregated, then docs do not stale code verification
+    assert ledger.state().has_fresh_verification is True

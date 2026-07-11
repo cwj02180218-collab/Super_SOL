@@ -34,6 +34,7 @@ class MutationToolEvent(BaseModel):
     kind: Literal[ToolKind.MUTATION] = ToolKind.MUTATION
     path: str
     change_kind: ChangeKind
+    sequence: int = Field(ge=1)
 
 
 class VerificationToolEvent(BaseModel):
@@ -46,6 +47,7 @@ class VerificationToolEvent(BaseModel):
     tool: ToolName
     kind: Literal[ToolKind.VERIFICATION] = ToolKind.VERIFICATION
     success: bool
+    sequence: int = Field(ge=1)
 
 
 class EvidenceRejectedEvent(BaseModel):

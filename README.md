@@ -59,7 +59,8 @@ The CLI accepts a strict JSON manifest with one or more tasks:
 Each task has a non-empty `id`, `prompt`, fixture directory, and
 `verify_argv`. Relative fixtures resolve from the manifest directory. Verification
 commands are argument arrays, never shell strings: each array element is passed
-as one process argument without shell interpolation.
+as one process argument without shell interpolation. Fixtures containing symbolic
+links are rejected before they can be copied into a session workspace.
 
 ## Dry Run
 
@@ -82,13 +83,15 @@ output directory.
 ## Live Paired Evaluation
 
 Live execution is billable and may modify the copied task workspaces. It
-requires `OPENAI_API_KEY` and access to both configured models:
+requires `OPENAI_API_KEY`, access to both configured models, and
+`VERIFICATION_IMAGE` set to a complete digest-pinned image reference:
 
 ```bash
 OPENAI_API_KEY=... uv run fablized-sol-eval \
   --tasks eval/tasks.example.json \
   --output-dir .fablized/live \
-  --run-id day0-live
+  --run-id day0-live \
+  --verification-image "$VERIFICATION_IMAGE"
 ```
 
 The defaults are `gpt-5.6-sol` and `gpt-5.5`, with two gate correction retries.
@@ -96,6 +99,16 @@ GPT-5.6 Sol is a limited preview, so API access is not implied by installing thi
 package. Use `--sol-model`, `--baseline-model`, and `--max-gate-retries` to
 override the defaults. A live run should be an explicit quota and workspace
 decision, not part of routine verification or CI.
+
+Live verification requires a working Docker runtime and an image pinned by an
+immutable `sha256` digest. The image must already contain every dependency named
+by `verify_argv`; the harness does not install dependencies during verification.
+The container receives only a read-write bind mount of the copied session
+workspace at `/workspace`. It receives no parent environment, no API keys, and
+no network. The root filesystem is read-only, Linux capabilities are dropped,
+privilege escalation is disabled, process count is limited, and only an isolated
+temporary filesystem is writable outside the workspace. Missing Docker or a
+missing verification image fails closed and cannot produce successful evidence.
 
 ## Ledger And Shadow Stream
 
@@ -113,14 +126,16 @@ outcomes; they must not be merged.
 
 ## Gate Decisions
 
-The v0.1 policy evaluates chronological ledger state. A successful verification
-must be newer than the most recent mutation.
+The v0.1 policy evaluates tool completion sequence rather than JSONL append order.
+A successful verification must be newer than the most recent code mutation;
+documentation edits after verified code do not stale that code evidence. Sequence
+tokens stay in harness context and are never exposed in model-visible tool output.
 
 | Condition | Decision |
 | --- | --- |
 | Holdout/OFF arm | `ALLOW` |
 | No observed mutation | `ALLOW` |
-| Fresh successful verification after the latest mutation | `ALLOW` |
+| Fresh successful verification after the latest code mutation | `ALLOW` |
 | QUICK task | `ALLOW` |
 | NORMAL task | `ALLOW` in v0.1 |
 | DEEP task with documentation-only mutations | `ALLOW` |
@@ -150,4 +165,7 @@ Hosted tools and SDK built-ins that bypass the local function-tool lifecycle
 hooks cannot be observed as mutation or verification evidence in v0.1. They
 remain outside the enforcement boundary and must not be registered as though
 the harness can observe them. Ledger locking is process-local, every session
-must own a separate ledger, and final defect grading remains out of band.
+must own a separate ledger, and final defect grading remains out of band. The
+workspace bind mount is intentionally writable so the verifier can inspect the
+model's edits; digest pinning makes the verifier image reproducible, but image
+provenance and vulnerability review remain deployment responsibilities.

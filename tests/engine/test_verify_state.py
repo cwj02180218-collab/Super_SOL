@@ -27,6 +27,7 @@ def deep_changed_ledger(tmp_path: Path) -> Ledger:
             tool=ToolName("write_file"),
             path="src/x.py",
             change_kind=ChangeKind.CODE,
+            sequence=1,
         )
     )
     return ledger
@@ -36,12 +37,15 @@ def test_verification_before_mutation_does_not_satisfy_gate(tmp_path: Path) -> N
     # Given
     ledger = Ledger(tmp_path / "ledger.jsonl")
     ledger.append(ClassifyEvent(mode=TaskMode.DEEP, risk_flags=()))
-    ledger.append(VerificationToolEvent(tool=ToolName("run_verification"), success=True))
+    ledger.append(
+        VerificationToolEvent(tool=ToolName("run_verification"), success=True, sequence=1)
+    )
     ledger.append(
         MutationToolEvent(
             tool=ToolName("write_file"),
             path="src/x.py",
             change_kind=ChangeKind.CODE,
+            sequence=2,
         )
     )
 
@@ -55,7 +59,9 @@ def test_verification_before_mutation_does_not_satisfy_gate(tmp_path: Path) -> N
 def test_successful_verification_after_mutation_allows_stop(tmp_path: Path) -> None:
     # Given
     ledger = deep_changed_ledger(tmp_path)
-    ledger.append(VerificationToolEvent(tool=ToolName("run_verification"), success=True))
+    ledger.append(
+        VerificationToolEvent(tool=ToolName("run_verification"), success=True, sequence=2)
+    )
 
     # When
     decision = decide_stop(ledger.state(), HoldoutArm.ON, retry_limit=2)
@@ -90,6 +96,7 @@ def test_gate_table(
                 tool=ToolName("write_file"),
                 path="changed-artifact",
                 change_kind=change_kind,
+                sequence=1,
             )
         )
 
@@ -103,7 +110,9 @@ def test_gate_table(
 def test_failed_verification_does_not_satisfy_deep_code_gate(tmp_path: Path) -> None:
     # Given
     ledger = deep_changed_ledger(tmp_path)
-    ledger.append(VerificationToolEvent(tool=ToolName("run_verification"), success=False))
+    ledger.append(
+        VerificationToolEvent(tool=ToolName("run_verification"), success=False, sequence=2)
+    )
 
     # When
     decision = decide_stop(ledger.state(), HoldoutArm.ON, retry_limit=2)

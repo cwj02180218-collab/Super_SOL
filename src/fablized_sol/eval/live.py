@@ -109,7 +109,11 @@ def _tool_registry() -> ToolRegistry:
     return registry
 
 
-async def execute_live(run: LiveRun, max_gate_retries: int) -> RunCompleted | RunExhausted:
+async def execute_live(
+    run: LiveRun,
+    max_gate_retries: int,
+    verification_image: str,
+) -> RunCompleted | RunExhausted:
     """Copy one fixture, route once, and invoke the bounded runner."""
     _ = await to_thread.run_sync(shutil.copytree, run.planned.task.fixture, run.workspace)
     bundle = build_instructions(
@@ -132,6 +136,7 @@ async def execute_live(run: LiveRun, max_gate_retries: int) -> RunCompleted | Ru
         registry=_tool_registry(),
         arm=run.planned.arm,
         retry_limit=max_gate_retries,
+        verification_image=verification_image,
     )
     executor = SdkAttemptExecutor(
         context=context,

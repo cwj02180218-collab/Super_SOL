@@ -105,7 +105,7 @@ The stop gate returns one of `allow`, `block`, or `exhausted`.
 | Quick task | allow |
 | No mutation observed | allow |
 | Documentation-only mutations | allow |
-| Successful verification observed after mutation | allow |
+| Successful verification completed after the latest code mutation | allow |
 | Deep task, code mutation, no successful verification | block |
 | Retry limit reached while still blocked | exhausted |
 
@@ -113,8 +113,10 @@ The stop gate returns one of `allow`, `block`, or `exhausted`.
 reason. It is not represented as successful completion. This preserves the
 no-fake-pass invariant and prevents infinite loops.
 
-Verification evidence must be newer than the most recent relevant mutation.
-Running tests before changing code cannot satisfy the gate.
+Verification evidence must have a later workspace-lock completion sequence than
+the most recent code mutation. Documentation changes do not stale verified code.
+Running tests before changing code cannot satisfy the gate even when concurrent
+SDK hooks append their ledger events in the opposite order.
 
 ## Tool Observation
 
@@ -123,6 +125,12 @@ The registry requires every exposed local tool to have an explicit kind:
 and never count as verification. Verification success is supplied by a typed
 tool result contract containing an exit code; free-form output text is not
 parsed to infer success.
+
+Mutation and verification results receive monotonic completion tokens in a
+context-owned identity map. The mandatory hook consumes each token once into the
+ledger; tokens never appear in model-visible tool results. Verification runs only
+inside a digest-pinned Docker image with no network, an empty environment, a
+read-only root filesystem, and the copied workspace as its sole bind mount.
 
 Hosted tools and SDK built-ins that do not pass through local function-tool
 hooks are outside the enforcement boundary in this slice. The CLI must reject a

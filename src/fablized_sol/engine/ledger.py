@@ -54,23 +54,23 @@ class LedgerStateError(Exception):
 
 @dataclass(frozen=True, slots=True)
 class SessionState:
-    """Evidence-relevant state aggregated in ledger order."""
+    """Evidence-relevant state aggregated by observed completion sequence."""
 
     task_mode: TaskMode
     changed_files_seen: bool
     change_kinds: frozenset[ChangeKind]
-    latest_mutation_index: int | None
-    latest_successful_verification_index: int | None
+    latest_code_mutation_sequence: int | None
+    latest_successful_verification_sequence: int | None
     stop_blocks: int
 
     @property
     def has_fresh_verification(self) -> bool:
         """Whether successful verification follows the latest mutation."""
-        if self.latest_mutation_index is None:
+        if self.latest_code_mutation_sequence is None:
             return False
-        if self.latest_successful_verification_index is None:
+        if self.latest_successful_verification_sequence is None:
             return False
-        return self.latest_successful_verification_index > self.latest_mutation_index
+        return self.latest_successful_verification_sequence > self.latest_code_mutation_sequence
 
 
 @final
@@ -108,20 +108,27 @@ class Ledger:
         """Aggregate the ledger into evidence-relevant session state."""
         task_modes: list[TaskMode] = []
         change_kinds: set[ChangeKind] = set()
-        latest_mutation_index: int | None = None
-        latest_verification_index: int | None = None
+        latest_code_mutation_sequence: int | None = None
+        latest_verification_sequence: int | None = None
         stop_blocks = 0
 
-        for index, event in enumerate(self.read()):
+        for event in self.read():
             match event:
                 case ClassifyEvent(mode=mode):
                     task_modes.append(mode)
-                case MutationToolEvent(change_kind=change_kind):
+                case MutationToolEvent(change_kind=change_kind, sequence=sequence):
                     change_kinds.add(change_kind)
-                    latest_mutation_index = index
-                case VerificationToolEvent(success=success):
+                    if change_kind is ChangeKind.CODE:
+                        latest_code_mutation_sequence = max(
+                            latest_code_mutation_sequence or 0,
+                            sequence,
+                        )
+                case VerificationToolEvent(success=success, sequence=sequence):
                     if success:
-                        latest_verification_index = index
+                        latest_verification_sequence = max(
+                            latest_verification_sequence or 0,
+                            sequence,
+                        )
                 case GateFireEvent():
                     stop_blocks += 1
                 case ReadToolEvent() | EvidenceRejectedEvent():
@@ -136,10 +143,10 @@ class Ledger:
             )
         return SessionState(
             task_mode=task_modes[0],
-            changed_files_seen=latest_mutation_index is not None,
+            changed_files_seen=bool(change_kinds),
             change_kinds=frozenset(change_kinds),
-            latest_mutation_index=latest_mutation_index,
-            latest_successful_verification_index=latest_verification_index,
+            latest_code_mutation_sequence=latest_code_mutation_sequence,
+            latest_successful_verification_sequence=latest_verification_sequence,
             stop_blocks=stop_blocks,
         )
 
