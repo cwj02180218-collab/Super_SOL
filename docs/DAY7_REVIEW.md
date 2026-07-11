@@ -1,6 +1,7 @@
 # Super SOL Day 7 Review
 
-Date: 2026-07-11  
+Date: 2026-07-11
+
 Release candidate: `v0.2.0`
 
 ## Decision
