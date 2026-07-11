@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">Super SOL 상황별 사용 가이드</title>
+  <desc id="desc">Super SOL 플러그인과 벤치마크 하네스의 상황별 추천 방식 표</desc>
+  <defs>
+    <style>
+      text { font-family: "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif; fill: #191919; }
+      .title { font-size: 52px; font-weight: 800; letter-spacing: -1px; }
+      .subtitle { font-size: 23px; font-weight: 500; fill: #57534e; }
+      .head { font-size: 21px; font-weight: 700; fill: #57534e; }
+      .cell { font-size: 23px; font-weight: 600; }
+      .detail { font-size: 22px; font-weight: 500; }
+      .chip { font-size: 17px; font-weight: 700; fill: #9a3412; }
+      .footer { font-size: 22px; font-weight: 700; fill: #292524; }
+      .label { font-size: 15px; font-weight: 800; letter-spacing: 1.6px; fill: #c2410c; }
+    </style>
+  </defs>
+  <rect width="1600" height="900" fill="#ffffff"/>
+  <rect x="0" y="0" width="1600" height="12" fill="#f97316"/>
+  <text class="label" x="80" y="70">STOCK CODEX · VERIFICATION HARNESS</text>
+  <text class="title" x="80" y="130"><tspan fill="#ea580c">Super SOL</tspan><tspan> — 상황별 사용 가이드</tspan></text>
+  <text class="subtitle" x="80" y="170">모델을 바꾸지 않고, 작업 뒤 검증을 놓치지 않게 만드는 Codex 하네스</text>
+
+  <rect x="80" y="210" width="1440" height="514" rx="16" fill="#ffffff" stroke="#d6d3d1" stroke-width="2"/>
+  <path d="M96 210h1408a16 16 0 0 1 16 16v50H80v-50a16 16 0 0 1 16-16z" fill="#f5f5f4"/>
+  <line x1="350" y1="210" x2="350" y2="724" stroke="#e7e5e4" stroke-width="2"/>
+  <line x1="720" y1="210" x2="720" y2="724" stroke="#e7e5e4" stroke-width="2"/>
+  <g stroke="#e7e5e4" stroke-width="2">
+    <line x1="80" y1="276" x2="1520" y2="276"/>
+    <line x1="80" y1="350" x2="1520" y2="350"/>
+    <line x1="80" y1="424" x2="1520" y2="424"/>
+    <line x1="80" y1="498" x2="1520" y2="498"/>
+    <line x1="80" y1="572" x2="1520" y2="572"/>
+    <line x1="80" y1="646" x2="1520" y2="646"/>
+  </g>
+  <text class="head" x="108" y="251">상황</text>
+  <text class="head" x="378" y="251">추천 방식</text>
+  <text class="head" x="748" y="251">판단</text>
+
+  <g class="cell">
+    <text x="108" y="323">일상 코딩</text>
+    <text x="378" y="323" fill="#c2410c">●  Super SOL 플러그인</text>
+    <text x="108" y="397">버그 수정</text>
+    <text x="378" y="397" fill="#c2410c">●  디버그 절차</text>
+    <text x="108" y="471">배포 전</text>
+    <text x="378" y="471" fill="#c2410c">●  릴리즈 점검</text>
+    <text x="108" y="545">무료 비교</text>
+    <text x="378" y="545" fill="#c2410c">●  dry-run</text>
+    <text x="108" y="619">실제 벤치마크</text>
+    <text x="378" y="619" fill="#c2410c">△  명시적 승인 후 live</text>
+    <text x="108" y="693">자동 과금 · 모델 전환</text>
+    <text x="378" y="693" fill="#78716c">×  사용하지 않음</text>
+  </g>
+  <g class="detail">
+    <text x="748" y="323">변경 후 검증 누락을 자동으로 확인</text>
+    <text x="748" y="397">재현하고 고친 뒤 같은 실패 경로를 다시 검사</text>
+    <text x="748" y="471">테스트, 보안, 공급망, 재현성을 함께 확인</text>
+    <text x="748" y="545">모델 호출과 API 과금 없이 실행 계획만 점검</text>
+    <text x="748" y="619">고정된 컨테이너와 기록된 조건으로만 실행</text>
+    <text x="748" y="693">과금과 모델 선택은 사용자가 직접 결정</text>
+  </g>
+
+  <g>
+    <rect x="80" y="760" width="220" height="44" rx="22" fill="#fff7ed" stroke="#fed7aa"/>
+    <rect x="318" y="760" width="190" height="44" rx="22" fill="#fff7ed" stroke="#fed7aa"/>
+    <rect x="526" y="760" width="264" height="44" rx="22" fill="#fff7ed" stroke="#fed7aa"/>
+    <rect x="808" y="760" width="294" height="44" rx="22" fill="#fff7ed" stroke="#fed7aa"/>
+    <text class="chip" x="105" y="788">198 tests passed</text>
+    <text class="chip" x="345" y="788">93% coverage</text>
+    <text class="chip" x="551" y="788">digest-pinned verifier</text>
+    <text class="chip" x="833" y="788">no automatic billable calls</text>
+    <text x="1122" y="788" font-size="15" font-weight="600" fill="#78716c">v0.3.0 검토 스냅샷</text>
+  </g>
+  <line x1="80" y1="834" x2="1520" y2="834" stroke="#e7e5e4"/>
+  <text class="footer" x="80" y="870">모델이 아니라, 일을 끝까지 검증하게 만드는 하네스</text>
+  <text x="1520" y="870" text-anchor="end" font-size="18" font-weight="700" fill="#ea580c">github.com/cwj02180218-collab/Super_SOL</text>
+</svg>

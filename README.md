@@ -1,7 +1,7 @@
 # Super SOL
 
-[![CI](https://github.com/cuj0218/Super-SOL/actions/workflows/ci.yml/badge.svg)](https://github.com/cuj0218/Super-SOL/actions/workflows/ci.yml)
-[![Container security](https://github.com/cuj0218/Super-SOL/actions/workflows/container-security.yml/badge.svg)](https://github.com/cuj0218/Super-SOL/actions/workflows/container-security.yml)
+[![CI](https://github.com/cwj02180218-collab/Super_SOL/actions/workflows/ci.yml/badge.svg)](https://github.com/cwj02180218-collab/Super_SOL/actions/workflows/ci.yml)
+[![Container security](https://github.com/cwj02180218-collab/Super_SOL/actions/workflows/container-security.yml/badge.svg)](https://github.com/cwj02180218-collab/Super_SOL/actions/workflows/container-security.yml)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -15,6 +15,8 @@ Super SOL은 두 가지를 한 저장소에 담습니다.
 Codex 작업 자체의 사용량은 그대로 발생하므로 비용 0을 보장한다는 뜻은 아닙니다. Super SOL은
 새 모델이나 온톨로지가 아니라, 실제 작업과 검증 누락을 관리하는 품질관리 하네스입니다.
 
+![Super SOL 상황별 사용 가이드](docs/assets/super-sol-guide-wide.png)
+
 ## 초보자용 5분 설치
 
 먼저 macOS/Linux는 `/usr/bin/python3 --version`, Windows는 `py -3 --version`으로 Python
@@ -22,10 +24,10 @@ Codex 작업 자체의 사용량은 그대로 발생하므로 비용 0을 보장
 `/usr/bin/python3`가 없거나 3.9보다 낮으면 훅을 승인하지 말고 운영체제 Python을 먼저
 업데이트합니다. 벤치마크에는 별도로 Python 3.12가 필요합니다.
 
-정식 v0.3.0 배포본은 버전을 고정해 설치합니다.
+정식 v0.3.1 배포본은 버전을 고정해 설치합니다.
 
 ```bash
-codex plugin marketplace add cuj0218/Super-SOL --ref v0.3.0
+codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.3.1
 codex plugin add super-sol@super-sol
 codex plugin list
 ```
@@ -53,7 +55,7 @@ codex plugin list
 ```bash
 codex plugin remove super-sol@super-sol
 codex plugin marketplace remove super-sol
-codex plugin marketplace add cuj0218/Super-SOL --ref vX.Y.Z
+codex plugin marketplace add cwj02180218-collab/Super_SOL --ref vX.Y.Z
 codex plugin add super-sol@super-sol
 codex plugin list
 ```
