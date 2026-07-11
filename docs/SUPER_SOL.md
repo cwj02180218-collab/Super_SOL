@@ -1,13 +1,13 @@
 # Super Sol Profile
 
-Super Sol is the merged operating profile for `fablized-sol` and
-`cuj0218/GPT.C`.
+Super SOL is the merged operating profile derived from the original
+`fablized-sol` harness and `cuj0218/GPT.C`.
 
-It keeps GPT-5.5 plus `fablized-sol` as the measured product surface. GPT-5.6
-Sol uses the same adapter only as a controlled model comparator, while GPT.C
-plus Codex CLI remains a separate operational reference whose scores are never
+It keeps GPT-5.5 plus Super SOL as the measured product surface. GPT-5.6 Sol
+uses the same adapter only as a controlled model comparator, while GPT.C plus
+Codex CLI remains a separate operational reference whose scores are never
 pooled with this benchmark. GPT.C's wrapper and ontology inform procedure
-choices; `fablized-sol` owns the stricter benchmark evidence boundary.
+choices; Super SOL owns the stricter benchmark evidence boundary.
 
 ## Adopt Now
 
@@ -32,7 +32,7 @@ are not completion evidence in the benchmark harness.
 
 - Treating command output text or model prose as verification credit.
 - Treating fail-open parser or verifier errors as successful completion.
-- Mixing GPT.C wrapper runs and `fablized-sol` verifier runs into one score.
+- Mixing GPT.C wrapper runs and Super SOL verifier runs into one score.
 
 ## Day 0 Execution Path
 

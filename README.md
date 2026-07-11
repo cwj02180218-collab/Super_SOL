@@ -12,10 +12,10 @@ capability ceiling.
 
 ## Why Super SOL
 
-This repository now carries a Super Sol profile that merges the useful GPT.C
-Codex wrapper framing with this harness's stricter evidence boundary. In that
-profile, `fablized-sol` remains the measured product surface and GPT.C remains
-the Codex operational reference surface. Dry-run and live shadow streams include
+This repository carries a Super SOL profile that merges the useful GPT.C Codex
+wrapper framing with this harness's stricter evidence boundary. Super SOL is the
+measured product surface and GPT.C remains the Codex operational reference
+surface. Dry-run and live shadow streams include
 the profile name and version on every planned run so results can be traced back
 without exposing measurement labels to the model.
 
@@ -40,7 +40,7 @@ The harness judges observed tool execution rather than claims in generated text.
 Deterministic code owns enforcement, experimental guidance is routed only when a
 task signal matches, and holdout labels stay outside model-visible context.
 
-This v0.1 slice does not automatically grade defects, inspect hidden reasoning,
+This v0.2 release does not automatically grade defects, inspect hidden reasoning,
 support distributed ledgers, treat arbitrary remote tools as evidence, or infer
 statistical lift from an initial small sample.
 
@@ -191,7 +191,7 @@ outcomes; they must not be merged.
 
 ## Gate Decisions
 
-The v0.1 policy evaluates tool completion sequence rather than JSONL append order.
+The current policy evaluates tool completion sequence rather than JSONL append order.
 A successful verification must be newer than the most recent code mutation;
 documentation edits after verified code do not stale that code evidence. Sequence
 tokens stay in harness context and are never exposed in model-visible tool output.

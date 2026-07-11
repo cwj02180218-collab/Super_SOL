@@ -10,7 +10,7 @@ Use the crossover design so every task is run in both harness arms for both
 models. The four-task pilot therefore plans sixteen isolated sessions.
 
 ```bash
-uv run fablized-sol-eval \
+uv run super-sol-eval \
   --tasks eval/tasks.example.json \
   --output-dir .fablized/day1 \
   --run-id day1-crossover \
@@ -58,7 +58,7 @@ Missing or duplicate evidence fails the report instead of lowering the
 denominator silently.
 
 ```bash
-uv run fablized-sol-report \
+uv run super-sol-report \
   --events .fablized/live/day3-live/events.jsonl \
   --grades .fablized/live/day3-live/grades.json \
   --output .fablized/live/day3-live/report.json

@@ -36,7 +36,7 @@ docker pull "$GRADER_IMAGE"
 Then run the pilot:
 
 ```bash
-uv run fablized-sol-eval \
+uv run super-sol-eval \
   --tasks eval/tasks.example.json \
   --output-dir .fablized/live \
   --run-id day3-live \
