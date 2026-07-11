@@ -45,6 +45,7 @@ def test_console_scripts_are_registered() -> None:
         "super-sol-eval",
         "super-sol-report",
         "super-sol-container-audit",
+        "super-sol-codex-ab",
     }
 
     # When its public console-script metadata is selected
