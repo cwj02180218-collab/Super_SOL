@@ -285,11 +285,18 @@ def load_completed_samples(events: Path) -> tuple[CodexABSample, ...]:
         if not isinstance(slot_id, str) or slot_id in seen_slots:
             raise CodexABReportError("complete lattice contains duplicate completed slots")
         seen_slots.add(slot_id)
+        arm = event.get("arm")
+        if not isinstance(arm, str):
+            raise CodexABReportError("completed sample arm is missing")
+        try:
+            parsed_arm = CodexArm(arm)
+        except ValueError as error:
+            raise CodexABReportError("completed sample arm is invalid") from error
         sample = CodexABSample.model_validate(
             {
                 "task_id": event.get("task_id"),
                 "repetition": event.get("repetition"),
-                "arm": event.get("arm"),
+                "arm": parsed_arm,
                 "score": event.get("score"),
                 "full_pass": event.get("full_pass"),
                 "total_tokens": event.get("total_tokens"),

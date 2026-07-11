@@ -1,7 +1,10 @@
+import json
 from collections.abc import Mapping
+from pathlib import Path
 from typing import TypedDict
 
 import pytest
+from typer.testing import CliRunner
 
 from fablized_sol.eval.codex_cleanroom import CodexArm
 from fablized_sol.measure.codex_ab import (
@@ -9,7 +12,16 @@ from fablized_sol.measure.codex_ab import (
     build_candidate_report,
     finalize_promotion,
 )
-from fablized_sol.measure.codex_ab_models import CodexABAudit, CodexABSample
+from fablized_sol.measure.codex_ab import (
+    app as report_app,
+)
+from fablized_sol.measure.codex_ab_models import (
+    CodexABAudit,
+    CodexABSample,
+    PromotionCandidate,
+)
+
+_RUNNER = CliRunner()
 
 
 class _SampleKwargs(TypedDict, total=False):
@@ -135,3 +147,49 @@ def test_failed_independent_reproduction_blocks_promotion() -> None:
     assert decision.promote is False
     audit_gate = next(gate for gate in decision.gates if gate.name == "independent_audit")
     assert audit_gate.passed is False
+
+
+def test_report_cli_loads_run_provenance_and_writes_nonpromoted_candidate(
+    tmp_path: Path,
+) -> None:
+    events = tmp_path / "events.jsonl"
+    rows: list[dict[str, object]] = []
+    for index, sample in enumerate(samples()):
+        payload: dict[str, object] = {
+            "task_id": sample.task_id,
+            "repetition": sample.repetition,
+            "arm": sample.arm,
+            "score": sample.score,
+            "full_pass": sample.full_pass,
+            "total_tokens": sample.total_tokens,
+            "wall_time_seconds": sample.wall_time_seconds,
+            "run_digest": sample.run_digest,
+            "task_digest": sample.task_digest,
+        }
+        rows.append({"type": "slot.completed", "slot_id": f"slot-{index}", **payload})
+    _ = events.write_text(
+        "\n".join(json.dumps(row) for row in rows) + "\n",
+        encoding="utf-8",
+    )
+    _ = (tmp_path / "run.json").write_text(
+        json.dumps(
+            {
+                "identity": {"codex_binary_digest": "d" * 64, "plugin_ref": "e" * 40},
+                "raw_home": {"tree_digest": "f" * 64},
+                "lean_home": {"tree_digest": "0" * 64},
+            }
+        ),
+        encoding="utf-8",
+    )
+    output = tmp_path / "candidate.json"
+
+    result = _RUNNER.invoke(
+        report_app,
+        ["--events", str(events), "--output", str(output), "--seed", "20260711"],
+    )
+
+    assert result.exit_code == 0, result.output
+    candidate = PromotionCandidate.model_validate_json(output.read_text(encoding="utf-8"))
+    assert candidate.statistical_candidate is True
+    assert candidate.awaiting_independent_audit is True
+    assert output.with_suffix(".md").is_file()

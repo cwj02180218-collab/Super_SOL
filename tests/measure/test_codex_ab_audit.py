@@ -1,11 +1,16 @@
 import json
 from pathlib import Path
 
+from typer.testing import CliRunner
+
 from fablized_sol.measure.codex_ab import build_candidate_report
+from fablized_sol.measure.codex_ab_audit import app as audit_app
 from fablized_sol.measure.codex_ab_audit import audit_codex_ab
-from fablized_sol.measure.codex_ab_models import CodexABAudit
+from fablized_sol.measure.codex_ab_models import CodexABAudit, PromotionDecision
 
 from .test_codex_ab import samples
+
+_RUNNER = CliRunner()
 
 
 def test_auditor_reproduces_aggregates_and_detects_hidden_material(tmp_path: Path) -> None:
@@ -35,6 +40,27 @@ def test_auditor_reproduces_aggregates_and_detects_hidden_material(tmp_path: Pat
         leakage_findings=0,
         aggregate_reproduced=True,
     )
+
+    audit_output = tmp_path / "audit.json"
+    final_output = tmp_path / "decision.json"
+    result = _RUNNER.invoke(
+        audit_app,
+        [
+            "--events",
+            str(events),
+            "--candidate",
+            str(candidate),
+            "--artifact-root",
+            str(artifacts),
+            "--audit-output",
+            str(audit_output),
+            "--final-output",
+            str(final_output),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    decision = PromotionDecision.model_validate_json(final_output.read_text(encoding="utf-8"))
+    assert decision.promote is True
 
     hidden = artifacts / "hidden-tests.py"
     _ = hidden.write_text("def test_private_contract(): assert True\n", encoding="utf-8")
