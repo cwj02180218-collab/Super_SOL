@@ -2,7 +2,9 @@
 
 Date: 2026-07-11
 
-Release candidate: `v0.3.0`
+Stable release: `v0.3.1`
+
+Development candidate: `0.4.0-rc1`
 
 ## Decision
 
@@ -14,10 +16,12 @@ Release candidate: `v0.3.0`
 | v3 benchmark contract | **GO** | Run and session identities are recomputed from task, runtime, lockfile, model, effort, arm, and image inputs |
 | New v3 live benchmark claim | **HOLD** | No billable v3 live run was authorized for this release |
 | Fable parity or superiority | **HOLD** | The only live pilot is a frozen v0.2.1 four-task historical artifact |
+| v0.4 lean default promotion | **HOLD** | Gate 0 is local-only; Gate 1 and the sealed unseen Gate 2 have not run |
 
-Super SOL v0.3.0 is releasable as a beginner-friendly Codex quality plugin and an optional
-experimental benchmark harness. It is not evidence that a model became smarter, that Super SOL beats
-Fable, or that the old pilot is reproducible under the new v3 schema.
+Super SOL v0.3.1 remains the stable beginner-friendly Codex quality plugin and optional experimental
+benchmark harness. The v0.4 lean branch is a development candidate only. Its provisional predecessor
+regressed against raw Codex and its clean-room confirmatory holdout is not complete, so it is not
+evidence that a model became smarter or that Super SOL beats Fable.
 
 ## Seven-day trace
 
@@ -70,13 +74,17 @@ packaging, and hands-on QA. Their first pass found concrete blockers in Python c
 hook command parsing, provenance validation, interval reporting, and release documentation. Each
 accepted finding was fixed and returned to the same lane for recheck before release.
 
+For v0.4, independent review is encoded as a separate raw-record auditor. A statistical candidate
+cannot set final `promote=true`; the auditor must independently reproduce the core aggregates and find
+zero missing public artifacts and zero hidden-test or credential leakage.
+
 ## Evidence boundary
 
 The directory `benchmarks/day3-contract-v2` is retained only as a historical v0.2.1 snapshot. Its raw
 events, grades, exact preregistration, and v3 run identity do not exist, so its missing fields are never
 guessed and it cannot be parsed as v3 evidence.
 
-A new performance claim requires a separately authorized v3 live run that preserves the complete
+A new performance claim requires the separately authorized clean-room Gate 2 run that preserves the complete
 event stream, external grade file, exact task manifest and fixtures, preregistration commit, image
-references, and generated report. Broad parity or routing claims additionally require at least 50
-completed crossover task groups and a held-out grader pack.
+references, candidate report, independent audit, and final decision. Gate 1 tuning results cannot be
+used for a public performance claim.

@@ -18,7 +18,7 @@ def test_plugin_manifest_and_marketplace_are_release_ready() -> None:
     marketplace = _json(REPO_ROOT / ".agents" / "plugins" / "marketplace.json")
 
     assert manifest["name"] == "super-sol"
-    assert manifest["version"] == "0.3.1"
+    assert manifest["version"] == "0.4.0-rc1"
     assert manifest["repository"] == "https://github.com/cwj02180218-collab/Super_SOL"
     assert "mcpServers" not in manifest
     assert "apps" not in manifest
@@ -34,7 +34,7 @@ def test_plugin_manifest_and_marketplace_are_release_ready() -> None:
 def test_hook_config_registers_only_local_python_commands() -> None:
     hooks = _json(PLUGIN_ROOT / "hooks" / "hooks.json")["hooks"]
     assert isinstance(hooks, dict)
-    assert set(hooks) == {"SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop"}
+    assert set(hooks) == {"UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop"}
     encoded = json.dumps(hooks)
     assert "$PLUGIN_ROOT/hooks/super_sol_hook.py" in encoded
     assert "commandWindows" in encoded
@@ -43,7 +43,7 @@ def test_hook_config_registers_only_local_python_commands() -> None:
     assert "https://" not in encoded
 
 
-def test_skill_is_concise_implicit_and_stock_codex_only() -> None:
+def test_skill_is_concise_explicit_and_stock_codex_only() -> None:
     skill = (PLUGIN_ROOT / "skills" / "super-sol" / "SKILL.md").read_text(encoding="utf-8")
     metadata = (PLUGIN_ROOT / "skills" / "super-sol" / "agents" / "openai.yaml").read_text(
         encoding="utf-8"
@@ -51,7 +51,7 @@ def test_skill_is_concise_implicit_and_stock_codex_only() -> None:
 
     assert "[TODO:" not in skill
     assert len(skill.splitlines()) < 120
-    assert "allow_implicit_invocation: true" in metadata
+    assert "allow_implicit_invocation: false" in metadata
     lowered = skill.lower()
     assert "lazycodex" not in lowered
     assert "omo" not in lowered

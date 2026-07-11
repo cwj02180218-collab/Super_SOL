@@ -45,6 +45,9 @@ def test_console_scripts_are_registered() -> None:
         "super-sol-eval",
         "super-sol-report",
         "super-sol-container-audit",
+        "super-sol-codex-ab",
+        "super-sol-codex-ab-report",
+        "super-sol-codex-ab-audit",
     }
 
     # When its public console-script metadata is selected
@@ -78,7 +81,7 @@ def test_package_exports_version() -> None:
     version = fablized_sol.__version__
 
     # Then the package exports the distribution version
-    assert version == "0.3.1"
+    assert version == "0.4.0rc1"
 
 
 def test_sdist_uses_an_explicit_source_allowlist() -> None:
@@ -122,3 +125,6 @@ def test_readme_exposes_beginner_plugin_and_current_model_contract() -> None:
     assert "super-sol-container-audit" in readme
     assert "https://openai.com/index/gpt-5-6/" in readme
     assert "GPT-5.6 Sol is a limited preview" not in readme
+    assert "v0.3.1 remains the stable release" in readme
+    assert "super-sol-codex-ab" in readme
+    assert "unseen holdout" in readme

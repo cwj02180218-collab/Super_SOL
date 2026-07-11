@@ -59,6 +59,23 @@ def test_unapproved_live_eval_and_direct_api_are_denied(run_hook: HookRunner) ->
         assert specific["permissionDecision"] == "deny"
 
 
+def test_unapproved_cleanroom_codex_ab_is_denied(run_hook: HookRunner) -> None:
+    _prime(run_hook)
+    result = run_hook(
+        hook_input(
+            "PreToolUse",
+            tool_name="Bash",
+            tool_use_id="pre-cleanroom",
+            tool_input={"command": "uv run super-sol-codex-ab --tasks tasks.json"},
+        )
+    )
+
+    assert result.stdout is not None
+    specific = result.stdout["hookSpecificOutput"]
+    assert isinstance(specific, dict)
+    assert specific["permissionDecision"] == "deny"
+
+
 @pytest.mark.parametrize(
     "command",
     [

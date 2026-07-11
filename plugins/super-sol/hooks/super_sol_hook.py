@@ -7,7 +7,7 @@ import re
 import shlex
 import sys
 import time
-from typing import cast
+from typing import Final, cast
 
 from super_sol_state import (  # pyright: ignore[reportImplicitRelativeImport]
     HookInputError,
@@ -71,6 +71,10 @@ _ACTION_SIGNALS = (
     "수정",
     "추가",
 )
+CONTRACT_SWEEP: Final[str] = (
+    "Silently map requirements to code and one boundary. After tests pass, re-read once for "
+    "ownership, input, state, and failure semantics. Do not rerun tests."
+)
 _SHELL_OPERATORS = {"&", "&&", ";", "|", "||"}
 _UV_RUN_VALUE_OPTIONS = {
     "--allow-insecure-host",
@@ -122,7 +126,7 @@ _UV_RUN_VALUE_OPTIONS = {
     "-p",
     "-w",
 }
-_EVAL_COMMAND_NAMES = r"(?:super-sol-eval|fablized-sol-eval)"
+_EVAL_COMMAND_NAMES = r"(?:super-sol-eval|fablized-sol-eval|super-sol-codex-ab)"
 _EVAL_INVOCATION_PATTERN = (  # noqa: UP032 - avoids pyright implicit-concat error
     r"^\s*(?:(?:\S*/)?{0}|uv\s+run(?:\s+--with\s+\S+)?\s+(?:\S*/)?{0})(?:\s|$)"
 ).format(_EVAL_COMMAND_NAMES)
@@ -161,17 +165,7 @@ def _billable_authorized(prompt: str) -> bool:
     return any(confirmation in lines for confirmation in _BILLABLE_CONFIRMATIONS)
 
 
-def _session_start() -> dict[str, object]:
-    text = (
-        "Super SOL은 현재 Codex 작업 안에서만 동작하며 추가 과금 API를 자동 호출하지 않는다. "
-        "행동을 바꾸면 가장 좁은 검증을 실행하고 결과를 읽는다. "
-        "검증 누락 시 경고만 하며 모델을 자동으로 다시 호출하지 않는다. "
-        "초보자가 이해할 말로 결론부터 설명한다."
-    )
-    return _context("SessionStart", text)
-
-
-def _user_prompt(payload: dict[str, object]) -> dict[str, object]:
+def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:
     prompt = payload.get("prompt")
     if not isinstance(prompt, str):
         return _warning("요청 내용을 읽지 못해 자동 절차 없이 계속합니다.")
@@ -191,13 +185,14 @@ def _user_prompt(payload: dict[str, object]) -> dict[str, object]:
                 "schema_version": _SCHEMA_VERSION,
             },
         )
-    contexts = {
-        "conversation": "Answer in plain language first. Do not edit files unless the user asks.",
-        "action": "요청 범위 안에서 직접 작업하고, 변경 후 가장 좁은 검증 결과를 확인한다.",
-        "debug": "문제를 먼저 재현하고 원인을 고친 뒤 같은 실패 경로와 관련 테스트를 확인한다.",
-        "release": "배포 경로, 보안, 재현성, 테스트를 확인하고 관찰한 결과와 남은 위험을 구분한다.",
-    }
-    return _context("UserPromptSubmit", contexts[profile])
+    if profile == "conversation":
+        return None
+    if profile in {"action", "debug"}:
+        return _context("UserPromptSubmit", CONTRACT_SWEEP)
+    return _context(
+        "UserPromptSubmit",
+        "배포 경로, 보안, 재현성, 테스트를 확인하고 관찰한 결과와 남은 위험을 구분한다.",
+    )
 
 
 def _deny(reason: str) -> dict[str, object]:
@@ -237,7 +232,7 @@ def _simple_argv(command: str) -> tuple[str, ...] | None:
 
 def _eval_command(argv: tuple[str, ...]) -> bool:
     executable, _arguments = _command_parts(argv)
-    return executable in {"super-sol-eval", "fablized-sol-eval"}
+    return executable in {"super-sol-eval", "fablized-sol-eval", "super-sol-codex-ab"}
 
 
 def _command_parts(argv: tuple[str, ...]) -> tuple[str, tuple[str, ...]]:
@@ -396,8 +391,6 @@ def _stop(payload: dict[str, object]) -> dict[str, object]:
 
 def _dispatch(payload: dict[str, object]) -> dict[str, object] | None:
     event = payload.get("hook_event_name")
-    if event == "SessionStart":
-        return _session_start()
     if event == "UserPromptSubmit":
         return _user_prompt(payload)
     if event == "PreToolUse":
