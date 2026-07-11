@@ -17,6 +17,47 @@ Codex 작업 자체의 사용량은 그대로 발생하므로 비용 0을 보장
 
 ![Super SOL 상황별 사용 가이드](docs/assets/super-sol-guide-wide.png)
 
+## v0.4 Lean 개발 후보
+
+**v0.3.1 remains the stable release.** 현재 브랜치의 `0.4.0rc1`은 성능이 입증된 정식
+업데이트가 아니라 비열등성 검증을 위한 개발 후보입니다. 일상 설치 명령은 아래처럼 계속
+`v0.3.1`을 가리키며, unseen holdout 검증이 끝나기 전에는 v0.4 성능 우위나 Fable parity를
+주장하지 않습니다.
+
+26개 유효 슬롯의 잠정 실험에서 Codex raw는 평균 94.0점, Super SOL은 85.4점이었고,
+Super SOL은 평균 약 98.9k token과 23.7초를 더 사용했습니다. T105~T107에서 실제 품질
+퇴행이 관측됐습니다. 다만 raw arm만 `--ignore-user-config`를 사용하고 Super SOL arm은 사용자
+전역 플러그인을 함께 불러와, 이 수치는 중요한 부정 신호이지만 플러그인 단독 효과의 깨끗한
+추정치는 아닙니다. 전체 내용은
+[`BENCHMARK_POSTMORTEM_0.3.1.md`](docs/BENCHMARK_POSTMORTEM_0.3.1.md)에 공개합니다.
+
+v0.4 후보는 `SessionStart` 안내와 암묵적 스킬 호출을 제거하고, 실제 작업·디버깅 요청에만
+154자 contract sweep을 한 번 전달합니다. 설명 요청에는 추가 model context가 없습니다.
+별도의 clean-room 명령은 raw/lean 임시 `CODEX_HOME`을 같은 조건으로 만들고 Super SOL
+플러그인 하나만 차이 나도록 검사합니다.
+
+```bash
+uv run super-sol-codex-ab \
+  --tasks eval/tasks.example.json \
+  --output-dir .fablized/codex-ab \
+  --run-id v04-gate0-dry \
+  --codex-binary "$(command -v codex)" \
+  --model gpt-5.6-sol \
+  --effort xhigh \
+  --repetitions 2 \
+  --plugin-source . \
+  --plugin-ref "$(git rev-parse HEAD)" \
+  --dry-run
+```
+
+이 dry-run은 모델과 Docker를 호출하지 않지만, 임시 홈 설치·플러그인 중복·Git 커밋 고정·
+provenance를 실제로 검사합니다. live 모드는 ChatGPT/Codex 인증 파일, digest-pinned grader
+image, `--confirm-billable`, 그리고 현재 요청의 별도 승인 문구가 모두 필요합니다. 실행기는
+모델을 자동 재시도하지 않으며 429·timeout·parser·grader 오류를 0점이 아닌 결측으로 기록합니다.
+Gate 1의 T105~T108은 튜닝 회귀 세트일 뿐이고, 성능 주장은 봉인된 T109~T116 unseen holdout과
+독립 감사까지 통과한 경우에만 가능합니다. 사전등록은
+[`CODEX_AB_PREREGISTRATION.md`](docs/CODEX_AB_PREREGISTRATION.md)에 있습니다.
+
 ## 초보자용 5분 설치
 
 먼저 macOS/Linux는 `/usr/bin/python3 --version`, Windows는 `py -3 --version`으로 Python
@@ -35,7 +76,7 @@ codex plugin list
 태그 전 개발본만 확인할 때는 `--ref main`을 사용합니다. ChatGPT/Codex 데스크톱 앱을 다시
 열고 새 작업을 시작한 뒤 `/hooks`를 확인합니다. macOS/Linux에서는 설치된 Super SOL 폴더의
 `hooks/super_sol_hook.py`를 `/usr/bin/python3`로 실행하고, Windows에서는 같은 파일을 `py -3`로
-실행해야 합니다. 시작·요청 입력·Bash/편집·종료 이벤트 외의 경로나 명령이 보이면 승인하지
+실행해야 합니다. 요청 입력·Bash/편집·종료 이벤트 외의 경로나 명령이 보이면 승인하지
 마세요. 훅 내용이 업데이트되면 다시 승인하라는 안내가 나올 수 있습니다.
 `--dangerously-bypass-hook-trust`는 일반 설치 절차로 권장하지 않습니다.
 
@@ -46,7 +87,8 @@ codex plugin list
 ```
 
 플러그인은 요청을 로컬 문자열 규칙으로 `설명`, `일반 작업`, `디버깅`, `배포 점검` 중
-하나로 분류합니다. 프롬프트 원문, 명령, 도구 출력, 모델 출력, 환경변수는 저장하지 않습니다.
+하나로 분류합니다. 설명에는 context를 추가하지 않고, 일반 작업과 디버깅에는 짧은 contract
+sweep을 한 번만 전달합니다. 프롬프트 원문, 명령, 도구 출력, 모델 출력, 환경변수는 저장하지 않습니다.
 `apply_patch`, `Edit`, `Write` 변경을 관찰했는데 그 뒤 인식 가능한 성공 검증이 없으면 종료 시
 경고합니다. 추가 Codex 사용량을 자동으로 만들지 않도록 추가 모델 응답을 자동 생성하지는 않습니다.
 

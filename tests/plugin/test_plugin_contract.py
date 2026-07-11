@@ -18,7 +18,7 @@ def test_plugin_manifest_and_marketplace_are_release_ready() -> None:
     marketplace = _json(REPO_ROOT / ".agents" / "plugins" / "marketplace.json")
 
     assert manifest["name"] == "super-sol"
-    assert manifest["version"] == "0.3.1"
+    assert manifest["version"] == "0.4.0-rc1"
     assert manifest["repository"] == "https://github.com/cwj02180218-collab/Super_SOL"
     assert "mcpServers" not in manifest
     assert "apps" not in manifest
