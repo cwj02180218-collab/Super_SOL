@@ -20,6 +20,7 @@ from fablized_sol.engine.events import (
 from fablized_sol.engine.ledger import Ledger
 from fablized_sol.engine.models import HoldoutArm, SessionId, ToolKind, ToolName
 from fablized_sol.eval.manifest import ReasoningEffort, TaskSpec
+from fablized_sol.eval.provenance import RunIdentity
 from fablized_sol.harness.registry import ToolRegistry, ToolSpec
 from fablized_sol.harness.router import InstructionRequest, build_instructions
 from fablized_sol.harness.run import (
@@ -62,6 +63,7 @@ class PlannedRun:
     openai_sdk_version: str
     verification_image: str
     grader_image: str
+    run_identity: RunIdentity
 
 
 @final

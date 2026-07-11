@@ -74,6 +74,32 @@ def test_dry_run_is_allowed_without_billing_authorization(run_hook: HookRunner) 
     assert result.stdout is None
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        "rg super-sol-eval README.md",
+        "echo super-sol-eval",
+        "ls docs/super-sol-eval-notes.md",
+    ],
+)
+def test_non_eval_commands_that_mention_executable_are_allowed(
+    run_hook: HookRunner,
+    command: str,
+) -> None:
+    _prime(run_hook)
+    result = run_hook(
+        hook_input(
+            "PreToolUse",
+            tool_name="Bash",
+            tool_use_id="pre-mention",
+            tool_input={"command": command},
+        )
+    )
+
+    assert result.returncode == 0
+    assert result.stdout is None
+
+
 def test_authorized_live_eval_still_requires_confirmation_flag(run_hook: HookRunner) -> None:
     _prime(run_hook, "SUPER SOL 유료 실행 승인")
     without_flag = run_hook(
@@ -161,6 +187,18 @@ def test_fresh_structured_verification_allows_stop(run_hook: HookRunner) -> None
     assert _stop(run_hook) == {"continue": True}
 
 
+@pytest.mark.parametrize(
+    "command",
+    ["python3 -m pytest -q", "python -m mypy src", "python3 -m basedpyright"],
+)
+def test_python_module_verification_allows_stop(run_hook: HookRunner, command: str) -> None:
+    _prime(run_hook, "버그를 수정해줘")
+    _post_tool(run_hook, "apply_patch", "*** Begin Patch", {}, "mutation-python")
+    _post_tool(run_hook, "Bash", command, {"exit_code": 0}, "verify-python")
+
+    assert _stop(run_hook) == {"continue": True}
+
+
 def test_stale_or_failed_verification_does_not_count(run_hook: HookRunner) -> None:
     _prime(run_hook)
     _post_tool(run_hook, "Bash", "uv run pytest -q", {"exit_code": 0}, "verify-old")
@@ -176,3 +214,10 @@ def test_conversation_profile_never_forces_verification(run_hook: HookRunner) ->
     _post_tool(run_hook, "apply_patch", "*** Begin Patch", {}, "mutation-four")
 
     assert _stop(run_hook) == {"continue": True}
+
+
+def test_mixed_explanation_and_edit_prompt_requires_verification(run_hook: HookRunner) -> None:
+    _prime(run_hook, "Explain this module and update README.md with the explanation")
+    _post_tool(run_hook, "apply_patch", "*** Begin Patch", {}, "mutation-mixed")
+
+    assert "확인되지" in str(_stop(run_hook)["systemMessage"])

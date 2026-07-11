@@ -68,6 +68,7 @@ def _planned_runs(options: EvalOptions, manifest: TaskManifest) -> tuple[Planned
                 openai_sdk_version=provenance.openai_sdk_version,
                 verification_image=provenance.verification_image,
                 grader_image=provenance.grader_image,
+                run_identity=provenance.identity,
             )
             for arm in arms
             for model, effort in model_efforts
@@ -139,6 +140,7 @@ async def run_evaluation(options: EvalOptions) -> int:  # noqa: C901, PLR0912
                 openai_sdk_version=item.openai_sdk_version,
                 verification_image=item.verification_image,
                 grader_image=item.grader_image,
+                run_identity=item.run_identity,
             )
         )
     if options.dry_run:

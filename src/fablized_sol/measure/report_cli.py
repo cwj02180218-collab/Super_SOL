@@ -12,6 +12,10 @@ from fablized_sol.measure.report_models import BenchmarkReport, ReportInputError
 def _markdown(report: BenchmarkReport) -> str:
     baseline = report.baseline_model.replace("|", "\\|").replace("\n", " ")
     reference = report.reference_model.replace("|", "\\|").replace("\n", " ")
+    wall_time_header = "Wall-time delta (95% CI)"
+    paired_header = (
+        f"| Model | Effort | Quality delta (95% CI) | Token delta (95% CI) | {wall_time_header} |"
+    )
     lines = [
         "# Super Sol Day 3 Report",
         "",
@@ -19,6 +23,7 @@ def _markdown(report: BenchmarkReport) -> str:
         f"Reference: `{reference}` (`{report.reference_effort}`)",
         f"Run digest: `{report.run_digest}`  ",
         f"Quality interval: `{report.quality_interval_method}`",
+        f"Resource interval: `{report.resource_interval_method}`",
         "",
         "| Model | Effort | Arm | Quality | Tokens | Tokens / good run | Mean seconds |",
         "| --- | --- | --- | ---: | ---: | ---: | ---: |",
@@ -40,8 +45,8 @@ def _markdown(report: BenchmarkReport) -> str:
             "",
             "## Paired ON-minus-OFF effects",
             "",
-            "| Model | Effort | Quality delta (95% CI) | Token delta (95% CI) |",
-            "| --- | --- | ---: | ---: |",
+            paired_header,
+            "| --- | --- | ---: | ---: | ---: |",
         ]
     )
     for effect in report.paired_effects:
@@ -50,7 +55,9 @@ def _markdown(report: BenchmarkReport) -> str:
             f"| {model} | {effect.reasoning_effort} | {effect.quality_delta:.1%} "
             f"[{effect.quality_ci_low:.1%}, {effect.quality_ci_high:.1%}] | "
             f"{effect.mean_token_delta:.1f} "
-            f"[{effect.token_ci_low:.1f}, {effect.token_ci_high:.1f}] |"
+            f"[{effect.token_ci_low:.1f}, {effect.token_ci_high:.1f}] | "
+            f"{effect.mean_wall_time_delta:.2f} "
+            f"[{effect.wall_time_ci_low:.2f}, {effect.wall_time_ci_high:.2f}] |"
         )
         lines.append(row)
     lines.extend(
@@ -58,8 +65,8 @@ def _markdown(report: BenchmarkReport) -> str:
             "",
             "## Paired reference-minus-baseline effects",
             "",
-            "| Arm | Quality delta (95% CI) | Token delta (95% CI) |",
-            "| --- | ---: | ---: |",
+            "| Arm | Quality delta (95% CI) | Token delta (95% CI) | Wall-time delta (95% CI) |",
+            "| --- | ---: | ---: | ---: |",
         ]
     )
     for effect in report.model_effects:
@@ -67,7 +74,9 @@ def _markdown(report: BenchmarkReport) -> str:
             f"| {effect.arm} | {effect.quality_delta:.1%} "
             f"[{effect.quality_ci_low:.1%}, {effect.quality_ci_high:.1%}] | "
             f"{effect.mean_token_delta:.1f} "
-            f"[{effect.token_ci_low:.1f}, {effect.token_ci_high:.1f}] |"
+            f"[{effect.token_ci_low:.1f}, {effect.token_ci_high:.1f}] | "
+            f"{effect.mean_wall_time_delta:.2f} "
+            f"[{effect.wall_time_ci_low:.2f}, {effect.wall_time_ci_high:.2f}] |"
         )
         lines.append(row)
     lines.extend(

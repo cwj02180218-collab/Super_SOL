@@ -17,9 +17,10 @@ Codex 작업 자체의 사용량은 그대로 발생하므로 비용 0을 보장
 
 ## 초보자용 5분 설치
 
-먼저 macOS/Linux는 `python3 --version`, Windows는 `py -3 --version`으로 Python 3.9 이상을
-확인합니다. 벤치마크에는 Python 3.12가 필요하지만 일상 플러그인 훅은 Python 3.9 이상이면
-됩니다.
+먼저 macOS/Linux는 `/usr/bin/python3 --version`, Windows는 `py -3 --version`으로 Python
+3.9 이상을 확인합니다. 이 명령은 플러그인이 실제로 쓰는 실행기와 같습니다. macOS/Linux에서
+`/usr/bin/python3`가 없거나 3.9보다 낮으면 훅을 승인하지 말고 운영체제 Python을 먼저
+업데이트합니다. 벤치마크에는 별도로 Python 3.12가 필요합니다.
 
 정식 v0.3.0 배포본은 버전을 고정해 설치합니다.
 
@@ -30,8 +31,10 @@ codex plugin list
 ```
 
 태그 전 개발본만 확인할 때는 `--ref main`을 사용합니다. ChatGPT/Codex 데스크톱 앱을 다시
-열고 새 작업을 시작한 뒤 `/hooks`에서 실행 경로가 설치된 Super SOL 폴더인지 확인하고 신뢰를
-승인합니다. 신뢰는 훅 내용의 hash에 묶이므로 업데이트 뒤 다시 승인할 수 있습니다.
+열고 새 작업을 시작한 뒤 `/hooks`를 확인합니다. macOS/Linux에서는 설치된 Super SOL 폴더의
+`hooks/super_sol_hook.py`를 `/usr/bin/python3`로 실행하고, Windows에서는 같은 파일을 `py -3`로
+실행해야 합니다. 시작·요청 입력·Bash/편집·종료 이벤트 외의 경로나 명령이 보이면 승인하지
+마세요. 훅 내용이 업데이트되면 다시 승인하라는 안내가 나올 수 있습니다.
 `--dangerously-bypass-hook-trust`는 일반 설치 절차로 권장하지 않습니다.
 
 ```text
@@ -43,18 +46,37 @@ codex plugin list
 플러그인은 요청을 로컬 문자열 규칙으로 `설명`, `일반 작업`, `디버깅`, `배포 점검` 중
 하나로 분류합니다. 프롬프트 원문, 명령, 도구 출력, 모델 출력, 환경변수는 저장하지 않습니다.
 `apply_patch`, `Edit`, `Write` 변경을 관찰했는데 그 뒤 인식 가능한 성공 검증이 없으면 종료 시
-경고합니다. 추가 Codex 사용량을 자동으로 만들지 않도록 새 continuation을 생성하지는 않습니다.
+경고합니다. 추가 Codex 사용량을 자동으로 만들지 않도록 추가 모델 응답을 자동 생성하지는 않습니다.
 
-### 업데이트와 삭제
+### 새 버전으로 업데이트
 
 ```bash
-codex plugin marketplace upgrade super-sol
+codex plugin remove super-sol@super-sol
+codex plugin marketplace remove super-sol
+codex plugin marketplace add cuj0218/Super-SOL --ref vX.Y.Z
+codex plugin add super-sol@super-sol
+codex plugin list
+```
+
+`vX.Y.Z`를 설치할 새 태그로 바꿉니다. 앱을 다시 열고 `/hooks`의 경로와 이벤트를 다시 확인한 뒤
+신뢰를 승인합니다. 태그로 고정한 설치는 `marketplace upgrade`만으로 다음 태그로 이동하지 않습니다.
+
+### 플러그인만 삭제
+
+```bash
+codex plugin remove super-sol@super-sol
+```
+
+### 플러그인과 marketplace 모두 삭제
+
+```bash
 codex plugin remove super-sol@super-sol
 codex plugin marketplace remove super-sol
 ```
 
-업데이트 뒤 앱을 다시 열고 `codex plugin list`와 `/hooks`를 확인합니다. 이전 버전으로 돌아갈
-때는 플러그인과 marketplace를 제거한 뒤 원하는 `--ref vX.Y.Z`로 다시 추가합니다.
+이전 버전으로 돌아갈 때도 업데이트 절차와 같습니다. 단, Codex 플러그인을 포함하는 `v0.3.0`
+이후 태그만 선택하고, marketplace 재등록 뒤 `codex plugin add`, `codex plugin list`, 앱 재시작,
+`/hooks` 확인까지 마칩니다.
 `codex plugin` 명령이 없다면 Codex를 먼저 업데이트하고, Python 실행 오류가 보이면 위 버전 확인부터
 다시 합니다.
 
@@ -116,9 +138,9 @@ uv run super-sol-eval \
 
 기본 비교는 `gpt-5.6-terra/medium` 대 `gpt-5.6-sol/medium`입니다. 다른 조건은
 `--product-model`, `--reference-model`, `--product-effort`, `--reference-effort`로 명시합니다.
-모델과 effort뿐 아니라 task·fixture 내용, 사전등록 hash, 패키지/SDK 버전, 두 이미지 digest가
-run/session 식별자와 plan event에 기록됩니다. 조건이 하나라도 바뀌면 과거 grade와 결합할 수
-없는 새 run digest가 만들어집니다.
+모델과 effort뿐 아니라 task·fixture 내용, 사전등록 내용 식별값, 하네스 전체 내용, `uv.lock`,
+해석기/플랫폼, 실제 설치된 런타임 의존성, 두 이미지 digest가 run/session 식별자와 plan event에
+기록됩니다. 리포트는 이 식별자를 다시 계산하며 조건이 하나라도 바뀐 과거 grade를 거부합니다.
 
 ### 과금되는 live 평가
 

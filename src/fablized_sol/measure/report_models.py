@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
 from fablized_sol.engine.models import HoldoutArm, SessionId
 from fablized_sol.eval.manifest import ReasoningEffort
+from fablized_sol.eval.provenance import RunIdentity
 
 
 @unique
@@ -37,6 +38,7 @@ class ReportIssue(StrEnum):
     INCONSISTENT_EFFORT = "each model must use exactly one reasoning effort"
     RUN_DIGEST_MISMATCH = "grade file run digest does not match event run digest"
     INCONSISTENT_PROVENANCE = "planned sessions do not share one frozen provenance"
+    IDENTITY_MISMATCH = "run or session identity does not match canonical provenance"
     EMBEDDED_FINAL_DEFECT = "embedded final defect labels are forbidden"
 
 
@@ -158,7 +160,9 @@ class BenchmarkReport(BaseModel):
     openai_sdk_version: str
     verification_image: str
     grader_image: str
+    run_identity: RunIdentity
     quality_interval_method: Literal["paired-hoeffding-95"] = "paired-hoeffding-95"
+    resource_interval_method: Literal["paired-student-t-95"] = "paired-student-t-95"
     baseline_model: str
     baseline_effort: ReasoningEffort
     reference_model: str

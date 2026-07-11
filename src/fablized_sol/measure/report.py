@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from fablized_sol.engine.models import HoldoutArm, SessionId
 from fablized_sol.eval.manifest import ReasoningEffort
+from fablized_sol.eval.provenance import digest_json, session_identity_digest
 from fablized_sol.measure.report_effects import model_effects, paired_effects, validate_crossover
 from fablized_sol.measure.report_events import load_events
 from fablized_sol.measure.report_models import (
@@ -64,6 +65,13 @@ def _validate_provenance(
     if len(provenance) != 1:
         raise ReportInputError(ReportIssue.INCONSISTENT_PROVENANCE)
     representative = next(iter(plans.values()))
+    identities = {plan.run_identity.model_dump_json() for plan in plans.values()}
+    if len(identities) != 1:
+        raise ReportInputError(ReportIssue.INCONSISTENT_PROVENANCE)
+    identity = representative.run_identity
+    recomputed_run_digest = digest_json(identity.model_dump(mode="json"))
+    if recomputed_run_digest != representative.run_digest:
+        raise ReportInputError(ReportIssue.IDENTITY_MISMATCH, "run digest")
     if grade_file.run_digest != representative.run_digest:
         raise ReportInputError(ReportIssue.RUN_DIGEST_MISMATCH)
     task_digests: dict[str, str] = {}
@@ -71,6 +79,39 @@ def _validate_provenance(
         previous_digest = task_digests.setdefault(plan.task_id, plan.task_digest)
         if previous_digest != plan.task_digest:
             raise ReportInputError(ReportIssue.INCONSISTENT_PROVENANCE, plan.task_id)
+        expected_session = session_identity_digest(
+            representative.run_digest,
+            plan.task_digest,
+            plan.model,
+            plan.reasoning_effort,
+            plan.arm,
+        )
+        if plan.session_id != expected_session:
+            raise ReportInputError(ReportIssue.IDENTITY_MISMATCH, plan.session_id)
+    if tuple(task_digests.items()) != identity.task_digests:
+        raise ReportInputError(ReportIssue.IDENTITY_MISMATCH, "task digests")
+    duplicated_identity = (
+        representative.preregistration_digest,
+        representative.harness_version,
+        representative.agents_sdk_version,
+        representative.openai_sdk_version,
+        representative.verification_image,
+        representative.grader_image,
+        representative.profile,
+        representative.profile_version,
+    )
+    canonical_identity = (
+        identity.preregistration_digest,
+        identity.harness_version,
+        identity.agents_sdk_version,
+        identity.openai_sdk_version,
+        identity.verification_image,
+        identity.grader_image,
+        identity.profile,
+        identity.profile_version,
+    )
+    if duplicated_identity != canonical_identity:
+        raise ReportInputError(ReportIssue.IDENTITY_MISMATCH, "duplicated provenance")
     return representative
 
 
@@ -236,6 +277,7 @@ def build_report(
         openai_sdk_version=provenance.openai_sdk_version,
         verification_image=provenance.verification_image,
         grader_image=provenance.grader_image,
+        run_identity=provenance.run_identity,
         baseline_model=baseline_model,
         baseline_effort=efforts[baseline_model],
         reference_model=reference_model,

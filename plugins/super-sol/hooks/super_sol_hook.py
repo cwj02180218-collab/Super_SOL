@@ -7,8 +7,9 @@ import re
 import shlex
 import sys
 import time
+from typing import cast
 
-from super_sol_state import (
+from super_sol_state import (  # pyright: ignore[reportImplicitRelativeImport]
     HookInputError,
     event_path,
     load_events,
@@ -55,7 +56,30 @@ _CONVERSATION_SIGNALS = (
     "뭐야",
     "알려줘",
 )
+_ACTION_SIGNALS = (
+    "add",
+    "change",
+    "create",
+    "edit",
+    "fix",
+    "implement",
+    "remove",
+    "update",
+    "고쳐",
+    "만들",
+    "삭제",
+    "수정",
+    "추가",
+)
 _SHELL_OPERATORS = {"&", "&&", ";", "|", "||"}
+_EVAL_COMMAND_NAMES = r"(?:super-sol-eval|fablized-sol-eval)"
+_EVAL_INVOCATION_PATTERN = (  # noqa: UP032 - avoids pyright implicit-concat error
+    r"^\s*(?:(?:\S*/)?{0}|uv\s+run(?:\s+--with\s+\S+)?\s+(?:\S*/)?{0})(?:\s|$)"
+).format(_EVAL_COMMAND_NAMES)
+_EVAL_INVOCATION = re.compile(
+    _EVAL_INVOCATION_PATTERN,
+    re.IGNORECASE,
+)
 
 
 def _context(event: str, text: str) -> dict[str, object]:
@@ -72,7 +96,9 @@ def _profile(prompt: str) -> str:
         return "release"
     if any(signal in lowered for signal in _DEBUG_SIGNALS):
         return "debug"
-    if any(signal in lowered for signal in _CONVERSATION_SIGNALS):
+    if any(signal in lowered for signal in _CONVERSATION_SIGNALS) and not any(
+        signal in lowered for signal in _ACTION_SIGNALS
+    ):
         return "conversation"
     return "action"
 
@@ -138,6 +164,7 @@ def _command(payload: dict[str, object]) -> str | None:
     tool_input = payload.get("tool_input")
     if not isinstance(tool_input, dict):
         return None
+    tool_input = cast("dict[object, object]", tool_input)
     command = tool_input.get("command")
     if isinstance(command, str):
         return command
@@ -159,10 +186,8 @@ def _simple_argv(command: str) -> tuple[str, ...] | None:
 
 
 def _eval_command(argv: tuple[str, ...]) -> bool:
-    return any(
-        token.rsplit("/", maxsplit=1)[-1] in {"super-sol-eval", "fablized-sol-eval"}
-        for token in argv
-    )
+    executable, _arguments = _command_parts(argv)
+    return executable in {"super-sol-eval", "fablized-sol-eval"}
 
 
 def _command_parts(argv: tuple[str, ...]) -> tuple[str, tuple[str, ...]]:
@@ -191,6 +216,11 @@ def _verification_command(argv: tuple[str, ...] | None) -> bool:
         if arguments[:1] == ("run",) and len(arguments) > 1
         else (arguments[0] if arguments else "")
     )
+    python_module = (
+        arguments[1].casefold()
+        if executable in {"python", "python3"} and len(arguments) > 1 and arguments[0] == "-m"
+        else ""
+    )
     return (
         executable in {"pytest", "basedpyright", "mypy", "uv-build"}
         or (
@@ -203,6 +233,7 @@ def _verification_command(argv: tuple[str, ...] | None) -> bool:
         or (executable in {"cargo", "go"} and arguments[:1] == ("test",))
         or (executable in {"npm", "pnpm", "yarn"} and script in {"test", "lint", "build"})
         or (executable == "git" and arguments[:1] == ("diff",) and "--check" in arguments)
+        or python_module in {"pytest", "mypy", "basedpyright"}
     )
 
 
@@ -216,8 +247,11 @@ def _pre_tool(payload: dict[str, object]) -> dict[str, object] | None:
     authorized = state.get("billable_authorized") is True
     if "api.openai.com" in lowered and not authorized:
         return _deny("사용자가 이 작업의 유료 API 호출을 명시적으로 승인하지 않았습니다.")
-    is_eval = "super-sol-eval" in lowered or "fablized-sol-eval" in lowered
-    if is_eval and "--dry-run" not in lowered:
+    is_eval = (argv is not None and _eval_command(argv)) or _EVAL_INVOCATION.search(
+        command
+    ) is not None
+    has_dry_run = argv is not None and "--dry-run" in argv
+    if is_eval and not has_dry_run:
         if not authorized:
             return _deny(
                 "live 평가는 자동 실행하지 않습니다. 먼저 사용자의 명시적 과금 승인이 필요합니다."
@@ -237,9 +271,11 @@ def _pre_tool(payload: dict[str, object]) -> dict[str, object] | None:
 
 
 def _exit_code_zero(value: object) -> bool:
-    return (
-        isinstance(value, dict) and type(value.get("exit_code")) is int and value["exit_code"] == 0
-    )
+    if not isinstance(value, dict):
+        return False
+    response = cast("dict[object, object]", value)
+    code = response.get("exit_code")
+    return type(code) is int and code == 0
 
 
 def _post_tool(payload: dict[str, object]) -> dict[str, object] | None:
@@ -258,7 +294,7 @@ def _post_tool(payload: dict[str, object]) -> dict[str, object] | None:
     if not mutation and not verification:
         return None
     observed_at = time.time_ns()
-    event = {
+    event: dict[str, object] = {
         "mutation": mutation,
         "observed_at_ns": observed_at,
         "schema_version": _SCHEMA_VERSION,

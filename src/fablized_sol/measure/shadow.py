@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from fablized_sol.engine.models import HoldoutArm, SessionId
 from fablized_sol.eval.manifest import ReasoningEffort
+from fablized_sol.eval.provenance import RunIdentity
 
 type RunStatus = Literal["completed", "exhausted", "error", "abandoned"]
 
@@ -42,6 +43,7 @@ class RunPlanned(_ShadowBase):
     openai_sdk_version: str = Field(min_length=1)
     verification_image: str = Field(min_length=1)
     grader_image: str = Field(min_length=1)
+    run_identity: RunIdentity
 
 
 class RunStarted(_ShadowBase):

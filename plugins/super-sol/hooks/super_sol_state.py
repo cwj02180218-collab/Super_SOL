@@ -8,6 +8,7 @@ import os
 import sys
 import time
 from pathlib import Path
+from typing import cast
 
 MAX_INPUT_BYTES = 1_048_576
 _MAX_STATE_BYTES = 4096
@@ -28,12 +29,12 @@ def read_input() -> dict[str, object]:
     if len(raw) > MAX_INPUT_BYTES:
         raise HookInputError
     try:
-        value = json.loads(raw.decode("utf-8"))
+        value = cast("object", json.loads(raw.decode("utf-8")))
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise HookInputError from error
     if not isinstance(value, dict):
         raise HookInputError
-    return value
+    return cast("dict[str, object]", value)
 
 
 def turn_root(payload: dict[str, object]) -> Path | None:
@@ -64,10 +65,10 @@ def read_private_json(path: Path) -> dict[str, object] | None:
     try:
         if path.stat().st_size > _MAX_STATE_BYTES:
             return None
-        value = json.loads(path.read_text(encoding="utf-8"))
+        value = cast("object", json.loads(path.read_text(encoding="utf-8")))
     except (OSError, json.JSONDecodeError):
         return None
-    return value if isinstance(value, dict) else None
+    return cast("dict[str, object]", value) if isinstance(value, dict) else None
 
 
 def load_state(payload: dict[str, object]) -> dict[str, object] | None:

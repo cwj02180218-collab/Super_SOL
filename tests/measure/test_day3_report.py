@@ -5,7 +5,8 @@ import pytest
 from pydantic import JsonValue, TypeAdapter
 from typer.testing import CliRunner
 
-from fablized_sol.engine.models import HoldoutArm
+from fablized_sol.engine.models import HoldoutArm, SessionId
+from fablized_sol.eval.provenance import RunIdentity, digest_json, session_identity_digest
 from fablized_sol.measure.report import build_report
 from fablized_sol.measure.report_cli import app
 from fablized_sol.measure.report_models import BenchmarkReport, GradeFile, ReportInputError
@@ -13,9 +14,37 @@ from fablized_sol.measure.super_sol import SUPER_SOL_PROFILE
 
 _RUNNER = CliRunner()
 _ROW_ADAPTER = TypeAdapter[dict[str, JsonValue]](dict[str, JsonValue])
-_RUN_DIGEST = "d" * 64
 _VERIFICATION_IMAGE = "ghcr.io/example/verify@sha256:" + "a" * 64
 _GRADER_IMAGE = "ghcr.io/example/grader@sha256:" + "b" * 64
+
+
+def _run_identity() -> RunIdentity:
+    return RunIdentity(
+        schema_version="super-sol-run/v3",
+        run_id="test-run",
+        arm_design="crossover",
+        models=("gpt-5.6-terra", "gpt-5.6-sol"),
+        efforts=("medium", "medium"),
+        max_gate_retries=2,
+        task_digests=(("task-a", "a" * 64), ("task-b", "b" * 64)),
+        preregistration_digest="c" * 64,
+        harness_version="0.3.0",
+        harness_content_digest="1" * 64,
+        dependency_lock_digest="2" * 64,
+        resolved_dependencies=(("openai", "2.38.0"),),
+        python_runtime="3.12.11",
+        runtime_platform="darwin-arm64",
+        agents_sdk_version="0.17.4",
+        openai_sdk_version="2.38.0",
+        verification_image=_VERIFICATION_IMAGE,
+        grader_image=_GRADER_IMAGE,
+        profile=SUPER_SOL_PROFILE.name,
+        profile_version=SUPER_SOL_PROFILE.version,
+    )
+
+
+_RUN_IDENTITY = _run_identity()
+_RUN_DIGEST = digest_json(_RUN_IDENTITY.model_dump(mode="json"))
 
 
 def _event_rows(events: Path) -> list[dict[str, JsonValue]]:
@@ -27,7 +56,7 @@ def _event_rows(events: Path) -> list[dict[str, JsonValue]]:
 def write_inputs(tmp_path: Path) -> tuple[Path, Path]:
     events = tmp_path / "events.jsonl"
     grades = tmp_path / "grades.json"
-    rows: list[dict[str, str | int | float | bool | None]] = []
+    rows: list[dict[str, JsonValue]] = []
     grade_rows: list[dict[str, str | bool]] = []
     samples = (
         ("task-a", "gpt-5.6-terra", "on", "a-base", "completed", 100, False),
@@ -39,8 +68,10 @@ def write_inputs(tmp_path: Path) -> tuple[Path, Path]:
         ("task-b", "gpt-5.6-terra", "off", "b-base-off", "completed", 120, False),
         ("task-b", "gpt-5.6-sol", "off", "b-ref-off", "completed", 220, True),
     )
-    for task_id, model, arm, session_id, status, tokens, defect in samples:
-        grader_passed = session_id != "b-base"
+    for task_id, model, arm, label, status, tokens, defect in samples:
+        task_content_digest = ("a" if task_id == "task-a" else "b") * 64
+        session_id = session_identity_digest(_RUN_DIGEST, task_content_digest, model, "medium", arm)
+        grader_passed = label != "b-base"
         rows.append(
             {
                 "event": "run_planned",
@@ -60,6 +91,7 @@ def write_inputs(tmp_path: Path) -> tuple[Path, Path]:
                 "openai_sdk_version": "2.38.0",
                 "verification_image": _VERIFICATION_IMAGE,
                 "grader_image": _GRADER_IMAGE,
+                "run_identity": _RUN_IDENTITY.model_dump(mode="json"),
             }
         )
         rows.append(
@@ -139,6 +171,7 @@ def test_report_quantifies_quality_efficiency_and_lazy_escalation(tmp_path: Path
     assert report.run_digest == _RUN_DIGEST
     assert report.verification_image == _VERIFICATION_IMAGE
     assert report.grader_image == _GRADER_IMAGE
+    assert digest_json(report.run_identity.model_dump(mode="json")) == report.run_digest
     cells = {(cell.model, cell.arm): cell for cell in report.cells}
     assert cells[("gpt-5.6-terra", HoldoutArm.ON)].quality_rate == 0.5
     assert cells[("gpt-5.6-sol", HoldoutArm.ON)].quality_rate == 1.0
@@ -156,6 +189,8 @@ def test_report_quantifies_quality_efficiency_and_lazy_escalation(tmp_path: Path
     assert effects["gpt-5.6-sol"].quality_delta == 0.5
     markdown = output.with_suffix(".md").read_text(encoding="utf-8")
     assert "| Model | Effort | Quality delta" in markdown
+    assert "Wall-time delta" in markdown
+    assert report.resource_interval_method == "paired-student-t-95"
 
 
 def test_report_fails_closed_when_an_out_of_band_grade_is_missing(tmp_path: Path) -> None:
@@ -192,6 +227,43 @@ def test_report_rejects_grade_file_for_a_different_run(tmp_path: Path) -> None:
     )
 
     with pytest.raises(ReportInputError, match="run digest"):
+        _ = build_report(events, grades, "gpt-5.6-terra", "gpt-5.6-sol")
+
+
+@pytest.mark.parametrize("tamper", ["task_digest", "session_id", "run_identity"])
+def test_report_recomputes_run_and_session_identity(tmp_path: Path, tamper: str) -> None:
+    events, grades = write_inputs(tmp_path)
+    rows = _event_rows(events)
+    plan = next(row for row in rows if row["event"] == "run_planned")
+    if tamper == "task_digest":
+        plan["task_digest"] = "f" * 64
+    elif tamper == "session_id":
+        original = plan["session_id"]
+        assert isinstance(original, str)
+        replacement = "f" * 64
+        for row in rows:
+            if row.get("session_id") == original:
+                row["session_id"] = replacement
+        grade_payload = GradeFile.model_validate_json(grades.read_text(encoding="utf-8"))
+        updated_grades = tuple(
+            grade.model_copy(update={"session_id": SessionId(replacement)})
+            if grade.session_id == original
+            else grade
+            for grade in grade_payload.grades
+        )
+        _ = grades.write_text(
+            grade_payload.model_copy(update={"grades": updated_grades}).model_dump_json(),
+            encoding="utf-8",
+        )
+    else:
+        for row in rows:
+            if row["event"] == "run_planned":
+                identity = row["run_identity"]
+                assert isinstance(identity, dict)
+                identity["max_gate_retries"] = 3
+    _ = events.write_text("".join(f"{json.dumps(row)}\n" for row in rows), encoding="utf-8")
+
+    with pytest.raises(ReportInputError, match="identity"):
         _ = build_report(events, grades, "gpt-5.6-terra", "gpt-5.6-sol")
 
 

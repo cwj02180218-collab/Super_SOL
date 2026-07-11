@@ -68,7 +68,13 @@ dev = [
 typeCheckingMode = "all"
 pythonVersion = "3.12"
 pythonPlatform = "All"
-include = ["src", "tests", "eval/verifier/subject_worker.py", "eval/verifier/hidden/support.py"]
+include = [
+  "src",
+  "tests",
+  "plugins/super-sol/hooks",
+  "eval/verifier/subject_worker.py",
+  "eval/verifier/hidden/support.py",
+]
 exclude = ["**/__pycache__", "**/.venv", "**/build", "**/dist"]
 reportUnusedCallResult = "warning"
 reportUnnecessaryTypeIgnoreComment = "error"

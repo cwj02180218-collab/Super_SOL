@@ -1,13 +1,18 @@
 """Content-bound identities for reproducible Super SOL evaluation runs."""
 
 import json
+import platform
 import stat
+import sys
 from dataclasses import dataclass
 from hashlib import sha256
 from importlib.metadata import version
 from importlib.resources import files
+from importlib.resources.abc import Traversable
 from pathlib import Path
-from typing import Final
+from typing import ClassVar, Final
+
+from pydantic import BaseModel, ConfigDict
 
 from fablized_sol import __version__
 from fablized_sol.eval.manifest import EvalOptions, TaskManifest, TaskSpec
@@ -16,6 +21,7 @@ from fablized_sol.measure.super_sol import SUPER_SOL_PROFILE
 _RUN_SCHEMA: Final = "super-sol-run/v3"
 _SESSION_SCHEMA: Final = "super-sol-session/v3"
 _DRY_RUN_IMAGE: Final = "dry-run"
+_RUNTIME_DISTRIBUTIONS: Final = ("anyio", "openai", "openai-agents", "pydantic", "typer")
 
 
 def digest_json(value: object) -> str:
@@ -64,6 +70,53 @@ def _preregistration_digest() -> str:
     return sha256(resource.read_bytes()).hexdigest()
 
 
+def _harness_content_digest() -> str:
+    root = files("fablized_sol")
+    entries: list[dict[str, str]] = []
+
+    def visit(node: Traversable, relative: str) -> None:
+        for child in sorted(node.iterdir(), key=lambda item: item.name):
+            child_relative = f"{relative}/{child.name}" if relative else child.name
+            if child.name == "__pycache__" or child_relative.endswith((".pyc", ".pyo")):
+                continue
+            if child.is_dir():
+                visit(child, child_relative)
+            elif child.is_file():
+                entries.append(
+                    {"path": child_relative, "sha256": sha256(child.read_bytes()).hexdigest()}
+                )
+
+    visit(root, "")
+    return digest_json({"entries": entries, "schema": "super-sol-harness-content/v1"})
+
+
+class RunIdentity(BaseModel):
+    """Canonical run-level inputs that independently reproduce the run digest."""
+
+    model_config: ClassVar[ConfigDict] = ConfigDict(frozen=True, extra="forbid", strict=True)
+
+    schema_version: str
+    run_id: str
+    arm_design: str
+    models: tuple[str, str]
+    efforts: tuple[str, str]
+    max_gate_retries: int
+    task_digests: tuple[tuple[str, str], ...]
+    preregistration_digest: str
+    harness_version: str
+    harness_content_digest: str
+    dependency_lock_digest: str
+    resolved_dependencies: tuple[tuple[str, str], ...]
+    python_runtime: str
+    runtime_platform: str
+    agents_sdk_version: str
+    openai_sdk_version: str
+    verification_image: str
+    grader_image: str
+    profile: str
+    profile_version: str
+
+
 @dataclass(frozen=True, slots=True)
 class RunProvenance:
     """Frozen versions, images, and content identities for one CLI run."""
@@ -76,6 +129,7 @@ class RunProvenance:
     openai_sdk_version: str
     verification_image: str
     grader_image: str
+    identity: RunIdentity
 
     def digest_for_task(self, task_id: str) -> str:
         """Return the unique content digest for one validated task id."""
@@ -90,25 +144,31 @@ def build_run_provenance(options: EvalOptions, manifest: TaskManifest) -> RunPro
     grader_image = options.grader_image or _DRY_RUN_IMAGE
     agents_sdk_version = version("openai-agents")
     openai_sdk_version = version("openai")
-    payload = {
-        "agents_sdk_version": agents_sdk_version,
-        "arm_design": options.arm_design,
-        "efforts": options.efforts,
-        "grader_image": grader_image,
-        "harness_version": __version__,
-        "max_gate_retries": options.max_gate_retries,
-        "models": options.models,
-        "openai_sdk_version": openai_sdk_version,
-        "preregistration_digest": preregistration_digest,
-        "profile": SUPER_SOL_PROFILE.name,
-        "profile_version": SUPER_SOL_PROFILE.version,
-        "run_id": options.run_id,
-        "schema": _RUN_SCHEMA,
-        "task_digests": task_digests,
-        "verification_image": verification_image,
-    }
+    lock_digest = files("fablized_sol.eval").joinpath("DEPENDENCY_LOCK.sha256").read_text().strip()
+    identity = RunIdentity(
+        schema_version=_RUN_SCHEMA,
+        run_id=options.run_id,
+        arm_design=options.arm_design,
+        models=options.models,
+        efforts=options.efforts,
+        max_gate_retries=options.max_gate_retries,
+        task_digests=task_digests,
+        preregistration_digest=preregistration_digest,
+        harness_version=__version__,
+        harness_content_digest=_harness_content_digest(),
+        dependency_lock_digest=lock_digest,
+        resolved_dependencies=tuple((name, version(name)) for name in _RUNTIME_DISTRIBUTIONS),
+        python_runtime=platform.python_version(),
+        runtime_platform=f"{sys.platform}-{platform.machine()}",
+        agents_sdk_version=agents_sdk_version,
+        openai_sdk_version=openai_sdk_version,
+        verification_image=verification_image,
+        grader_image=grader_image,
+        profile=SUPER_SOL_PROFILE.name,
+        profile_version=SUPER_SOL_PROFILE.version,
+    )
     return RunProvenance(
-        run_digest=digest_json(payload),
+        run_digest=digest_json(identity.model_dump(mode="json")),
         task_digests=task_digests,
         preregistration_digest=preregistration_digest,
         harness_version=__version__,
@@ -116,6 +176,7 @@ def build_run_provenance(options: EvalOptions, manifest: TaskManifest) -> RunPro
         openai_sdk_version=openai_sdk_version,
         verification_image=verification_image,
         grader_image=grader_image,
+        identity=identity,
     )
 
 
@@ -127,13 +188,30 @@ def session_digest(
     arm: str,
 ) -> str:
     """Build one typed versioned session identity from its complete run identity."""
+    return session_identity_digest(
+        provenance.run_digest,
+        provenance.digest_for_task(task_id),
+        model,
+        effort,
+        arm,
+    )
+
+
+def session_identity_digest(
+    run_digest: str,
+    task_content_digest: str,
+    model: str,
+    effort: str,
+    arm: str,
+) -> str:
+    """Recompute a session identity from report-visible canonical inputs."""
     return digest_json(
         {
             "arm": arm,
             "effort": effort,
             "model": model,
-            "run_digest": provenance.run_digest,
+            "run_digest": run_digest,
             "schema": _SESSION_SCHEMA,
-            "task_digest": provenance.digest_for_task(task_id),
+            "task_digest": task_content_digest,
         }
     )
