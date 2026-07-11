@@ -5,6 +5,11 @@ from pydantic import JsonValue
 
 from .conftest import HookRunner, hook_input
 
+CONTRACT_SWEEP = (
+    "Silently map requirements to code and one boundary. After tests pass, re-read once for "
+    "ownership, input, state, and failure semantics. Do not rerun tests."
+)
+
 
 def _context(output: dict[str, JsonValue] | None) -> str:
     assert output is not None
@@ -19,14 +24,14 @@ def _state_payloads(plugin_data: Path) -> list[dict[str, object]]:
     return [json.loads(path.read_text(encoding="utf-8")) for path in plugin_data.rglob("*.json")]
 
 
-def test_session_start_injects_minimal_beginner_context(run_hook: HookRunner) -> None:
-    result = run_hook(hook_input("SessionStart", source="startup"))
-
-    assert result.returncode == 0
-    context = _context(result.stdout)
-    assert "추가 과금" in context
-    assert "검증" in context
-    assert "초보자" in context
+def test_action_and_debug_prompts_emit_one_exact_contract_sweep(run_hook: HookRunner) -> None:
+    assert len(CONTRACT_SWEEP) == 154
+    assert len(CONTRACT_SWEEP.split()) == 24
+    for prompt in ("implement nested copy behavior", "fix the failing retry bug"):
+        result = run_hook(hook_input("UserPromptSubmit", prompt=prompt))
+        assert result.returncode == 0
+        assert _context(result.stdout) == CONTRACT_SWEEP
+        assert _context(result.stdout).count(CONTRACT_SWEEP) == 1
 
 
 def test_korean_debug_prompt_routes_without_persisting_prompt(
@@ -37,7 +42,7 @@ def test_korean_debug_prompt_routes_without_persisting_prompt(
     result = run_hook(hook_input("UserPromptSubmit", prompt=prompt))
 
     assert result.returncode == 0
-    assert "재현" in _context(result.stdout)
+    assert _context(result.stdout) == CONTRACT_SWEEP
     payloads = _state_payloads(plugin_data)
     assert payloads == [{"billable_authorized": False, "profile": "debug", "schema_version": 1}]
     assert prompt not in "".join(
@@ -52,8 +57,17 @@ def test_explanation_prompt_uses_conversation_profile(
     result = run_hook(hook_input("UserPromptSubmit", prompt="Explain what this repository does"))
 
     assert result.returncode == 0
-    assert "plain language" in _context(result.stdout)
+    assert result.stdout is None
     assert _state_payloads(plugin_data)[0]["profile"] == "conversation"
+
+
+def test_release_prompt_keeps_only_release_context(run_hook: HookRunner) -> None:
+    result = run_hook(hook_input("UserPromptSubmit", prompt="배포 안정성을 검사해줘"))
+
+    assert result.returncode == 0
+    context = _context(result.stdout)
+    assert "배포 경로" in context
+    assert CONTRACT_SWEEP not in context
 
 
 def test_likely_api_key_is_blocked_without_echo_or_storage(

@@ -20,9 +20,9 @@ def _configured_hook_argv() -> list[str]:
     payload = _OBJECT_ADAPTER.validate_json(HOOK_CONFIG.read_text(encoding="utf-8"))
     hooks = payload["hooks"]
     assert isinstance(hooks, dict)
-    session = hooks["SessionStart"]
-    assert isinstance(session, list)
-    group = session[0]
+    prompt_submit = hooks["UserPromptSubmit"]
+    assert isinstance(prompt_submit, list)
+    group = prompt_submit[0]
     assert isinstance(group, dict)
     handlers = group["hooks"]
     assert isinstance(handlers, list)
