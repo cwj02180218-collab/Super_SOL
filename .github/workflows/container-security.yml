@@ -38,41 +38,39 @@ jobs:
       - name: Prepare SBOM directory
         run: mkdir -p security/sbom
       - name: Generate verifier SBOM
-        uses: docker/scout-action@2688993af7bafd6ba8c6a74ec652442be91dd82b # v1.23.1
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
-          command: sbom
-          image: local://super-sol-verifier:audit
-          format: spdx
-          output: security/sbom/verifier.spdx.json
-          write-comment: false
+          image: super-sol-verifier:audit
+          format: spdx-json
+          output-file: security/sbom/verifier.spdx.json
+          upload-artifact: false
       - name: Generate grader SBOM
-        uses: docker/scout-action@2688993af7bafd6ba8c6a74ec652442be91dd82b # v1.23.1
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
-          command: sbom
-          image: local://super-sol-grader:audit
-          format: spdx
-          output: security/sbom/grader.spdx.json
-          write-comment: false
+          image: super-sol-grader:audit
+          format: spdx-json
+          output-file: security/sbom/grader.spdx.json
+          upload-artifact: false
       - name: Scan verifier
         id: scan-verifier
         continue-on-error: true
-        uses: docker/scout-action@2688993af7bafd6ba8c6a74ec652442be91dd82b # v1.23.1
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          command: cves
-          image: local://super-sol-verifier:audit
-          only-severities: critical,high
-          exit-code: true
-          write-comment: false
+          scan-type: image
+          image-ref: super-sol-verifier:audit
+          severity: CRITICAL,HIGH
+          exit-code: 1
+          format: table
       - name: Scan grader
         id: scan-grader
         continue-on-error: true
-        uses: docker/scout-action@2688993af7bafd6ba8c6a74ec652442be91dd82b # v1.23.1
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
-          command: cves
-          image: local://super-sol-grader:audit
-          only-severities: critical,high
-          exit-code: true
-          write-comment: false
+          scan-type: image
+          image-ref: super-sol-grader:audit
+          severity: CRITICAL,HIGH
+          exit-code: 1
+          format: table
       - name: Upload SBOM evidence
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0

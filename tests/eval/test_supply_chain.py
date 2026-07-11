@@ -133,10 +133,11 @@ def test_container_security_workflow_pins_actions_and_gates_both_images() -> Non
 
     assert action_lines
     assert all(re.search(r"@[0-9a-f]{40}(?:\s|$)", line) for line in action_lines)
-    assert workflow.count("command: cves") == 2
-    assert workflow.count("command: sbom") == 2
-    assert workflow.count("exit-code: true") == 2
-    assert workflow.count("only-severities: critical,high") == 2
+    assert workflow.count("uses: anchore/sbom-action@") == 2
+    assert workflow.count("uses: aquasecurity/trivy-action@") == 2
+    assert workflow.count("format: spdx-json") == 2
+    assert workflow.count("exit-code: 1") == 2
+    assert workflow.count("severity: CRITICAL,HIGH") == 2
     assert workflow.find("Generate verifier SBOM") < workflow.find("Scan verifier")
     assert workflow.count("continue-on-error: true") == 2
     assert "Enforce scan gate" in workflow

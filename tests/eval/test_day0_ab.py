@@ -179,7 +179,7 @@ def test_live_cli_rejects_missing_billable_confirmation_before_creating_run(
     )
 
     assert result.exit_code != 0
-    assert "confirm-billable" in result.output
+    assert "confirm-billable" in result.output.replace("\n", "")
     assert not output_dir.exists()
 
 
