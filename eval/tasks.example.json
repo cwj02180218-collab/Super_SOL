@@ -23,7 +23,7 @@
     },
     {
       "id": "multi-file-tax",
-      "prompt": "Fix checkout so integer basis-point tax is applied to the subtotal across the pricing and order modules with integer-cent rounding, then verify.",
+      "prompt": "Fix checkout so basis-point tax is computed once from the subtotal across the pricing and order modules. Inputs are non-negative integers. Compute tax cents as (subtotal_cents * tax_basis_points) // 10_000, discarding any fractional tax cents. For example, a 101-cent subtotal at 500 basis points has 5 cents of tax and a 106-cent total. Then run the configured verification.",
       "fixture": "fixtures/multi_file",
       "verify_argv": ["uv", "run", "--with", "pytest", "pytest", "-q", "-p", "no:cacheprovider", "/workspace"],
       "grader_argv": ["uv", "run", "--with", "pytest", "pytest", "-q", "-p", "no:cacheprovider", "/opt/grader/tests/multi_file"]
