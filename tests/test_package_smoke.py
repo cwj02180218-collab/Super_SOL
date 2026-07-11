@@ -114,9 +114,7 @@ def test_sdist_uses_an_explicit_source_allowlist() -> None:
 def test_readme_exposes_beginner_plugin_and_current_model_contract() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
 
-    assert (
-        "codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.3.1" in readme
-    )
+    assert "codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.3.1" in readme
     assert "추가 API 과금 호출 없음" in readme
     assert "gpt-5.6-terra" in readme
     assert "--product-effort" in readme

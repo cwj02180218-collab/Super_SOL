@@ -40,19 +40,19 @@ benchmark harness.
 
 ## Verification record
 
-The final release commit must record the observed results for:
+The release candidate was verified locally on 2026-07-11 with these observed results:
 
-| Check | Required result |
+| Check | Observed result |
 | --- | --- |
-| Ruff format and lint | pass |
+| Ruff format and lint | pass; 89 files formatted and all lint checks passed |
 | basedpyright | 0 errors |
-| pytest | all tests pass |
-| coverage | report retained in the release brief update |
-| `uv build` | v0.3.1 wheel and source archive built |
-| installed dependency audit | no known third-party vulnerabilities |
-| current-tree and history credential scan | no real credential found |
-| free release smoke | completes without model or API call |
-| GitHub CI | CI and Container security pass on the release commit |
+| pytest | 198 passed |
+| coverage | 93% total statement coverage |
+| `uv build` | `super_sol_harness-0.3.1` wheel and source archive built |
+| installed dependency audit | no known third-party vulnerabilities; unpublished local package skipped by name |
+| current-tree and history credential scan | no real credential found; one deliberate `sk-example_...` test fixture reviewed |
+| free release smoke | exit 0 without model or API call |
+| GitHub CI | must pass `CI` and `Container security` on the final merge commit before tagging |
 
 ## Evidence claims
 
