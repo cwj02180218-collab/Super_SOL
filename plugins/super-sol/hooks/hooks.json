@@ -1,0 +1,72 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\super_sol_hook.py\"",
+            "timeout": 5,
+            "statusMessage": "Super SOL 준비 중"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\super_sol_hook.py\"",
+            "timeout": 5,
+            "statusMessage": "작업 유형 확인 중"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\super_sol_hook.py\"",
+            "timeout": 5,
+            "statusMessage": "과금 경로 확인 중"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(Bash|apply_patch|Edit|Write)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\super_sol_hook.py\"",
+            "timeout": 5,
+            "statusMessage": "작업 증거 확인 중"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
+            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\super_sol_hook.py\"",
+            "timeout": 5,
+            "statusMessage": "마지막 검증 확인 중"
+          }
+        ]
+      }
+    ]
+  }
+}

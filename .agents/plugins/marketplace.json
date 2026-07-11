@@ -1,0 +1,20 @@
+{
+  "name": "super-sol",
+  "interface": {
+    "displayName": "Super Sol"
+  },
+  "plugins": [
+    {
+      "name": "super-sol",
+      "source": {
+        "source": "local",
+        "path": "./plugins/super-sol"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

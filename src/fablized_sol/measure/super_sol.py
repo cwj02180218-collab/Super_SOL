@@ -31,8 +31,8 @@ class SuperSolProfile:
 
 SUPER_SOL_PROFILE: Final = SuperSolProfile(
     name="super-sol",
-    version="2026-07-11",
-    product_surface="gpt-5.5 + Super SOL",
+    version="2026-07-11-plugin-v1",
+    product_surface="gpt-5.6-terra + Super SOL",
     model_comparator_surface="gpt-5.6-sol + Super SOL",
     reference_surface="GPT.C + Codex CLI",
     adopt_now=(
@@ -72,7 +72,7 @@ SUPER_SOL_PROFILE: Final = SuperSolProfile(
             name="lazy-baseline-first-escalation-analysis",
             status="adopt_now",
             rationale=(
-                "Measure GPT-5.5-first routing and escalate only failed or defective tasks "
+                "Measure GPT-5.6 Terra-first routing and escalate only failed or defective tasks "
                 "to the GPT-5.6 Sol reference; keep observed cells separate from the "
                 "counterfactual cascade."
             ),

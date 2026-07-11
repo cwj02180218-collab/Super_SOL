@@ -1,13 +1,13 @@
-# Super Sol Day 1-3 Validation
+# Super SOL Day 1-3 검증
 
-The three-day gate validates the benchmark before it is used for product claims.
-It does not treat a small pilot as evidence that GPT-5.5 exceeds Fable or GPT-5.6
-Sol.
+이 3일 gate는 벤치마크 배관과 증거 경계를 검증합니다. 작은 파일럿을 Fable parity나 모델
+우월성의 증거로 해석하지 않습니다.
 
-## Day 1: Comparable experiment cells
+## Day 1: 비교 가능한 실험 셀
 
-Use the crossover design so every task is run in both harness arms for both
-models. The four-task pilot therefore plans sixteen isolated sessions.
+작은 표본에서는 모든 작업을 두 모델과 두 arm에서 실행하는 crossover를 사용합니다. 기본
+조합은 `gpt-5.6-terra/medium` 대 `gpt-5.6-sol/medium`이며, 모델과 effort가 각 이벤트에
+함께 기록됩니다.
 
 ```bash
 uv run super-sol-eval \
@@ -15,47 +15,68 @@ uv run super-sol-eval \
   --output-dir .fablized/day1 \
   --run-id day1-crossover \
   --arm-design crossover \
+  --product-effort medium \
+  --reference-effort medium \
   --dry-run
 ```
 
-The default `holdout` design remains available for longer operational sampling.
-The crossover design is the credible small-sample choice because ON/OFF results
-share the same tasks.
+네 작업 파일럿은 16개의 격리된 세션을 계획합니다. 더 긴 운영 표본에는 기본 holdout design을
+쓸 수 있지만, 네 셀을 모두 갖추지 않은 결과를 crossover 보고서로 승격할 수 없습니다.
 
-## Day 2: Out-of-band grader controls
+## Day 2: 독립 grader와 공급망
 
-The model-callable verifier image contains only visible workspace checks. A
-separate grader image contains root-only task-specific checks under `/opt/grader/tests` and runs
-once after the model turn. Its stdout and stderr never return to the model; only
-a boolean enters the shadow stream. Before a live pilot, every buggy fixture
-must fail and local reference controls must pass in the digest-pinned,
-network-disabled grader container.
+모델이 호출할 수 있는 verifier에는 공개 workspace 검사만 넣습니다. 별도 grader는
+`/opt/grader/tests`의 root-only 검사로 모델 턴 뒤 한 번 실행됩니다. stdout/stderr는 모델에게
+돌아가지 않고 boolean만 shadow stream에 기록됩니다.
 
-The pilot covers four failure shapes:
+live 전에 다음을 모두 확인합니다.
 
-- local arithmetic logic;
-- cached-state invalidation;
-- filesystem traversal containment;
-- a calculation split across two modules.
+- verifier와 grader가 서로 다른 immutable digest를 가짐
+- 두 이미지의 base가 저장소 정책과 정확히 일치함
+- Docker Scout Critical/High scan이 fail-closed로 통과함
+- 각 이미지의 SPDX 2.3 SBOM이 생성됨
+- buggy fixture는 실패하고 local reference control은 통과함
+- 컨테이너 network, parent environment, writable root, privilege escalation이 차단됨
 
-Reference controls exist only for local image QA. They are not published or
-copied into live workspaces.
+```bash
+uv run super-sol-container-audit \
+  --repo-root . \
+  --sbom-dir security/sbom
+```
 
-## Day 3: Quality, productivity, and lazy escalation
+공개 grader는 배관 검증용입니다. 모델 또는 Fable 관련 성능 주장을 하려면 미공개 grader build
+context를 별도로 사용해야 합니다.
 
-After the live run, an evaluator grades each session in a separate JSON file:
+## Day 3: 명시적 live 실행과 보고서
+
+live는 자동 호출되지 않습니다. 로컬 API 키, 두 digest-pinned 이미지와 함께 사용자가
+`--confirm-billable`을 직접 입력해야 합니다. 실행기는 두 이미지가 로컬에 있는지 모델 호출 전에
+확인합니다.
+
+```bash
+uv run super-sol-eval \
+  --tasks eval/tasks.example.json \
+  --output-dir .fablized/live \
+  --run-id day3-live \
+  --arm-design crossover \
+  --product-effort medium \
+  --reference-effort medium \
+  --verification-image "$VERIFICATION_IMAGE" \
+  --grader-image "$GRADER_IMAGE" \
+  --confirm-billable
+```
+
+평가자는 모델 context 밖에서 세션마다 최종 결함 라벨 하나를 작성합니다.
 
 ```json
 {
+  "schema_version": "super-sol-grades/v3",
+  "run_digest": "events.jsonl의 공통 run_digest",
   "grades": [
     {"session_id": "sha256-session-id", "final_defect_found": false}
   ]
 }
 ```
-
-Every planned session needs exactly one terminal event and one external grade.
-Missing or duplicate evidence fails the report instead of lowering the
-denominator silently.
 
 ```bash
 uv run super-sol-report \
@@ -64,24 +85,17 @@ uv run super-sol-report \
   --output .fablized/live/day3-live/report.json
 ```
 
-The command writes both `report.json` and the sibling `report.md`.
+보고서는 모든 계획 세션의 plan/start/finish와 외부 grade가 정확히 하나씩 있을 때만 생성됩니다.
+모델, effort, run digest, task content, image provenance 불일치나 빠진 셀, 중복 terminal event,
+빠진 grade는 fail-closed입니다. 결과에는 결함 없는 비율, token, 시간, 도구 호출, 검증 실패,
+gate block, paired effect, 보수적인 paired-binary 95% 구간과
+Terra-first lazy cascade의 품질·escalation rate·token 절감 proxy가 포함됩니다.
 
-The report rejects anything short of the complete two-model by two-arm task
-lattice. It records defect-free rate, token volume, time, tool calls, failed
-verification, gate blocks, paired effects, and 95% intervals. It also computes
-an operational lazy cascade: use GPT-5.5 first and escalate only when the
-baseline run fails completion or its out-of-band grader. External human defect
-labels score the resulting route but never decide it. The cascade reports
-quality, escalation rate, and token-volume savings against always using the
-reference model.
+token volume은 비용 proxy이지 실제 달러 비용이 아닙니다. 비용 주장은 해당 실행의 실제 청구
+사용량과 당시 계정 가격으로 계산해야 합니다.
 
-Token volume is a cost proxy, not a dollar claim. Dollar cost should be added
-only from the actual billed usage and current account pricing.
+## 승격 기준
 
-## Promotion gate
-
-Do not claim parity with Fable from the four-task pilot. Promotion requires at
-least fifty completed crossover task groups, externally graded outcomes, paired
-effect sizes with uncertainty, an unpublished grader pack, and frozen verifier
-and grader digests. Until then, the result supports harness engineering
-decisions only.
+네 작업 파일럿으로 parity를 주장하지 않습니다. 최소 50개 completed crossover 작업 그룹,
+미공개 versioned grader pack, 고정 이미지 digest, 외부 grade, paired effect와 불확실성, 실제
+청구 비용, 튜닝되지 않은 사전등록 재실행을 모두 갖추기 전까지 결과는 하네스 공학 증거입니다.

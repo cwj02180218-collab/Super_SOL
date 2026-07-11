@@ -1,7 +1,7 @@
 """Paired crossover validation and effect estimates."""
 
 from dataclasses import dataclass
-from math import sqrt
+from math import log, sqrt
 from typing import Final
 
 from fablized_sol.engine.models import HoldoutArm
@@ -46,6 +46,7 @@ _T_CRITICAL_95: Final[tuple[float, ...]] = (
     2.042,
 )
 _MIN_PAIRED_TASKS: Final = 2
+_HOEFFDING_LOG_TERM_95: Final = log(40.0)
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,6 +67,13 @@ def _estimate(values: tuple[float, ...]) -> _Estimate:
     variance = sum((value - mean) ** 2 for value in values) / degrees_of_freedom
     margin = critical * sqrt(variance) / sqrt(float(len(values)))
     return _Estimate(mean=mean, low=mean - margin, high=mean + margin)
+
+
+def _quality_estimate(values: tuple[float, ...]) -> _Estimate:
+    """Return a conservative distribution-free interval for paired binary deltas."""
+    mean = sum(values) / len(values)
+    margin = sqrt(2 * _HOEFFDING_LOG_TERM_95 / len(values))
+    return _Estimate(mean=mean, low=max(-1.0, mean - margin), high=min(1.0, mean + margin))
 
 
 def _find(
@@ -127,7 +135,7 @@ def paired_effects(
             )
             for task_id in tasks
         )
-        quality = _estimate(
+        quality = _quality_estimate(
             tuple(float(on.defect_free) - float(off.defect_free) for on, off in pairs)
         )
         tokens = _estimate(tuple(float(on.token_volume - off.token_volume) for on, off in pairs))
@@ -137,10 +145,11 @@ def paired_effects(
         effects.append(
             PairedEffect(
                 model=model,
+                reasoning_effort=pairs[0][0].reasoning_effort,
                 tasks=len(tasks),
                 quality_delta=quality.mean,
-                quality_ci_low=max(-1.0, quality.low),
-                quality_ci_high=min(1.0, quality.high),
+                quality_ci_low=quality.low,
+                quality_ci_high=quality.high,
                 mean_token_delta=tokens.mean,
                 token_ci_low=tokens.low,
                 token_ci_high=tokens.high,
@@ -168,7 +177,7 @@ def model_effects(
             )
             for task_id in tasks
         )
-        quality = _estimate(
+        quality = _quality_estimate(
             tuple(
                 float(reference.defect_free) - float(baseline.defect_free)
                 for reference, baseline in pairs
@@ -191,8 +200,8 @@ def model_effects(
                 arm=arm,
                 tasks=len(tasks),
                 quality_delta=quality.mean,
-                quality_ci_low=max(-1.0, quality.low),
-                quality_ci_high=min(1.0, quality.high),
+                quality_ci_low=quality.low,
+                quality_ci_high=quality.high,
                 mean_token_delta=tokens.mean,
                 token_ci_low=tokens.low,
                 token_ci_high=tokens.high,

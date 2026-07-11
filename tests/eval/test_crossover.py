@@ -71,8 +71,8 @@ def test_crossover_plans_each_task_in_both_arms_for_both_models(tmp_path: Path) 
         )
         for row in planned
     } == {
-        ("gpt-5.5", "on"),
-        ("gpt-5.5", "off"),
+        ("gpt-5.6-terra", "on"),
+        ("gpt-5.6-terra", "off"),
         ("gpt-5.6-sol", "on"),
         ("gpt-5.6-sol", "off"),
     }

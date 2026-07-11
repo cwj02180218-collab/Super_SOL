@@ -2,80 +2,81 @@
 
 Date: 2026-07-11
 
-Release candidate: `v0.2.1`
+Release candidate: `v0.3.0`
 
 ## Decision
 
 | Gate | Decision | Evidence |
 | --- | --- | --- |
-| Open-source harness release | **PASS** | Strict typing, 133 tests, build, CLI QA, isolated verifier/grader, aggregate report |
-| Reproducible pilot execution | **PASS** | 16/16 sessions completed; 16/16 out-of-band grader checks passed |
-| Baseline-first efficiency hypothesis | **PROMISING** | 11.2% to 14.9% token-volume savings with zero escalations in four tasks |
-| ON-arm quality uplift | **NOT OBSERVED** | Both arms scored 100%; ON used more tokens for both models |
-| Fable parity or broad benchmark promotion | **HOLD** | Four task groups cannot support the claim |
+| Beginner Codex plugin | **GO** | Local-only hooks, no automatic model/API call, explicit paid-run consent, verified install/remove path |
+| Package and CLI stability | **GO** | Formatting, lint, strict typing including shipped hooks, tests, archives, CLI smoke |
+| Container build evidence | **GO** | Digest-pinned base, hash-locked Python dependencies, verifier/grader SBOMs, local audit |
+| v3 benchmark contract | **GO** | Run and session identities are recomputed from task, runtime, lockfile, model, effort, arm, and image inputs |
+| New v3 live benchmark claim | **HOLD** | No billable v3 live run was authorized for this release |
+| Fable parity or superiority | **HOLD** | The only live pilot is a frozen v0.2.1 four-task historical artifact |
 
-Super SOL is ready to ship as an experimental, evidence-gated harness. The
-benchmark is not ready to support a parity or superiority claim.
+Super SOL v0.3.0 is releasable as a beginner-friendly Codex quality plugin and an optional
+experimental benchmark harness. It is not evidence that a model became smarter, that Super SOL beats
+Fable, or that the old pilot is reproducible under the new v3 schema.
 
-## Seven-day review trace
+## Seven-day trace
 
-### Day 0: Execution contract
+### Day 0: Safe default
 
-The CLI parses a strict manifest, creates isolated session workspaces, keeps
-model roles distinct, and fails closed when live credentials or digest-pinned
-images are absent.
+The normal product path is the stock-Codex plugin. It needs no API key or Docker and never starts a
+billable benchmark automatically. Live evaluation requires both a prompt-level authorization line and
+the CLI `--confirm-billable` flag.
 
-### Day 1: Comparable cells
+### Day 1: Beginner workflow
 
-The crossover design runs every task under both models and both harness arms.
-The four-task pilot creates sixteen deterministic sessions.
+One marketplace command installs the plugin. The guide shows the exact Python executable, expected
+hook path and events, update, plugin-only removal, full removal, and tag-pinned rollback.
 
-### Day 2: Independent grading
+### Day 2: Verification behavior
 
-The model-callable verifier contains only visible checks. A separate,
-digest-pinned grader runs after the turn with no network and returns only a
-boolean to the shadow stream.
+The hook distinguishes explanation-only prompts from work requests, observes supported file edits,
+recognizes common verification commands, and warns without creating another model response. It does
+not claim to observe arbitrary shell or MCP mutations.
 
-### Day 3: Quality and efficiency
+### Day 3: Benchmark identity
 
-The final contract-v2 pilot completed all sixteen sessions and passed every
-grader check. GPT-5.5 used fewer tokens in aggregate, while quality was tied.
+The v3 event stream contains a canonical run identity. It binds the complete task set, preregistration
+content, harness content, dependency lock, resolved dependencies, Python/platform, models, efforts,
+arm design, retry limit, and verifier/grader image references. Report generation recomputes run and
+session digests before joining external grades.
 
-### Day 4: Contract audit
+### Day 4: Measurement contract
 
-The ambiguous fractional-cent task was corrected. The public acceptance example
-and hidden grader case use different numbers, preserving generalization value.
+Final-defect labels remain external to the model-visible stream. Crossover reports require complete
+paired cells, state the Hoeffding quality interval and paired Student-t resource interval, and render
+quality, token, and wall-time effects.
 
-### Day 5: Security and leakage audit
+### Day 5: Container reproducibility
 
-Environment files and live artifacts are ignored. Containers receive no parent
-API key, no network, a read-only root filesystem, and only the intended
-workspace bind mount. Published evidence is aggregate only.
+Verifier and grader builds use an exact multi-platform base digest and hash-locked Python packages.
+The local audit builds both images, emits SPDX SBOMs before both release scans, and preserves the
+evidence even when a later gate fails.
 
-### Day 6: Reproducibility and release QA
+### Day 6: Release QA
 
-Offline formatting, linting, strict typing, tests, package builds, primary CLI
-commands, compatibility aliases, archive contents, and GitHub CI are the release
-gate. Billable live evaluation is excluded from routine CI.
+The release gate covers the full test suite, coverage, formatting, lint, strict typing of package and
+plugin hooks, package build, archive contents, isolated marketplace install/remove, free dry-run, and
+the no-confirmation live refusal path.
 
-### Day 7: Promotion review
+### Day 7: Independent review
 
-Five independent review lanes cover goal completeness, hands-on QA, code
-quality, security, and missed repository context. The software can be released
-when all lanes pass. Benchmark promotion remains on hold until the evidence
-threshold below is met.
+Five stock-Codex review lanes examined code correctness, beginner UX, reproducibility, release
+packaging, and hands-on QA. Their first pass found concrete blockers in Python compatibility, consent,
+hook command parsing, provenance validation, interval reporting, and release documentation. Each
+accepted finding was fixed and returned to the same lane for recheck before release.
 
-## Promotion threshold
+## Evidence boundary
 
-Fable-parity, general model-superiority, or production-routing claims require:
+The directory `benchmarks/day3-contract-v2` is retained only as a historical v0.2.1 snapshot. Its raw
+events, grades, exact preregistration, and v3 run identity do not exist, so its missing fields are never
+guessed and it cannot be parsed as v3 evidence.
 
-- at least 50 completed crossover task groups;
-- an unpublished, versioned grader pack;
-- frozen verifier and grader image digests;
-- exactly one external final-defect label per session;
-- paired effect sizes and uncertainty supporting the specific claim;
-- cost calculated from actual billed usage rather than token volume alone;
-- a rerun on a preregistered task set that was not used to tune prompts or packs.
-
-Until those conditions are met, published results are engineering evidence, not
-a leaderboard claim.
+A new performance claim requires a separately authorized v3 live run that preserves the complete
+event stream, external grade file, exact task manifest and fixtures, preregistration commit, image
+references, and generated report. Broad parity or routing claims additionally require at least 50
+completed crossover task groups and a held-out grader pack.

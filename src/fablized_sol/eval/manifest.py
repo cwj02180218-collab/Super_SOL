@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from enum import StrEnum, unique
 from pathlib import Path
-from typing import Annotated, ClassVar, Self, override
+from typing import Annotated, ClassVar, Literal, Self, override
 
 from pydantic import (
     AfterValidator,
@@ -46,6 +46,8 @@ type ComparisonModels = Annotated[
     tuple[StrictStr, StrictStr],
     AfterValidator(_require_distinct_models),
 ]
+type ReasoningEffort = Literal["none", "minimal", "low", "medium", "high", "xhigh"]
+type ComparisonEfforts = tuple[ReasoningEffort, ReasoningEffort]
 type VerificationImage = Annotated[
     StrictStr,
     Field(pattern=r"^[^@\s]+@sha256:[0-9a-f]{64}$"),
@@ -133,16 +135,22 @@ class EvalOptions(BaseModel):
     output_dir: Path
     run_id: StrictStr = Field(min_length=1, pattern=r"^[a-zA-Z0-9][a-zA-Z0-9_-]*$")
     models: ComparisonModels
+    efforts: ComparisonEfforts = ("medium", "medium")
     max_gate_retries: int = Field(ge=0, le=5)
     dry_run: bool
+    confirm_billable: bool = False
     arm_design: ArmDesign = ArmDesign.HOLDOUT
     verification_image: VerificationImage | None = None
     grader_image: VerificationImage | None = None
 
     @model_validator(mode="after")
     def require_live_verification_image(self) -> Self:
-        """Require a digest-pinned sandbox image for billable live runs."""
+        """Require confirmation and digest-pinned images for billable live runs."""
         if not self.dry_run:
+            if not self.confirm_billable:
+                error_code = "billable_confirmation_required"
+                message = "live evaluation requires --confirm-billable"
+                raise PydanticCustomError(error_code, message)
             if self.verification_image is None:
                 error_code = "missing_verification_image"
                 message = "verification image is required for live evaluation"

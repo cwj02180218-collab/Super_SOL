@@ -1,6 +1,6 @@
 [project]
 name = "super-sol-harness"
-version = "0.2.1"
+version = "0.3.0"
 description = "Evidence-gated coding-agent harness with reproducible model comparisons"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -20,6 +20,7 @@ fablized-sol-eval = "fablized_sol.eval.day0_ab:main"
 fablized-sol-report = "fablized_sol.measure.report_cli:main"
 super-sol-eval = "fablized_sol.eval.day0_ab:main"
 super-sol-report = "fablized_sol.measure.report_cli:main"
+super-sol-container-audit = "fablized_sol.eval.supply_chain:main"
 
 [project.urls]
 Homepage = "https://github.com/cuj0218/Super-SOL"
@@ -36,6 +37,7 @@ packages = ["src/fablized_sol"]
 
 [tool.hatch.build.targets.sdist]
 include = [
+  "/.agents",
   "/.python-version",
   "/AGENTS.md",
   "/CONTRIBUTING.md",
@@ -47,6 +49,8 @@ include = [
   "/docs",
   "/eval",
   "/pyproject.toml",
+  "/plugins",
+  "/security",
   "/src",
   "/tests",
   "/uv.lock",
@@ -64,7 +68,13 @@ dev = [
 typeCheckingMode = "all"
 pythonVersion = "3.12"
 pythonPlatform = "All"
-include = ["src", "tests", "eval/verifier/subject_worker.py", "eval/verifier/hidden/support.py"]
+include = [
+  "src",
+  "tests",
+  "plugins/super-sol/hooks",
+  "eval/verifier/subject_worker.py",
+  "eval/verifier/hidden/support.py",
+]
 exclude = ["**/__pycache__", "**/.venv", "**/build", "**/dist"]
 reportUnusedCallResult = "warning"
 reportUnnecessaryTypeIgnoreComment = "error"

@@ -12,14 +12,21 @@ from fablized_sol.measure.report_models import BenchmarkReport, ReportInputError
 def _markdown(report: BenchmarkReport) -> str:
     baseline = report.baseline_model.replace("|", "\\|").replace("\n", " ")
     reference = report.reference_model.replace("|", "\\|").replace("\n", " ")
+    wall_time_header = "Wall-time delta (95% CI)"
+    paired_header = (
+        f"| Model | Effort | Quality delta (95% CI) | Token delta (95% CI) | {wall_time_header} |"
+    )
     lines = [
         "# Super Sol Day 3 Report",
         "",
-        f"Baseline: `{baseline}`  ",
-        f"Reference: `{reference}`",
+        f"Baseline: `{baseline}` (`{report.baseline_effort}`)  ",
+        f"Reference: `{reference}` (`{report.reference_effort}`)",
+        f"Run digest: `{report.run_digest}`  ",
+        f"Quality interval: `{report.quality_interval_method}`",
+        f"Resource interval: `{report.resource_interval_method}`",
         "",
-        "| Model | Arm | Quality | Tokens | Tokens / good run | Mean seconds |",
-        "| --- | --- | ---: | ---: | ---: | ---: |",
+        "| Model | Effort | Arm | Quality | Tokens | Tokens / good run | Mean seconds |",
+        "| --- | --- | --- | ---: | ---: | ---: | ---: |",
     ]
     for cell in report.cells:
         model = cell.model.replace("|", "\\|").replace("\n", " ")
@@ -29,7 +36,7 @@ def _markdown(report: BenchmarkReport) -> str:
             else "n/a"
         )
         row = (
-            f"| {model} | {cell.arm} | {cell.quality_rate:.1%} | "
+            f"| {model} | {cell.reasoning_effort} | {cell.arm} | {cell.quality_rate:.1%} | "
             f"{cell.token_volume} | {efficiency} | {cell.mean_wall_time_seconds:.2f} |"
         )
         lines.append(row)
@@ -38,17 +45,19 @@ def _markdown(report: BenchmarkReport) -> str:
             "",
             "## Paired ON-minus-OFF effects",
             "",
-            "| Model | Quality delta (95% CI) | Token delta (95% CI) |",
-            "| --- | ---: | ---: |",
+            paired_header,
+            "| --- | --- | ---: | ---: | ---: |",
         ]
     )
     for effect in report.paired_effects:
         model = effect.model.replace("|", "\\|").replace("\n", " ")
         row = (
-            f"| {model} | {effect.quality_delta:.1%} "
+            f"| {model} | {effect.reasoning_effort} | {effect.quality_delta:.1%} "
             f"[{effect.quality_ci_low:.1%}, {effect.quality_ci_high:.1%}] | "
             f"{effect.mean_token_delta:.1f} "
-            f"[{effect.token_ci_low:.1f}, {effect.token_ci_high:.1f}] |"
+            f"[{effect.token_ci_low:.1f}, {effect.token_ci_high:.1f}] | "
+            f"{effect.mean_wall_time_delta:.2f} "
+            f"[{effect.wall_time_ci_low:.2f}, {effect.wall_time_ci_high:.2f}] |"
         )
         lines.append(row)
     lines.extend(
@@ -56,8 +65,8 @@ def _markdown(report: BenchmarkReport) -> str:
             "",
             "## Paired reference-minus-baseline effects",
             "",
-            "| Arm | Quality delta (95% CI) | Token delta (95% CI) |",
-            "| --- | ---: | ---: |",
+            "| Arm | Quality delta (95% CI) | Token delta (95% CI) | Wall-time delta (95% CI) |",
+            "| --- | ---: | ---: | ---: |",
         ]
     )
     for effect in report.model_effects:
@@ -65,7 +74,9 @@ def _markdown(report: BenchmarkReport) -> str:
             f"| {effect.arm} | {effect.quality_delta:.1%} "
             f"[{effect.quality_ci_low:.1%}, {effect.quality_ci_high:.1%}] | "
             f"{effect.mean_token_delta:.1f} "
-            f"[{effect.token_ci_low:.1f}, {effect.token_ci_high:.1f}] |"
+            f"[{effect.token_ci_low:.1f}, {effect.token_ci_high:.1f}] | "
+            f"{effect.mean_wall_time_delta:.2f} "
+            f"[{effect.wall_time_ci_low:.2f}, {effect.wall_time_ci_high:.2f}] |"
         )
         lines.append(row)
     lines.extend(
@@ -93,7 +104,7 @@ def report_command(
     events: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
     grades: Annotated[Path, typer.Option(exists=True, dir_okay=False)],
     output: Annotated[Path, typer.Option(dir_okay=False)],
-    baseline_model: Annotated[str, typer.Option()] = "gpt-5.5",
+    baseline_model: Annotated[str, typer.Option()] = "gpt-5.6-terra",
     reference_model: Annotated[str, typer.Option()] = "gpt-5.6-sol",
 ) -> None:
     """Analyze complete shadow events and external quality grades."""

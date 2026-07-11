@@ -169,8 +169,25 @@ def test_live_eval_options_require_digest_pinned_verification_image(tmp_path: Pa
             models=("gpt-5.6-sol", "gpt-5.5"),
             max_gate_retries=2,
             dry_run=False,
+            confirm_billable=True,
             verification_image=None,
             grader_image=None,
+        )
+
+
+def test_live_eval_options_require_explicit_billable_confirmation(tmp_path: Path) -> None:
+    with pytest.raises(ValidationError, match="confirm-billable"):
+        _ = EvalOptions(
+            tasks=tmp_path / "tasks.json",
+            output_dir=tmp_path / "out",
+            run_id="unconfirmed-live",
+            models=("gpt-5.6-terra", "gpt-5.6-sol"),
+            efforts=("medium", "medium"),
+            max_gate_retries=2,
+            dry_run=False,
+            confirm_billable=False,
+            verification_image=_VERIFY_IMAGE,
+            grader_image=_GRADER_IMAGE,
         )
 
 
@@ -185,6 +202,7 @@ def test_eval_options_reject_mutable_verification_image_tag(tmp_path: Path) -> N
             models=("gpt-5.6-sol", "gpt-5.5"),
             max_gate_retries=2,
             dry_run=False,
+            confirm_billable=True,
             verification_image="python:3.12",
             grader_image=_GRADER_IMAGE,
         )
@@ -201,6 +219,7 @@ def test_live_eval_options_require_distinct_verifier_and_grader_images(tmp_path:
             models=("gpt-5.6-sol", "gpt-5.5"),
             max_gate_retries=2,
             dry_run=False,
+            confirm_billable=True,
             verification_image=_VERIFY_IMAGE,
             grader_image=_VERIFY_IMAGE,
         )
@@ -214,6 +233,7 @@ def test_live_eval_options_require_distinct_verifier_and_grader_images(tmp_path:
             models=("gpt-5.6-sol", "gpt-5.5"),
             max_gate_retries=2,
             dry_run=False,
+            confirm_billable=True,
             verification_image=_VERIFY_IMAGE,
             grader_image=aliased_grader,
         )

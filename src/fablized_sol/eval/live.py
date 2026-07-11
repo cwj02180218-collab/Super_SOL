@@ -19,7 +19,8 @@ from fablized_sol.engine.events import (
 )
 from fablized_sol.engine.ledger import Ledger
 from fablized_sol.engine.models import HoldoutArm, SessionId, ToolKind, ToolName
-from fablized_sol.eval.manifest import TaskSpec
+from fablized_sol.eval.manifest import ReasoningEffort, TaskSpec
+from fablized_sol.eval.provenance import RunIdentity
 from fablized_sol.harness.registry import ToolRegistry, ToolSpec
 from fablized_sol.harness.router import InstructionRequest, build_instructions
 from fablized_sol.harness.run import (
@@ -51,8 +52,18 @@ class PlannedRun:
 
     task: TaskSpec
     model: str
+    reasoning_effort: ReasoningEffort
     session_id: SessionId
     arm: HoldoutArm
+    run_digest: str
+    task_digest: str
+    preregistration_digest: str
+    harness_version: str
+    agents_sdk_version: str
+    openai_sdk_version: str
+    verification_image: str
+    grader_image: str
+    run_identity: RunIdentity
 
 
 @final
@@ -141,6 +152,7 @@ async def execute_live(
     executor = SdkAttemptExecutor(
         context=context,
         model=run.planned.model,
+        reasoning_effort=run.planned.reasoning_effort,
         tools=_TOOLS,
         instructions=bundle.instructions,
         response_observer=run.usage,
@@ -187,6 +199,7 @@ def finished_event(
         session_id=run.planned.session_id,
         arm=run.planned.arm,
         model=run.planned.model,
+        reasoning_effort=run.planned.reasoning_effort,
         status=status,
         wall_time_seconds=time.monotonic() - run.started,
         tool_calls=tool_calls,
@@ -210,6 +223,7 @@ def empty_finished_event(
         session_id=planned.session_id,
         arm=planned.arm,
         model=planned.model,
+        reasoning_effort=planned.reasoning_effort,
         status=status,
         wall_time_seconds=0,
         tool_calls=0,

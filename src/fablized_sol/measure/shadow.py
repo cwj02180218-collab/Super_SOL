@@ -8,6 +8,8 @@ from typing import Annotated, ClassVar, Literal, final
 from pydantic import BaseModel, ConfigDict, Field
 
 from fablized_sol.engine.models import HoldoutArm, SessionId
+from fablized_sol.eval.manifest import ReasoningEffort
+from fablized_sol.eval.provenance import RunIdentity
 
 type RunStatus = Literal["completed", "exhausted", "error", "abandoned"]
 
@@ -23,6 +25,7 @@ class _ShadowBase(BaseModel):
     session_id: SessionId
     arm: HoldoutArm
     model: str = Field(min_length=1)
+    reasoning_effort: ReasoningEffort
 
 
 class RunPlanned(_ShadowBase):
@@ -32,6 +35,15 @@ class RunPlanned(_ShadowBase):
     task_id: str = Field(min_length=1)
     profile: str
     profile_version: str
+    run_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    task_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    preregistration_digest: str = Field(pattern=r"^[0-9a-f]{64}$")
+    harness_version: str = Field(min_length=1)
+    agents_sdk_version: str = Field(min_length=1)
+    openai_sdk_version: str = Field(min_length=1)
+    verification_image: str = Field(min_length=1)
+    grader_image: str = Field(min_length=1)
+    run_identity: RunIdentity
 
 
 class RunStarted(_ShadowBase):

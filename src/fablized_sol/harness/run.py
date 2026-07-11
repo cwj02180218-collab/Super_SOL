@@ -7,12 +7,15 @@ from agents import (
     Agent,
     GuardrailFunctionOutput,
     Model,
+    ModelSettings,
     OutputGuardrailTripwireTriggered,
     Runner,
     Tool,
 )
+from openai.types.shared import Reasoning
 
 from fablized_sol.engine.models import GateAction, HoldoutArm
+from fablized_sol.eval.manifest import ReasoningEffort
 from fablized_sol.harness.guardrails import GuardrailInfo, verification_gate
 from fablized_sol.harness.hooks import LedgerHooks, ModelResponseObserver, ObservedLedgerHooks
 from fablized_sol.harness.workspace_tools import FablizedContext
@@ -130,6 +133,7 @@ class SdkAttemptExecutor:
     model: str | Model
     tools: tuple[Tool, ...]
     instructions: str
+    reasoning_effort: ReasoningEffort = "medium"
     response_observer: ModelResponseObserver | None = None
 
     async def execute(self, request: AttemptRequest) -> AttemptCompleted | AttemptBlocked:
@@ -146,6 +150,7 @@ class SdkAttemptExecutor:
             model=self.model,
             tools=list(self.tools),
             instructions=self.instructions,
+            model_settings=ModelSettings(reasoning=Reasoning(effort=self.reasoning_effort)),
             output_guardrails=output_guardrails,
         )
         try:
