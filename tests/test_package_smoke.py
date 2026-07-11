@@ -62,6 +62,15 @@ def test_distribution_uses_super_sol_name() -> None:
     assert name == "super-sol-harness"
 
 
+def test_distribution_declares_mit_license() -> None:
+    # Given the installed Super SOL distribution
+    # When its core metadata is inspected
+    license_expression = distribution("super-sol-harness").metadata["License-Expression"]
+
+    # Then downstream users receive a machine-readable MIT license
+    assert license_expression == "MIT"
+
+
 def test_package_exports_version() -> None:
     # Given the project is installed in the uv environment
     # When callers inspect its public package metadata

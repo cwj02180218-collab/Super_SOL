@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .coverage
+.DS_Store
 .fablized/
 dist/
 *.egg-info/

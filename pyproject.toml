@@ -4,6 +4,9 @@ version = "0.2.0"
 description = "Evidence-gated coding-agent harness with reproducible model comparisons"
 readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "cuj0218" }]
+keywords = ["ai-agents", "benchmark", "coding-agents", "evaluation", "openai"]
 dependencies = [
   "anyio>=4.11,<5",
   "openai==2.38.0",
@@ -17,6 +20,12 @@ fablized-sol-eval = "fablized_sol.eval.day0_ab:main"
 fablized-sol-report = "fablized_sol.measure.report_cli:main"
 super-sol-eval = "fablized_sol.eval.day0_ab:main"
 super-sol-report = "fablized_sol.measure.report_cli:main"
+
+[project.urls]
+Homepage = "https://github.com/cuj0218/Super-SOL"
+Repository = "https://github.com/cuj0218/Super-SOL"
+Documentation = "https://github.com/cuj0218/Super-SOL#readme"
+Issues = "https://github.com/cuj0218/Super-SOL/issues"
 
 [build-system]
 requires = ["hatchling"]
