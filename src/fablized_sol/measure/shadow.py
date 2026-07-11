@@ -8,6 +8,7 @@ from typing import Annotated, ClassVar, Literal, final
 from pydantic import BaseModel, ConfigDict, Field
 
 from fablized_sol.engine.models import HoldoutArm, SessionId
+from fablized_sol.measure.super_sol import SUPER_SOL_PROFILE
 
 type RunStatus = Literal["completed", "exhausted", "error", "abandoned"]
 
@@ -30,6 +31,8 @@ class RunPlanned(_ShadowBase):
 
     event: Literal["run_planned"] = "run_planned"
     task_id: str = Field(min_length=1)
+    profile: str = SUPER_SOL_PROFILE.name
+    profile_version: str = SUPER_SOL_PROFILE.version
 
 
 class RunStarted(_ShadowBase):

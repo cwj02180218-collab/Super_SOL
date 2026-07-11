@@ -4,6 +4,18 @@ Fablized SOL is an evidence-gated procedure harness for paired GPT-5.6 Sol
 evaluations. It measures whether narrowly routed procedures improve outcomes; it
 does not claim to increase a model's capability ceiling.
 
+## Super Sol Profile
+
+This repository now carries a Super Sol profile that merges the useful GPT.C
+Codex wrapper framing with this harness's stricter evidence boundary. In that
+profile, `fablized-sol` remains the measured product surface and GPT.C remains
+the Codex operational reference surface. Dry-run and live shadow streams include
+the profile name and version on every planned run so results can be traced back
+without exposing measurement labels to the model.
+
+See [docs/SUPER_SOL.md](docs/SUPER_SOL.md) for the adopted, parked, and rejected
+GPT.C decisions.
+
 ## Philosophy And Non-goals
 
 The harness judges observed tool execution rather than claims in generated text.
@@ -104,6 +116,10 @@ Live verification requires a working Docker runtime and an image pinned by an
 immutable `sha256` digest. The image must already contain every dependency named
 by `verify_argv` and must already exist locally because pulls are disabled; the
 harness does not install dependencies during verification.
+The example manifest can use the minimal verifier image in
+[`eval/verifier/`](eval/verifier/); its README shows how to build a local
+registry-backed `localhost:5050/...@sha256:...` reference for
+`VERIFICATION_IMAGE`.
 The container receives only a read-write bind mount of the copied session
 workspace at `/workspace`. It receives no parent environment, no API keys, and
 no network. The root filesystem is read-only, Linux capabilities are dropped,

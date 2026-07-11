@@ -14,6 +14,7 @@ from fablized_sol.harness.run import (
     AttemptRequest,
     SdkAttemptExecutor,
 )
+from fablized_sol.measure.super_sol import SUPER_SOL_PROFILE
 
 _RUNNER = CliRunner()
 _ROW_ADAPTER = TypeAdapter[dict[str, JsonValue]](dict[str, JsonValue])
@@ -79,10 +80,10 @@ def test_dry_run_emits_two_models_without_api_key(
     # Then both configured models are planned without accessing the network
     assert result.exit_code == 0
     rows = _read_jsonl(output_dir / "day0-test" / "events.jsonl")
-    assert {_text(row, "model") for row in rows if row["event"] == "run_planned"} == {
-        "gpt-5.6-sol",
-        "gpt-5.5",
-    }
+    planned = [row for row in rows if row["event"] == "run_planned"]
+    assert {_text(row, "model") for row in planned} == {"gpt-5.6-sol", "gpt-5.5"}
+    assert {_text(row, "profile") for row in planned} == {SUPER_SOL_PROFILE.name}
+    assert {_text(row, "profile_version") for row in planned} == {SUPER_SOL_PROFILE.version}
 
 
 def test_dry_run_pairs_arms_and_separates_sessions(tmp_path: Path) -> None:

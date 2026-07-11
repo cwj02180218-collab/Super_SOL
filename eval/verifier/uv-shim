@@ -1,0 +1,22 @@
+#!/bin/sh
+set -eu
+
+if [ "$#" -lt 1 ] || [ "$1" != "run" ]; then
+  echo "uv verifier shim supports: uv run [--with PACKAGE] COMMAND ..." >&2
+  exit 64
+fi
+
+shift
+
+if [ "$#" -ge 2 ] && [ "$1" = "--with" ]; then
+  shift 2
+fi
+
+if [ "$#" -lt 1 ]; then
+  echo "uv verifier shim requires a command after uv run" >&2
+  exit 64
+fi
+
+export PYTHONPATH="/workspace${PYTHONPATH:+:$PYTHONPATH}"
+
+exec "$@"
