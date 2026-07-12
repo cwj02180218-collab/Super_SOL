@@ -17,18 +17,26 @@ Codex 작업 자체의 사용량은 그대로 발생하므로 비용 0을 보장
 
 ![Super SOL 상황별 사용 가이드](docs/assets/super-sol-guide-wide.png)
 
-## v0.6 Router Diagnostics 개발 후보
+## v0.7 Evidence-Bounded Router 개발 후보
 
-`0.6.0rc1`은 v0.5의 부정적 결과를 숨기지 않고 라우팅 실패와 procedure 실패를 분리하는
-진단 후보입니다. failure-atomicity의 일반 표현 recall을 보강하고, 모델-visible prompt를
-바꾸지 않는 `router-observe`와 `procedure-forced` 환경 모드를 추가했습니다. 정상 설치는
-항상 adaptive이며 자동 모델 전환·API 호출·추가 과금은 없습니다.
+`0.7.0rc1`은 **raw-first** 후보입니다. 일반 Codex가 먼저 구현하고 검증하도록 요청 시점에는
+아무 context도 넣지 않습니다. 요청에서 하나의 의미 계약이 높은 확신으로 감지되고, 실제 편집
+뒤 첫 검증 결과가 관찰된 경우에만 **one model-visible injection**을 허용합니다. 통과한 테스트의
+반복, 자동 모델 전환, 추가 API 호출, 서브에이전트는 만들지 않습니다.
 
-공개된 T109~T116의 64-slot 진단은 성능 홍보에 사용할 수 없습니다. 정확한 네 arm과 recall,
-precision, 자원 게이트는 [`V0.6_DIAGNOSTIC_PROTOCOL.md`](docs/V0.6_DIAGNOSTIC_PROTOCOL.md), v0.5
-실패 수치는 [`BENCHMARK_POSTMORTEM_0.5.md`](docs/BENCHMARK_POSTMORTEM_0.5.md)에 고정했습니다.
-무료 안정성 결과와 남은 위험은
-[`RELEASE_BRIEF_0.6.0RC1.md`](docs/RELEASE_BRIEF_0.6.0RC1.md)에 있습니다.
+이 RC는 **not a performance-uplift claim**입니다. v0.6은 Terra -0.71점, Sol +2.53점이었지만
+두 신뢰구간이 모두 0을 포함했고 token/time 예산도 넘었습니다. 원인과 정확한 수치는
+[`BENCHMARK_POSTMORTEM_0.6.md`](docs/BENCHMARK_POSTMORTEM_0.6.md), T117-T124의 64 valid slots와
+승격 기준은 [`V0.7_PROMOTION_PROTOCOL.md`](docs/V0.7_PROMOTION_PROTOCOL.md), 무료 검증 상태는
+[`RELEASE_BRIEF_0.7.0RC1.md`](docs/RELEASE_BRIEF_0.7.0RC1.md)에 고정합니다.
+
+후보를 격리 확인할 때만 다음 고정 태그를 사용합니다. 안정판은 여전히 v0.3.1입니다.
+
+```bash
+codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.7.0-rc1
+codex plugin add super-sol@super-sol
+codex plugin list
+```
 
 ## v0.5 Performance Amplifier 실패 후보
 
@@ -86,8 +94,8 @@ codex plugin list
 태그 전 개발본만 확인할 때는 `--ref main`을 사용합니다. ChatGPT/Codex 데스크톱 앱을 다시
 열고 새 작업을 시작한 뒤 `/hooks`를 확인합니다. macOS/Linux에서는 설치된 Super SOL 폴더의
 `hooks/super_sol_hook.py`를 `/usr/bin/python3`로 실행하고, Windows에서는 같은 파일을 `py -3`로
-실행해야 합니다. v0.5 후보의 정상 이벤트는 요청 입력, Bash 실행 전, Bash 실행 후 세
-가지입니다. 편집·종료 훅이나 다른 경로가 보이면 승인하지 마세요. 훅 내용이 업데이트되면
+실행해야 합니다. v0.7 후보의 정상 이벤트는 요청 입력, Bash 실행 전, Bash 및 편집 실행 후
+세 가지입니다. 종료 훅이나 다른 경로가 보이면 승인하지 마세요. 훅 내용이 업데이트되면
 다시 승인하라는 안내가 나올 수 있습니다.
 `--dangerously-bypass-hook-trust`는 일반 설치 절차로 권장하지 않습니다.
 
@@ -97,11 +105,10 @@ codex plugin list
 이 저장소가 무엇을 하는지 초보자 기준으로 설명해줘.
 ```
 
-플러그인은 요청을 로컬 문자열 규칙으로 pass-through, 동시성, 보안 경계, 마이그레이션,
-실패 원자성 중 하나로 분류합니다. 한 영역만 높은 확신으로 감지될 때만 전문 context를
-전달합니다. 프롬프트 원문, 명령, 도구 출력, 모델 출력, 환경변수는 저장하지 않습니다.
-인식 가능한 검증이 실패하면 같은 turn에서 한 번만 표적 수정 context를 전달하며, 별도 모델
-응답이나 새 Codex 프로세스를 자동 생성하지 않습니다.
+플러그인은 요청을 로컬 규칙으로 일곱 의미 계약 또는 pass-through로 분류하지만 구현 전에는
+context를 전달하지 않습니다. 프롬프트 원문, 명령, 도구 출력, 모델 출력, 환경변수는 저장하지
+않습니다. 실제 편집 뒤 첫 검증에서만 잔여 의미 점검 또는 표적 수정 context 중 하나를 한 번
+전달하며, 별도 모델 응답이나 새 Codex 프로세스를 자동 생성하지 않습니다.
 
 ### 새 버전으로 업데이트
 

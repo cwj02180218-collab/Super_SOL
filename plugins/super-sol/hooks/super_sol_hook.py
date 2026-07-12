@@ -11,20 +11,25 @@ from typing import cast
 
 from super_sol_routes import (
     REPAIR_CONTEXT,
+    Contract,
     Route,
     context_for,
+    residual_context,
     route_prompt,
 )
 from super_sol_state import (
     HookInputError,
     claim_once,
+    load_events,
     load_state,
+    next_context_kind,
     read_input,
+    record_event,
     turn_root,
     write_private_json,
 )
 
-_SCHEMA_VERSION = 3
+_SCHEMA_VERSION = 4
 _DIAGNOSTIC_MODE = "SUPER_SOL_DIAGNOSTIC_MODE"
 _FORCED_ROUTE = "SUPER_SOL_FORCED_ROUTE"
 _SECRET = re.compile(r"sk-[A-Za-z0-9_-]{20,}")
@@ -43,6 +48,7 @@ _BILLABLE_CONFIRMATIONS = (
     "super sol billable run approved",
 )
 _SHELL_OPERATORS = {"&", "&&", ";", "|", "||"}
+_EDIT_TOOLS = {"apply_patch", "edit", "write"}
 _UV_RUN_VALUE_OPTIONS = {
     "--allow-insecure-host",
     "--cache-dir",
@@ -148,19 +154,31 @@ def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:
         }
     decision = route_prompt(prompt)
     diagnostic_mode, forced_route, diagnostic_warning = _diagnostic_control()
-    effective_route = decision.route
+    effective_route = Route.PASS_THROUGH
     if diagnostic_mode == "observe":
         effective_route = Route.PASS_THROUGH
     elif diagnostic_mode == "forced" and forced_route is not None:
         effective_route = forced_route
+    elif decision.forced:
+        effective_route = decision.route
     root = turn_root(payload)
-    if root is not None:
+    billable_authorized = _billable_authorized(prompt)
+    should_persist = (
+        billable_authorized
+        or decision.contract is not None
+        or decision.forced
+        or diagnostic_mode != "adaptive"
+        or diagnostic_warning is not None
+    )
+    if root is not None and should_persist:
         private_state: dict[str, object] = {
-            "billable_authorized": _billable_authorized(prompt),
+            "billable_authorized": billable_authorized,
+            "confidence": decision.confidence,
             "diagnostic_mode": diagnostic_mode,
             "effective_route": effective_route.value,
             "forced": decision.forced or diagnostic_mode == "forced",
             "natural_route": decision.route.value,
+            "primary_contract": decision.contract.value if decision.contract is not None else None,
             "schema_version": _SCHEMA_VERSION,
             "signal_ids": list(decision.signal_ids),
         }
@@ -173,6 +191,8 @@ def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:
     if decision.warning is not None:
         return _warning(decision.warning)
     context = context_for(effective_route)
+    if context is not None and root is not None:
+        _ = claim_once(root, "model-visible-context")
     return _context("UserPromptSubmit", context) if context is not None else None
 
 
@@ -310,26 +330,48 @@ def _pre_tool(payload: dict[str, object]) -> dict[str, object] | None:
     return None
 
 
-def _post_tool(payload: dict[str, object]) -> dict[str, object] | None:
+def _post_tool(payload: dict[str, object]) -> dict[str, object] | None:  # noqa: PLR0911
     root = turn_root(payload)
     state = load_state(payload)
-    if (
-        root is None
-        or state is None
-        or state.get("diagnostic_mode") == "observe"
-        or state.get("effective_route") == Route.PASS_THROUGH.value
-    ):
+    if root is None or state is None or state.get("diagnostic_mode") == "observe":
         return None
-    command = _command(payload) or ""
-    verification = _verification_command(_simple_argv(command))
     response = payload.get("tool_response")
-    if not verification or not isinstance(response, dict):
+    if not isinstance(response, dict):
         return None
     response = cast("dict[object, object]", response)
     code = response.get("exit_code")
-    if type(code) is not int or code == 0 or not claim_once(root, "repair-context"):
+    explicit_success = response.get("success")
+    is_error = response.get("is_error")
+    success = (
+        code == 0
+        if type(code) is int
+        else (explicit_success if isinstance(explicit_success, bool) else is_error is not True)
+    )
+    tool_name = payload.get("tool_name")
+    normalized_tool = tool_name.casefold() if isinstance(tool_name, str) else ""
+    if normalized_tool in _EDIT_TOOLS:
+        record_event(root, payload.get("tool_use_id"), "edit", success)
         return None
-    return _context("PostToolUse", REPAIR_CONTEXT)
+    if normalized_tool != "bash":
+        return None
+    command = _command(payload) or ""
+    verification = _verification_command(_simple_argv(command))
+    if not verification:
+        return None
+    record_event(root, payload.get("tool_use_id"), "verification", success)
+    events = load_events(root)
+    context_kind = next_context_kind(state, events, success)
+    if context_kind is None:
+        return None
+    primary = state.get("primary_contract")
+    if not isinstance(primary, str) or not claim_once(root, "model-visible-context"):
+        return None
+    try:
+        contract = Contract(primary)
+    except ValueError:
+        return None
+    context = residual_context(contract) if context_kind == "residual" else REPAIR_CONTEXT
+    return _context("PostToolUse", context)
 
 
 def _dispatch(payload: dict[str, object]) -> dict[str, object] | None:

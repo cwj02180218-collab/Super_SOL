@@ -28,20 +28,13 @@ def test_pass_through_prompt_emits_no_model_context(
 
     assert result.returncode == 0
     assert result.stdout is None
-    assert _state_payloads(plugin_data) == [
-        {
-            "billable_authorized": False,
-            "diagnostic_mode": "adaptive",
-            "effective_route": "pass_through",
-            "forced": False,
-            "natural_route": "pass_through",
-            "schema_version": 3,
-            "signal_ids": [],
-        }
-    ]
+    assert not plugin_data.exists()
 
 
-def test_specialist_prompt_emits_only_selected_pack(run_hook: HookRunner) -> None:
+def test_adaptive_specialist_prompt_is_raw_first_and_emits_no_context(
+    run_hook: HookRunner,
+    plugin_data: Path,
+) -> None:
     result = run_hook(
         hook_input(
             "UserPromptSubmit",
@@ -50,9 +43,13 @@ def test_specialist_prompt_emits_only_selected_pack(run_hook: HookRunner) -> Non
     )
 
     assert result.returncode == 0
-    assert _context(result.stdout) == context_for(Route.CONCURRENCY_STATE)
-    assert "same-key coalescing" in _context(result.stdout)
-    assert "migration" not in _context(result.stdout).casefold()
+    assert result.stdout is None
+    state = _state_payloads(plugin_data)[0]
+    assert state["primary_contract"] == "concurrency_cancellation"
+    confidence = state["confidence"]
+    assert isinstance(confidence, int)
+    assert confidence >= 2
+    assert state["effective_route"] == "pass_through"
 
 
 def test_korean_security_prompt_routes_without_persisting_prompt(
@@ -63,11 +60,12 @@ def test_korean_security_prompt_routes_without_persisting_prompt(
     result = run_hook(hook_input("UserPromptSubmit", prompt=prompt))
 
     assert result.returncode == 0
-    assert _context(result.stdout) == context_for(Route.SECURITY_BOUNDARY)
+    assert result.stdout is None
     combined = "".join(path.read_text(encoding="utf-8") for path in plugin_data.rglob("*.*"))
     assert prompt not in combined
     assert _state_payloads(plugin_data)[0]["natural_route"] == "security_boundary"
-    assert _state_payloads(plugin_data)[0]["effective_route"] == "security_boundary"
+    assert _state_payloads(plugin_data)[0]["effective_route"] == "pass_through"
+    assert _state_payloads(plugin_data)[0]["primary_contract"] == "security_path_boundary"
 
 
 def test_ambiguous_and_mixed_prompts_pass_through(run_hook: HookRunner) -> None:
@@ -129,7 +127,7 @@ def test_negative_billing_phrase_overrides_live_words(
     result = run_hook(hook_input("UserPromptSubmit", prompt=prompt))
 
     assert result.returncode == 0
-    assert _state_payloads(plugin_data)[0]["billable_authorized"] is False
+    assert not plugin_data.exists()
 
 
 def test_billable_authorization_requires_standalone_fixed_confirmation(
@@ -142,7 +140,7 @@ def test_billable_authorization_requires_standalone_fixed_confirmation(
         )
     )
     assert incidental.returncode == 0
-    assert _state_payloads(plugin_data)[0]["billable_authorized"] is False
+    assert not plugin_data.exists()
 
     approved = run_hook(hook_input("UserPromptSubmit", prompt="SUPER SOL BILLABLE RUN APPROVED"))
     assert approved.returncode == 0
@@ -177,15 +175,16 @@ def test_observe_mode_records_natural_route_without_model_context(
     assert _state_payloads(plugin_data) == [
         {
             "billable_authorized": False,
+            "confidence": 5,
             "diagnostic_mode": "observe",
             "effective_route": "pass_through",
             "forced": False,
             "natural_route": "concurrency_state",
-            "schema_version": 3,
+            "primary_contract": "concurrency_cancellation",
+            "schema_version": 4,
             "signal_ids": [
-                "concurrency.race",
                 "concurrency.concurrent",
-                "concurrency.cancellation",
+                "concurrency.race",
             ],
         }
     ]

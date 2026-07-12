@@ -14,9 +14,8 @@ Super SOL은 `fablized-sol`의 재현 가능한 평가 하네스와 `cuj0218/GPT
 - 플러그인은 별도 API 키, SDK 호출, HTTP 요청, MCP 서버, 백그라운드 서비스가 없습니다.
 - 프롬프트 원문, 명령, 도구 출력, 모델 출력, 환경변수를 저장하지 않습니다.
 - 일반·모호·혼합·설명 요청은 추가 context 없이 stock Codex로 통과시킵니다.
-- 동시성, 보안 경계, 마이그레이션, 실패 원자성 중 한 영역만 높은 확신으로 감지될 때
-  해당 전문 절차를 적용합니다.
-- 인식 가능한 검증 실패에서만 같은 turn 안의 수정 context를 한 번 전달합니다.
+- 일곱 의미 계약 중 한 영역만 높은 확신으로 감지해도 구현 전 context는 넣지 않습니다.
+- 실제 편집 뒤 첫 검증에서만 잔여 의미 점검 또는 수정 context 중 하나를 한 번 전달합니다.
 - 모델, reasoning effort, 권한, 서브에이전트를 자동으로 바꾸지 않습니다.
 - v0.5 후보는 v0.4의 일반 154자 contract sweep과 Stop 훅을 제거합니다.
 
@@ -26,11 +25,10 @@ Super SOL은 `fablized-sol`의 재현 가능한 평가 하네스와 `cuj0218/GPT
 
 ## 현재 모델 기준
 
-v0.6은 새 모델이 아니라 v0.5 실패 원인을 분리하는 진단 후보입니다. 일반 사용은 adaptive
-모드만 사용하며, `SUPER_SOL_DIAGNOSTIC_MODE=observe|forced`와
-`SUPER_SOL_FORCED_ROUTE=<route>`는 사전등록된 clean-room benchmark home 전용입니다. observe는
-분류만 기록하고 context와 repair를 모두 끄며, forced는 외부 독립 label의 frozen pack만 한 번
-적용합니다. 자세한 계약은 [v0.6 diagnostic protocol](V0.6_DIAGNOSTIC_PROTOCOL.md)에 있습니다.
+v0.7은 새 모델이 아니라 raw-first 증거 제한형 후보입니다. 일반 사용은 adaptive 모드만
+사용합니다. 진단 환경변수는 이전 결과 재현용이며 기본 동작이 아닙니다. v0.7은 요청 시점에는
+순정 Codex 경로를 보존하고 실제 편집과 첫 검증이 관찰된 뒤에만 one model-visible injection을
+허용합니다. 자세한 계약은 [v0.7 promotion protocol](V0.7_PROMOTION_PROTOCOL.md)에 있습니다.
 
 [OpenAI의 2026-07-09 GPT-5.6 정식 출시 발표](https://openai.com/index/gpt-5-6/)를 기준으로
 일상 기본값은 `gpt-5.6-terra/medium`, Pro급 품질 통제 비교군은

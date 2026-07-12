@@ -4,7 +4,57 @@ from pathlib import Path
 HOOKS_ROOT = Path(__file__).parents[2] / "plugins" / "super-sol" / "hooks"
 sys.path.insert(0, str(HOOKS_ROOT))
 
-from super_sol_routes import REPAIR_CONTEXT, Route, context_for, route_prompt  # noqa: E402
+from super_sol_routes import (  # noqa: E402
+    REPAIR_CONTEXT,
+    Contract,
+    Route,
+    context_for,
+    residual_context,
+    route_prompt,
+)
+
+
+def test_action_prompts_select_one_primary_semantic_contract() -> None:
+    cases = {
+        "Return a deep copy without sharing nested aliases": Contract.OWNERSHIP_ALIASING,
+        "Reject unknown commands with usage and the correct return code": (
+            Contract.INPUT_ERROR_SEMANTICS
+        ),
+        "Allow retry after failure without duplicate state": Contract.RETRY_STATE,
+        "Fix concurrent refresh cancellation and race conditions": (
+            Contract.CONCURRENCY_CANCELLATION
+        ),
+        "Validate everything before an atomic commit": Contract.FAILURE_ATOMICITY,
+        "Migrate v1 records backward-compatibly and reject future versions": (
+            Contract.MIGRATION_COMPATIBILITY
+        ),
+        "Reject path traversal and symlink parents": Contract.SECURITY_PATH_BOUNDARY,
+    }
+
+    for prompt, expected in cases.items():
+        decision = route_prompt(prompt)
+        assert decision.contract is expected
+        assert decision.confidence >= 2
+        assert 1 <= len(decision.signal_ids) <= 2
+
+
+def test_equal_contract_scores_are_observe_only() -> None:
+    decision = route_prompt(
+        "Add path traversal protection and migrate schema versions backward-compatibly"
+    )
+
+    assert decision.contract is None
+    assert decision.route is Route.PASS_THROUGH
+    assert decision.confidence == 0
+
+
+def test_residual_context_is_bounded_and_does_not_repeat_tests() -> None:
+    for contract in Contract:
+        context = residual_context(contract)
+        assert len(context) <= 220
+        assert contract.value.replace("_", " ") in context
+        assert "Do not rerun passed tests" in context
+        assert "T109" not in context
 
 
 def test_unambiguous_prompts_select_one_specialist_route() -> None:

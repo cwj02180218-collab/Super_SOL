@@ -18,7 +18,7 @@ def test_plugin_manifest_and_marketplace_are_release_ready() -> None:
     marketplace = _json(REPO_ROOT / ".agents" / "plugins" / "marketplace.json")
 
     assert manifest["name"] == "super-sol"
-    assert manifest["version"] == "0.6.0-rc1"
+    assert manifest["version"] == "0.7.0-rc1"
     assert manifest["repository"] == "https://github.com/cwj02180218-collab/Super_SOL"
     assert "mcpServers" not in manifest
     assert "apps" not in manifest
@@ -44,7 +44,7 @@ def test_hook_config_registers_only_local_python_commands() -> None:
     assert isinstance(pre_group, dict)
     assert isinstance(post_group, dict)
     assert pre_group["matcher"] == "^Bash$"
-    assert post_group["matcher"] == "^Bash$"
+    assert post_group["matcher"] == "^(Bash|apply_patch|Edit|Write)$"
     encoded = json.dumps(hooks)
     assert "$PLUGIN_ROOT/hooks/super_sol_hook.py" in encoded
     assert "commandWindows" in encoded
