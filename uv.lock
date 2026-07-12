@@ -1062,7 +1062,7 @@ wheels = [
 
 [[package]]
 name = "super-sol-harness"
-version = "0.6.0rc1"
+version = "0.7.0rc1"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },

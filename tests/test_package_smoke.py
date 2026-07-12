@@ -81,7 +81,7 @@ def test_package_exports_version() -> None:
     version = fablized_sol.__version__
 
     # Then the package exports the distribution version
-    assert version == "0.6.0rc1"
+    assert version == "0.7.0rc1"
 
 
 def test_sdist_uses_an_explicit_source_allowlist() -> None:
@@ -207,3 +207,25 @@ def test_v06_gate0_brief_makes_no_performance_claim() -> None:
     assert "no known vulnerabilities found" in brief
     assert "No v0.6 model slot was executed" in brief
     assert "sealed T125-T132 holdout" in brief
+
+
+def test_v07_candidate_docs_freeze_evidence_bounded_claim() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    postmortem = Path("docs/BENCHMARK_POSTMORTEM_0.6.md").read_text(encoding="utf-8")
+    protocol = Path("docs/V0.7_PROMOTION_PROTOCOL.md").read_text(encoding="utf-8")
+    brief = Path("docs/RELEASE_BRIEF_0.7.0RC1.md").read_text(encoding="utf-8")
+    combined = f"{readme}\n{postmortem}\n{protocol}\n{brief}"
+
+    for expected in (
+        "0.7.0rc1",
+        "raw-first",
+        "one model-visible injection",
+        "T117-T124",
+        "64 valid slots",
+        "token ratio <= 1.05",
+        "wall-time ratio <= 1.10",
+        "not a performance-uplift claim",
+        "Terra -0.71",
+        "Sol +2.53",
+    ):
+        assert expected in combined
