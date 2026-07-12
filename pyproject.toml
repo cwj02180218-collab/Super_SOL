@@ -71,6 +71,7 @@ dev = [
 typeCheckingMode = "all"
 pythonVersion = "3.12"
 pythonPlatform = "All"
+extraPaths = ["plugins/super-sol/hooks"]
 include = [
   "src",
   "tests",
