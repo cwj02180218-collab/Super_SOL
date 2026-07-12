@@ -24,6 +24,18 @@ class Route(str, Enum):
     FAILURE_ATOMICITY = "failure_atomicity"
 
 
+class Contract(str, Enum):
+    """One bounded semantic obligation detected in a request."""
+
+    OWNERSHIP_ALIASING = "ownership_aliasing"
+    INPUT_ERROR_SEMANTICS = "input_error_semantics"
+    RETRY_STATE = "retry_state"
+    CONCURRENCY_CANCELLATION = "concurrency_cancellation"
+    FAILURE_ATOMICITY = "failure_atomicity"
+    MIGRATION_COMPATIBILITY = "migration_compatibility"
+    SECURITY_PATH_BOUNDARY = "security_path_boundary"
+
+
 @dataclass(frozen=True)
 class RouteDecision:
     """Privacy-safe route metadata for one prompt."""
@@ -33,6 +45,8 @@ class RouteDecision:
     signal_ids: tuple[str, ...]
     forced: bool = False
     warning: Optional[str] = None
+    contract: Optional[Contract] = None
+    confidence: int = 0
 
 
 @dataclass(frozen=True)
@@ -44,6 +58,7 @@ class _Signal:
 
 _ACTION_PHRASES = (
     "add",
+    "allow",
     "change",
     "fix",
     "implement",
@@ -52,6 +67,7 @@ _ACTION_PHRASES = (
     "must",
     "reject",
     "repair",
+    "return",
     "update",
     "clean up",
     "validate",
@@ -72,6 +88,137 @@ _EXPLANATION_PHRASES = (
     "뭐야",
 )
 _ACTIVATION_SCORE = 2
+_CONFIDENCE_MARGIN = 1
+
+_CONTRACT_SIGNALS: dict[Contract, tuple[_Signal, ...]] = {
+    Contract.OWNERSHIP_ALIASING: (
+        _Signal(
+            "ownership.copy",
+            2,
+            ("deep copy", "shallow copy", "copy without sharing", "깊은 복사", "얕은 복사"),
+        ),
+        _Signal(
+            "ownership.alias",
+            2,
+            ("nested alias", "shared alias", "sharing nested", "aliasing", "별칭 공유"),
+        ),
+        _Signal(
+            "ownership.immutable",
+            1,
+            ("without mutating", "input immutability", "do not mutate input", "입력 불변"),
+        ),
+    ),
+    Contract.INPUT_ERROR_SEMANTICS: (
+        _Signal(
+            "input.unknown",
+            2,
+            ("unknown command", "unknown input", "알 수 없는 명령", "알 수 없는 입력"),
+        ),
+        _Signal("input.arity", 2, ("wrong arity", "invalid arity", "잘못된 인자 수")),
+        _Signal("input.usage", 1, ("usage message", "usage text", "사용법 문구")),
+        _Signal("input.return_code", 1, ("return code", "exit code", "반환 코드", "종료 코드")),
+        _Signal("input.malformed", 1, ("malformed input", "invalid input", "잘못된 입력")),
+    ),
+    Contract.RETRY_STATE: (
+        _Signal(
+            "retry.after_failure",
+            2,
+            ("retry after failure", "retry after a failure", "실패 후 재시도"),
+        ),
+        _Signal(
+            "retry.identity",
+            2,
+            ("same id", "same identifier", "동일 id", "같은 id"),
+        ),
+        _Signal(
+            "retry.duplicate",
+            2,
+            ("duplicate state", "중복 상태"),
+        ),
+        _Signal("retry.idempotent", 2, ("idempotent retry", "idempotent retries", "멱등 재시도")),
+    ),
+    Contract.CONCURRENCY_CANCELLATION: (
+        _Signal("concurrency.race", 2, ("race condition", "race conditions", "data race", "경쟁 상태")),
+        _Signal("concurrency.concurrent", 2, ("concurrent", "concurrently", "동시 요청", "동시 호출")),
+        _Signal("concurrency.cancellation", 1, ("cancellation", "cancelled", "canceled", "취소 전파", "취소")),
+        _Signal("concurrency.coalescing", 1, ("share one", "single flight", "coalesc", "공유 작업")),
+    ),
+    Contract.FAILURE_ATOMICITY: (
+        _Signal("failure.atomic", 2, ("atomic commit", "atomic batch", "atomically", "transactional", "원자적")),
+        _Signal(
+            "failure.all_or_nothing",
+            2,
+            (
+                "all or nothing",
+                "all-or-nothing",
+                "none persist",
+                "persists nothing unless every",
+                "persist nothing unless every",
+                "every write succeeds or none",
+                "모두 성공",
+            ),
+        ),
+        _Signal(
+            "failure.staged_commit",
+            2,
+            (
+                "staged writes",
+                "commit only after all validations",
+                "all validations succeed",
+                "모든 검증이 성공한 뒤에만",
+            ),
+        ),
+        _Signal(
+            "failure.replace_after_success",
+            2,
+            ("temporary file", "replace the destination", "replace destination", "성공 후 교체"),
+        ),
+        _Signal(
+            "failure.cleanup_after_failure",
+            2,
+            (
+                "clean up previously written",
+                "remove previously written",
+                "앞서 저장한 결과도 정리",
+            ),
+        ),
+        _Signal(
+            "failure.duplicate_side_effect",
+            2,
+            ("duplicate side effects", "duplicate side effect", "중복 부작용"),
+        ),
+        _Signal("failure.rollback", 2, ("roll back", "rollback", "롤백", "되돌려")),
+        _Signal("failure.validation", 1, ("validate before mutation", "before an atomic", "변경 전 검증")),
+        _Signal("failure.partial", 2, ("partial failure", "partial-failure", "부분 실패")),
+    ),
+    Contract.MIGRATION_COMPATIBILITY: (
+        _Signal(
+            "migration.core",
+            2,
+            ("schema migration", "migrate", "migration", "마이그레이션", "이전해"),
+        ),
+        _Signal(
+            "migration.compatibility",
+            2,
+            ("backward-compatible", "backward compatible", "하위 호환", "이전 버전 호환"),
+        ),
+        _Signal("migration.future", 1, ("future version", "future versions", "향후 버전")),
+        _Signal("migration.idempotent", 1, ("idempotently", "idempotent migration", "멱등 이전")),
+    ),
+    Contract.SECURITY_PATH_BOUNDARY: (
+        _Signal("security.traversal", 2, ("path traversal", "directory traversal", "경로 순회", "경로 탈출")),
+        _Signal("security.symlink", 2, ("symlink", "symbolic link", "심볼릭 링크")),
+        _Signal("security.boundary", 1, ("secure upload", "upload boundary", "trust boundary", "신뢰 경계")),
+        _Signal("security.secret", 1, ("secret filename", "secret exposure", "비밀 파일")),
+    ),
+}
+
+_CONTRACT_ROUTE = {
+    Contract.CONCURRENCY_CANCELLATION: Route.CONCURRENCY_STATE,
+    Contract.FAILURE_ATOMICITY: Route.FAILURE_ATOMICITY,
+    Contract.MIGRATION_COMPATIBILITY: Route.MIGRATION_COMPATIBILITY,
+    Contract.SECURITY_PATH_BOUNDARY: Route.SECURITY_BOUNDARY,
+}
 
 _SIGNALS: dict[Route, tuple[_Signal, ...]] = {
     Route.CONCURRENCY_STATE: (
@@ -338,23 +485,41 @@ def route_prompt(prompt: str) -> RouteDecision:
     if not any(phrase in lowered for phrase in _ACTION_PHRASES):
         return RouteDecision(Route.PASS_THROUGH, 0, ())
 
-    scored: dict[Route, tuple[int, tuple[str, ...]]] = {}
-    for route, signals in _SIGNALS.items():
+    scored: list[tuple[int, Contract, tuple[_Signal, ...]]] = []
+    for contract, signals in _CONTRACT_SIGNALS.items():
         matched = tuple(
             signal for signal in signals if any(phrase in lowered for phrase in signal.phrases)
         )
-        scored[route] = (
-            sum(signal.weight for signal in matched),
-            tuple(signal.identifier for signal in matched),
-        )
-    active = tuple(route for route, (score, _) in scored.items() if score >= _ACTIVATION_SCORE)
-    if len(active) != 1:
+        scored.append((sum(signal.weight for signal in matched), contract, matched))
+    scored.sort(key=lambda item: (-item[0], item[1].value))
+    best_score, contract, matched = scored[0]
+    runner_up = scored[1][0]
+    if best_score < _ACTIVATION_SCORE or best_score - runner_up < _CONFIDENCE_MARGIN:
         return RouteDecision(Route.PASS_THROUGH, 0, ())
-    route = active[0]
-    score, identifiers = scored[route]
-    return RouteDecision(route, score, identifiers)
+    identifiers = tuple(
+        signal.identifier
+        for signal in sorted(matched, key=lambda signal: (-signal.weight, signal.identifier))[:2]
+    )
+    route = _CONTRACT_ROUTE.get(contract, Route.PASS_THROUGH)
+    return RouteDecision(
+        route,
+        best_score,
+        identifiers,
+        contract=contract,
+        confidence=best_score,
+    )
 
 
 def context_for(route: Route) -> Optional[str]:
     """Return the frozen model context for one specialist route."""
     return _PACKS.get(route)
+
+
+def residual_context(contract: Contract) -> str:
+    """Return one bounded post-verification semantic check."""
+    label = contract.value.replace("_", " ")
+    return (
+        f"Final semantic check only: compare the patch once with the requested {label} behavior. "
+        "If one explicit edge is missing, make one focused correction; otherwise stop. "
+        "Do not rerun passed tests."
+    )

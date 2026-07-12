@@ -24,7 +24,7 @@ from super_sol_state import (
     write_private_json,
 )
 
-_SCHEMA_VERSION = 3
+_SCHEMA_VERSION = 4
 _DIAGNOSTIC_MODE = "SUPER_SOL_DIAGNOSTIC_MODE"
 _FORCED_ROUTE = "SUPER_SOL_FORCED_ROUTE"
 _SECRET = re.compile(r"sk-[A-Za-z0-9_-]{20,}")
@@ -148,19 +148,23 @@ def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:
         }
     decision = route_prompt(prompt)
     diagnostic_mode, forced_route, diagnostic_warning = _diagnostic_control()
-    effective_route = decision.route
+    effective_route = Route.PASS_THROUGH
     if diagnostic_mode == "observe":
         effective_route = Route.PASS_THROUGH
     elif diagnostic_mode == "forced" and forced_route is not None:
         effective_route = forced_route
+    elif decision.forced:
+        effective_route = decision.route
     root = turn_root(payload)
     if root is not None:
         private_state: dict[str, object] = {
             "billable_authorized": _billable_authorized(prompt),
+            "confidence": decision.confidence,
             "diagnostic_mode": diagnostic_mode,
             "effective_route": effective_route.value,
             "forced": decision.forced or diagnostic_mode == "forced",
             "natural_route": decision.route.value,
+            "primary_contract": decision.contract.value if decision.contract is not None else None,
             "schema_version": _SCHEMA_VERSION,
             "signal_ids": list(decision.signal_ids),
         }
