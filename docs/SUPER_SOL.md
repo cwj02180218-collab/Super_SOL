@@ -26,6 +26,12 @@ Super SOL은 `fablized-sol`의 재현 가능한 평가 하네스와 `cuj0218/GPT
 
 ## 현재 모델 기준
 
+v0.6은 새 모델이 아니라 v0.5 실패 원인을 분리하는 진단 후보입니다. 일반 사용은 adaptive
+모드만 사용하며, `SUPER_SOL_DIAGNOSTIC_MODE=observe|forced`와
+`SUPER_SOL_FORCED_ROUTE=<route>`는 사전등록된 clean-room benchmark home 전용입니다. observe는
+분류만 기록하고 context와 repair를 모두 끄며, forced는 외부 독립 label의 frozen pack만 한 번
+적용합니다. 자세한 계약은 [v0.6 diagnostic protocol](V0.6_DIAGNOSTIC_PROTOCOL.md)에 있습니다.
+
 [OpenAI의 2026-07-09 GPT-5.6 정식 출시 발표](https://openai.com/index/gpt-5-6/)를 기준으로
 일상 기본값은 `gpt-5.6-terra/medium`, Pro급 품질 통제 비교군은
 `gpt-5.6-sol/high`, 최상단 참고치는 `gpt-5.6-sol/max`입니다. 실제 모델 접근 가능 여부는 사용자 플랜과 워크스페이스 정책에

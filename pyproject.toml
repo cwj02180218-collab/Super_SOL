@@ -1,6 +1,6 @@
 [project]
 name = "super-sol-harness"
-version = "0.5.0rc1"
+version = "0.6.0rc1"
 description = "Evidence-gated coding-agent harness with reproducible model comparisons"
 readme = "README.md"
 requires-python = ">=3.12"

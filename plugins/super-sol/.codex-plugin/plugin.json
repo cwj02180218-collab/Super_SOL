@@ -1,7 +1,7 @@
 {
   "name": "super-sol",
-  "version": "0.5.0-rc1",
-  "description": "Adaptive performance procedures for stock Codex",
+  "version": "0.6.0-rc1",
+  "description": "Diagnosable adaptive performance procedures for stock Codex",
   "author": {
     "name": "Super SOL contributors",
     "url": "https://github.com/cwj02180218-collab/Super_SOL"
@@ -14,7 +14,7 @@
   "interface": {
     "displayName": "Super SOL",
     "shortDescription": "고위험 작업만 증폭하는 Codex 도우미",
-    "longDescription": "평소처럼 요청하면 일반 작업은 순정 경로로 통과시키고 동시성, 보안, 마이그레이션, 원자성 작업에만 전문 절차를 적용합니다. 별도 API 키나 외부 서버가 필요하지 않습니다.",
+    "longDescription": "평소처럼 요청하면 일반 작업은 순정 경로로 통과시키고 동시성, 보안, 마이그레이션, 원자성 작업에만 전문 절차를 적용합니다. v0.6 진단 모드는 라우팅과 절차 효과를 분리하며 별도 API 키나 외부 서버가 필요하지 않습니다.",
     "developerName": "Super SOL contributors",
     "category": "Productivity",
     "capabilities": ["Interactive", "Write"],

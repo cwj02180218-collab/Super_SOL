@@ -17,9 +17,20 @@ Codex 작업 자체의 사용량은 그대로 발생하므로 비용 0을 보장
 
 ![Super SOL 상황별 사용 가이드](docs/assets/super-sol-guide-wide.png)
 
-## v0.5 Performance Amplifier 개발 후보
+## v0.6 Router Diagnostics 개발 후보
 
-**v0.3.1 remains the stable release.** 현재 브랜치의 `0.5.0rc1`은 Plus 사용자의 실전 코딩
+`0.6.0rc1`은 v0.5의 부정적 결과를 숨기지 않고 라우팅 실패와 procedure 실패를 분리하는
+진단 후보입니다. failure-atomicity의 일반 표현 recall을 보강하고, 모델-visible prompt를
+바꾸지 않는 `router-observe`와 `procedure-forced` 환경 모드를 추가했습니다. 정상 설치는
+항상 adaptive이며 자동 모델 전환·API 호출·추가 과금은 없습니다.
+
+공개된 T109~T116의 64-slot 진단은 성능 홍보에 사용할 수 없습니다. 정확한 네 arm과 recall,
+precision, 자원 게이트는 [`V0.6_DIAGNOSTIC_PROTOCOL.md`](docs/V0.6_DIAGNOSTIC_PROTOCOL.md), v0.5
+실패 수치는 [`BENCHMARK_POSTMORTEM_0.5.md`](docs/BENCHMARK_POSTMORTEM_0.5.md)에 고정했습니다.
+
+## v0.5 Performance Amplifier 실패 후보
+
+**v0.3.1 remains the stable release.** `0.5.0rc1`은 Plus 사용자의 실전 코딩
 결과를 더 강한 raw 모델에 가깝게 만들 수 있는지 검증하는 개발 후보입니다. 일상 설치 명령은
 계속 `v0.3.1`을 가리킵니다. 새 unseen holdout과 독립 감사 전에는 성능 증폭이나 Pro급 결과를
 주장하지 않습니다.

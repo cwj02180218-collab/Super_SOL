@@ -81,7 +81,7 @@ def test_package_exports_version() -> None:
     version = fablized_sol.__version__
 
     # Then the package exports the distribution version
-    assert version == "0.5.0rc1"
+    assert version == "0.6.0rc1"
 
 
 def test_sdist_uses_an_explicit_source_allowlist() -> None:
@@ -169,3 +169,30 @@ def test_v05_gate0_brief_stops_before_paid_evidence() -> None:
     assert "No v0.5 performance result exists" in brief
     assert "holdout-seal digest: **unavailable" in brief
     assert "SUPER SOL 유료 실행 승인" in brief
+
+
+def test_v06_diagnostic_docs_freeze_failure_and_four_arm_contract() -> None:
+    postmortem = Path("docs/BENCHMARK_POSTMORTEM_0.5.md").read_text(encoding="utf-8")
+    protocol = Path("docs/V0.6_DIAGNOSTIC_PROTOCOL.md").read_text(encoding="utf-8")
+    combined = f"{postmortem}\n{protocol}"
+
+    for expected in (
+        "0.6.0rc1",
+        "terra-raw",
+        "router-observe",
+        "procedure-forced",
+        "adaptive-v06",
+        "16 paired observations",
+        "62.5%",
+        "-17.5",
+        "T109-T116",
+        "64 slots",
+        "specialist recall",
+        "0.80",
+        "0.85",
+        "0.90",
+    ):
+        assert expected in combined
+
+    assert "diagnostic-only" in protocol
+    assert "no performance promotion" in protocol
