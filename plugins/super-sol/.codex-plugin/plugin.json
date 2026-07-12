@@ -1,7 +1,7 @@
 {
   "name": "super-sol",
-  "version": "0.4.0-rc1",
-  "description": "Beginner-friendly automatic verification for stock Codex",
+  "version": "0.5.0-rc1",
+  "description": "Adaptive performance procedures for stock Codex",
   "author": {
     "name": "Super SOL contributors",
     "url": "https://github.com/cwj02180218-collab/Super_SOL"
@@ -13,8 +13,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Super SOL",
-    "shortDescription": "검증까지 챙기는 초보자용 Codex 도우미",
-    "longDescription": "평소처럼 요청하면 작업 유형을 가볍게 분류하고, 변경 후 검증 누락과 알려진 자동 과금 경로를 확인합니다. 별도 API 키나 외부 서버가 필요하지 않습니다.",
+    "shortDescription": "고위험 작업만 증폭하는 Codex 도우미",
+    "longDescription": "평소처럼 요청하면 일반 작업은 순정 경로로 통과시키고 동시성, 보안, 마이그레이션, 원자성 작업에만 전문 절차를 적용합니다. 별도 API 키나 외부 서버가 필요하지 않습니다.",
     "developerName": "Super SOL contributors",
     "category": "Productivity",
     "capabilities": ["Interactive", "Write"],

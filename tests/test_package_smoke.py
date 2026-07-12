@@ -81,7 +81,7 @@ def test_package_exports_version() -> None:
     version = fablized_sol.__version__
 
     # Then the package exports the distribution version
-    assert version == "0.4.0rc1"
+    assert version == "0.5.0rc1"
 
 
 def test_sdist_uses_an_explicit_source_allowlist() -> None:
@@ -128,3 +128,32 @@ def test_readme_exposes_beginner_plugin_and_current_model_contract() -> None:
     assert "v0.3.1 remains the stable release" in readme
     assert "super-sol-codex-ab" in readme
     assert "unseen holdout" in readme
+
+
+def test_v05_release_candidate_docs_freeze_cells_and_claim_boundary() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    postmortem = Path("docs/BENCHMARK_POSTMORTEM_0.4.md").read_text(encoding="utf-8")
+    protocol = Path("docs/V0.5_PERFORMANCE_PROTOCOL.md").read_text(encoding="utf-8")
+    combined = f"{readme}\n{postmortem}\n{protocol}"
+
+    for expected in (
+        "terra-raw",
+        "terra-v05",
+        "sol-high-raw",
+        "sol-max-raw",
+        "+5",
+        "-2",
+        "1.15",
+        "0.5.0rc1",
+        "v0.3.1 remains the stable release",
+    ):
+        assert expected in combined
+
+    assert "72 paid slots" in postmortem
+    assert "+26.86%" in postmortem
+    assert "+30.86%" in postmortem
+    assert "-0.50%" in postmortem
+    assert "+11.08%" in postmortem
+    assert "T109-T116" in protocol
+    assert "T117-T124" in protocol
+    assert "universal Pro equivalence" in protocol
