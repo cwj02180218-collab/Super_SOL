@@ -55,6 +55,8 @@ def plugin_data(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def run_hook(plugin_data: Path) -> HookRunner:
+    argv = _configured_hook_argv()
+
     def invoke(payload: HookInput) -> HookResult:
         stdin = payload if isinstance(payload, str) else json.dumps(payload)
         environment = {
@@ -64,7 +66,7 @@ def run_hook(plugin_data: Path) -> HookRunner:
             "PYTHONUTF8": "1",
         }
         completed = subprocess.run(  # noqa: S603
-            _configured_hook_argv(),
+            argv,
             input=stdin,
             text=True,
             capture_output=True,
@@ -80,6 +82,8 @@ def run_hook(plugin_data: Path) -> HookRunner:
 
 @pytest.fixture
 def run_hook_with_env(plugin_data: Path) -> HookEnvironmentRunner:
+    argv = _configured_hook_argv()
+
     def invoke(payload: HookInput, overrides: dict[str, str]) -> HookResult:
         stdin = payload if isinstance(payload, str) else json.dumps(payload)
         environment = {
@@ -90,7 +94,7 @@ def run_hook_with_env(plugin_data: Path) -> HookEnvironmentRunner:
             **overrides,
         }
         completed = subprocess.run(  # noqa: S603
-            _configured_hook_argv(),
+            argv,
             input=stdin,
             text=True,
             capture_output=True,

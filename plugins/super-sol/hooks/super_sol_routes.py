@@ -89,6 +89,12 @@ _EXPLANATION_PHRASES = (
 )
 _ACTIVATION_SCORE = 2
 _CONFIDENCE_MARGIN = 1
+CONTEXT_CODEPOINT_LIMIT = 220
+
+
+class ResidualContextBudgetError(ValueError):
+    """Raised when model-visible residual context exceeds its frozen budget."""
+
 
 _CONTRACT_SIGNALS: dict[Contract, tuple[_Signal, ...]] = {
     Contract.OWNERSHIP_ALIASING: (
@@ -544,8 +550,11 @@ def context_for(route: Route) -> Optional[str]:
 def residual_context(contract: Contract) -> str:
     """Return one bounded post-verification semantic check."""
     label = contract.value.replace("_", " ")
-    return (
+    context = (
         f"Final semantic check only: compare the patch once with the requested {label} behavior. "
         "If one explicit edge is missing, make one focused correction; otherwise stop. "
         "Do not rerun passed tests."
     )
+    if len(context) > CONTEXT_CODEPOINT_LIMIT:
+        raise ResidualContextBudgetError
+    return context

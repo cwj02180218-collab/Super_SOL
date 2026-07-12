@@ -28,19 +28,7 @@ def test_pass_through_prompt_emits_no_model_context(
 
     assert result.returncode == 0
     assert result.stdout is None
-    assert _state_payloads(plugin_data) == [
-            {
-                "billable_authorized": False,
-                "confidence": 0,
-                "diagnostic_mode": "adaptive",
-            "effective_route": "pass_through",
-            "forced": False,
-                "natural_route": "pass_through",
-                "primary_contract": None,
-                "schema_version": 4,
-            "signal_ids": [],
-        }
-    ]
+    assert not plugin_data.exists()
 
 
 def test_adaptive_specialist_prompt_is_raw_first_and_emits_no_context(
@@ -58,7 +46,9 @@ def test_adaptive_specialist_prompt_is_raw_first_and_emits_no_context(
     assert result.stdout is None
     state = _state_payloads(plugin_data)[0]
     assert state["primary_contract"] == "concurrency_cancellation"
-    assert state["confidence"] >= 2
+    confidence = state["confidence"]
+    assert isinstance(confidence, int)
+    assert confidence >= 2
     assert state["effective_route"] == "pass_through"
 
 
@@ -137,7 +127,7 @@ def test_negative_billing_phrase_overrides_live_words(
     result = run_hook(hook_input("UserPromptSubmit", prompt=prompt))
 
     assert result.returncode == 0
-    assert _state_payloads(plugin_data)[0]["billable_authorized"] is False
+    assert not plugin_data.exists()
 
 
 def test_billable_authorization_requires_standalone_fixed_confirmation(
@@ -150,7 +140,7 @@ def test_billable_authorization_requires_standalone_fixed_confirmation(
         )
     )
     assert incidental.returncode == 0
-    assert _state_payloads(plugin_data)[0]["billable_authorized"] is False
+    assert not plugin_data.exists()
 
     approved = run_hook(hook_input("UserPromptSubmit", prompt="SUPER SOL BILLABLE RUN APPROVED"))
     assert approved.returncode == 0
@@ -183,19 +173,19 @@ def test_observe_mode_records_natural_route_without_model_context(
     assert result.returncode == 0
     assert result.stdout is None
     assert _state_payloads(plugin_data) == [
-            {
-                "billable_authorized": False,
-                "confidence": 5,
+        {
+            "billable_authorized": False,
+            "confidence": 5,
             "diagnostic_mode": "observe",
             "effective_route": "pass_through",
             "forced": False,
-                "natural_route": "concurrency_state",
-                "primary_contract": "concurrency_cancellation",
-                "schema_version": 4,
-                "signal_ids": [
-                    "concurrency.concurrent",
-                    "concurrency.race",
-                ],
+            "natural_route": "concurrency_state",
+            "primary_contract": "concurrency_cancellation",
+            "schema_version": 4,
+            "signal_ids": [
+                "concurrency.concurrent",
+                "concurrency.race",
+            ],
         }
     ]
 

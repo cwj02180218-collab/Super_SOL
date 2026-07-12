@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import cast
 
 MAX_INPUT_BYTES = 1_048_576
+MAX_INJECTIONS_PER_TURN = 1
 _MAX_STATE_BYTES = 4096
 
 
@@ -114,3 +115,18 @@ def record_event(root: Path, tool_use_id: object, kind: str, success: bool) -> N
 def has_successful_event(events: tuple[dict[str, object], ...], kind: str) -> bool:
     """Return whether one successful event of the requested kind exists."""
     return any(event.get("kind") == kind and event.get("success") is True for event in events)
+
+
+def next_context_kind(
+    state: dict[str, object],
+    events: tuple[dict[str, object], ...],
+    verification_success: bool,
+) -> str | None:
+    """Return the one eligible model-visible context kind for a turn."""
+    if state.get("diagnostic_mode") == "observe":
+        return None
+    if not isinstance(state.get("primary_contract"), str):
+        return None
+    if not has_successful_event(events, "edit"):
+        return None
+    return "residual" if verification_success else "repair"

@@ -20,9 +20,9 @@ from super_sol_routes import (
 from super_sol_state import (
     HookInputError,
     claim_once,
-    has_successful_event,
     load_events,
     load_state,
+    next_context_kind,
     read_input,
     record_event,
     turn_root,
@@ -162,9 +162,17 @@ def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:
     elif decision.forced:
         effective_route = decision.route
     root = turn_root(payload)
-    if root is not None:
+    billable_authorized = _billable_authorized(prompt)
+    should_persist = (
+        billable_authorized
+        or decision.contract is not None
+        or decision.forced
+        or diagnostic_mode != "adaptive"
+        or diagnostic_warning is not None
+    )
+    if root is not None and should_persist:
         private_state: dict[str, object] = {
-            "billable_authorized": _billable_authorized(prompt),
+            "billable_authorized": billable_authorized,
             "confidence": decision.confidence,
             "diagnostic_mode": diagnostic_mode,
             "effective_route": effective_route.value,
@@ -352,7 +360,8 @@ def _post_tool(payload: dict[str, object]) -> dict[str, object] | None:  # noqa:
         return None
     record_event(root, payload.get("tool_use_id"), "verification", success)
     events = load_events(root)
-    if not has_successful_event(events, "edit"):
+    context_kind = next_context_kind(state, events, success)
+    if context_kind is None:
         return None
     primary = state.get("primary_contract")
     if not isinstance(primary, str) or not claim_once(root, "model-visible-context"):
@@ -361,7 +370,7 @@ def _post_tool(payload: dict[str, object]) -> dict[str, object] | None:  # noqa:
         contract = Contract(primary)
     except ValueError:
         return None
-    context = residual_context(contract) if success else REPAIR_CONTEXT
+    context = residual_context(contract) if context_kind == "residual" else REPAIR_CONTEXT
     return _context("PostToolUse", context)
 
 
