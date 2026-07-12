@@ -138,13 +138,27 @@ _CONTRACT_SIGNALS: dict[Contract, tuple[_Signal, ...]] = {
         _Signal("retry.idempotent", 2, ("idempotent retry", "idempotent retries", "멱등 재시도")),
     ),
     Contract.CONCURRENCY_CANCELLATION: (
-        _Signal("concurrency.race", 2, ("race condition", "race conditions", "data race", "경쟁 상태")),
-        _Signal("concurrency.concurrent", 2, ("concurrent", "concurrently", "동시 요청", "동시 호출")),
-        _Signal("concurrency.cancellation", 1, ("cancellation", "cancelled", "canceled", "취소 전파", "취소")),
-        _Signal("concurrency.coalescing", 1, ("share one", "single flight", "coalesc", "공유 작업")),
+        _Signal(
+            "concurrency.race", 2, ("race condition", "race conditions", "data race", "경쟁 상태")
+        ),
+        _Signal(
+            "concurrency.concurrent", 2, ("concurrent", "concurrently", "동시 요청", "동시 호출")
+        ),
+        _Signal(
+            "concurrency.cancellation",
+            1,
+            ("cancellation", "cancelled", "canceled", "취소 전파", "취소"),
+        ),
+        _Signal(
+            "concurrency.coalescing", 1, ("share one", "single flight", "coalesc", "공유 작업")
+        ),
     ),
     Contract.FAILURE_ATOMICITY: (
-        _Signal("failure.atomic", 2, ("atomic commit", "atomic batch", "atomically", "transactional", "원자적")),
+        _Signal(
+            "failure.atomic",
+            2,
+            ("atomic commit", "atomic batch", "atomically", "transactional", "원자적"),
+        ),
         _Signal(
             "failure.all_or_nothing",
             2,
@@ -188,7 +202,11 @@ _CONTRACT_SIGNALS: dict[Contract, tuple[_Signal, ...]] = {
             ("duplicate side effects", "duplicate side effect", "중복 부작용"),
         ),
         _Signal("failure.rollback", 2, ("roll back", "rollback", "롤백", "되돌려")),
-        _Signal("failure.validation", 1, ("validate before mutation", "before an atomic", "변경 전 검증")),
+        _Signal(
+            "failure.validation",
+            1,
+            ("validate before mutation", "before an atomic", "변경 전 검증"),
+        ),
         _Signal("failure.partial", 2, ("partial failure", "partial-failure", "부분 실패")),
     ),
     Contract.MIGRATION_COMPATIBILITY: (
@@ -206,9 +224,17 @@ _CONTRACT_SIGNALS: dict[Contract, tuple[_Signal, ...]] = {
         _Signal("migration.idempotent", 1, ("idempotently", "idempotent migration", "멱등 이전")),
     ),
     Contract.SECURITY_PATH_BOUNDARY: (
-        _Signal("security.traversal", 2, ("path traversal", "directory traversal", "경로 순회", "경로 탈출")),
+        _Signal(
+            "security.traversal",
+            2,
+            ("path traversal", "directory traversal", "경로 순회", "경로 탈출"),
+        ),
         _Signal("security.symlink", 2, ("symlink", "symbolic link", "심볼릭 링크")),
-        _Signal("security.boundary", 1, ("secure upload", "upload boundary", "trust boundary", "신뢰 경계")),
+        _Signal(
+            "security.boundary",
+            1,
+            ("secure upload", "upload boundary", "trust boundary", "신뢰 경계"),
+        ),
         _Signal("security.secret", 1, ("secret filename", "secret exposure", "비밀 파일")),
     ),
 }
