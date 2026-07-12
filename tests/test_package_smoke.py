@@ -196,3 +196,14 @@ def test_v06_diagnostic_docs_freeze_failure_and_four_arm_contract() -> None:
 
     assert "diagnostic-only" in protocol
     assert "no performance promotion" in protocol
+
+
+def test_v06_gate0_brief_makes_no_performance_claim() -> None:
+    brief = Path("docs/RELEASE_BRIEF_0.6.0RC1.md").read_text(encoding="utf-8")
+
+    assert "255 passed" in brief
+    assert "45 passed" in brief
+    assert "90.15%" in brief
+    assert "no known vulnerabilities found" in brief
+    assert "No v0.6 model slot was executed" in brief
+    assert "sealed T125-T132 holdout" in brief

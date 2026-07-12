@@ -27,6 +27,8 @@ Codex 작업 자체의 사용량은 그대로 발생하므로 비용 0을 보장
 공개된 T109~T116의 64-slot 진단은 성능 홍보에 사용할 수 없습니다. 정확한 네 arm과 recall,
 precision, 자원 게이트는 [`V0.6_DIAGNOSTIC_PROTOCOL.md`](docs/V0.6_DIAGNOSTIC_PROTOCOL.md), v0.5
 실패 수치는 [`BENCHMARK_POSTMORTEM_0.5.md`](docs/BENCHMARK_POSTMORTEM_0.5.md)에 고정했습니다.
+무료 안정성 결과와 남은 위험은
+[`RELEASE_BRIEF_0.6.0RC1.md`](docs/RELEASE_BRIEF_0.6.0RC1.md)에 있습니다.
 
 ## v0.5 Performance Amplifier 실패 후보
 
