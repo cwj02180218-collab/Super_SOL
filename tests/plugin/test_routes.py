@@ -63,6 +63,31 @@ def test_signal_aliases_count_once_and_unicode_is_normalized() -> None:
     assert decision.signal_ids.count("concurrency.race") == 1
 
 
+def test_general_failure_atomicity_meanings_are_detected_without_fixture_terms() -> None:
+    prompts = (
+        "Fix the operation so it persists nothing unless every destination succeeds",
+        "Fix saving so every write succeeds or none persist",
+        "Implement staged writes and commit only after all validations succeed",
+        "Fix saving to use a temporary file and replace the destination after fsync",
+        "Clean up previously written outputs when a later operation fails",
+        "Make repeated delivery attempts avoid duplicate side effects",
+        "중간 단계가 실패하면 앞서 저장한 결과도 정리하도록 고쳐줘",
+        "모든 검증이 성공한 뒤에만 변경을 반영하도록 구현해줘",
+    )
+
+    assert all(route_prompt(prompt).route is Route.FAILURE_ATOMICITY for prompt in prompts)
+
+
+def test_generic_retry_and_configuration_requests_do_not_imply_atomicity() -> None:
+    prompts = (
+        "Implement exponential backoff for HTTP retries",
+        "Fix configuration precedence between environment and file settings",
+        "Update the command help for retry options",
+    )
+
+    assert all(route_prompt(prompt).route is Route.PASS_THROUGH for prompt in prompts)
+
+
 def test_packs_are_exact_bounded_and_never_reference_benchmarks() -> None:
     for route in Route:
         context = context_for(route)
