@@ -7,7 +7,7 @@
 
 Super SOL은 두 가지를 한 저장소에 담습니다.
 
-1. 평소 Codex 작업에서 검증 누락을 자동으로 챙기는 초보자용 Codex 플러그인
+1. 평소 Codex 작업에서 고위험 실패 조건만 선택적으로 보강하는 초보자용 Codex 플러그인
 2. 모델과 작업 절차를 통제된 조건에서 비교하는 선택형 벤치마크 하네스
 
 플러그인은 현재 열려 있는 순정 Codex 작업 안에서만 동작합니다. 별도 API 키, MCP 서버,
@@ -16,6 +16,57 @@ Codex 작업 자체의 사용량은 그대로 발생하므로 비용 0을 보장
 새 모델이나 온톨로지가 아니라, 실제 작업과 검증 누락을 관리하는 품질관리 하네스입니다.
 
 ![Super SOL 상황별 사용 가이드](docs/assets/super-sol-guide-wide.png)
+
+## v0.6 Router Diagnostics 개발 후보
+
+`0.6.0rc1`은 v0.5의 부정적 결과를 숨기지 않고 라우팅 실패와 procedure 실패를 분리하는
+진단 후보입니다. failure-atomicity의 일반 표현 recall을 보강하고, 모델-visible prompt를
+바꾸지 않는 `router-observe`와 `procedure-forced` 환경 모드를 추가했습니다. 정상 설치는
+항상 adaptive이며 자동 모델 전환·API 호출·추가 과금은 없습니다.
+
+공개된 T109~T116의 64-slot 진단은 성능 홍보에 사용할 수 없습니다. 정확한 네 arm과 recall,
+precision, 자원 게이트는 [`V0.6_DIAGNOSTIC_PROTOCOL.md`](docs/V0.6_DIAGNOSTIC_PROTOCOL.md), v0.5
+실패 수치는 [`BENCHMARK_POSTMORTEM_0.5.md`](docs/BENCHMARK_POSTMORTEM_0.5.md)에 고정했습니다.
+무료 안정성 결과와 남은 위험은
+[`RELEASE_BRIEF_0.6.0RC1.md`](docs/RELEASE_BRIEF_0.6.0RC1.md)에 있습니다.
+
+## v0.5 Performance Amplifier 실패 후보
+
+**v0.3.1 remains the stable release.** `0.5.0rc1`은 Plus 사용자의 실전 코딩
+결과를 더 강한 raw 모델에 가깝게 만들 수 있는지 검증하는 개발 후보입니다. 일상 설치 명령은
+계속 `v0.3.1`을 가리킵니다. 새 unseen holdout과 독립 감사 전에는 성능 증폭이나 Pro급 결과를
+주장하지 않습니다.
+
+Orca clean-room에서 72 paid slots를 완료한 결과, v0.3.1은 raw와 품질이 같았지만 token
++26.86%, 시간 +30.86%였고, v0.4rc1은 품질 동률과 token -0.50%까지 개선했지만 시간
++11.08%로 사전등록 상한 +10%를 넘었습니다. 따라서 v0.4 Gate 2는 실행하지 않았습니다.
+전체 근거는 [`BENCHMARK_POSTMORTEM_0.4.md`](docs/BENCHMARK_POSTMORTEM_0.4.md)에 고정합니다.
+
+v0.5는 일반 지시문을 항상 주입하지 않습니다. 요청을 로컬에서 보수적으로 분류해 일반·모호·
+설명 요청은 순정 경로로 통과시키고, 다음 네 영역만 짧은 전문 절차를 적용합니다.
+
+- 동시성·공유 상태
+- 인증·파일·입력 보안 경계
+- 스키마 마이그레이션·호환성
+- 부분 실패·원자성·재시도
+
+구조적으로 인식한 검증이 실패했을 때만 같은 Codex turn 안에서 한 번의 표적 수정 context를
+전달합니다. 별도 Codex 실행, API 호출, 모델 전환, 서브에이전트, 자동 재시도는 없습니다.
+첫 줄의 `SUPER SOL OFF`로 해당 turn을 즉시 pass-through로 만들 수 있습니다.
+
+| Cell | Model·effort | Plugin | 역할 |
+| --- | --- | --- | --- |
+| `terra-raw` | GPT-5.6 Terra / medium | off | Plus-efficient baseline |
+| `terra-v05` | GPT-5.6 Terra / medium | v0.5 | 성능 증폭 후보 |
+| `sol-high-raw` | GPT-5.6 Sol / high | off | Pro급 품질 기준선 |
+| `sol-max-raw` | GPT-5.6 Sol / max | off | 최상단 참고치 |
+
+주효과는 같은 모델·effort를 쓰는 `terra-v05 - terra-raw`입니다. `sol-high-raw`는 근접도를
+재고 `sol-max-raw`는 승격 판정에 쓰지 않습니다. 정확한 +5점, -2점, token/time 1.15 상한과
+T117~T124 봉인 규칙은 [`V0.5_PERFORMANCE_PROTOCOL.md`](docs/V0.5_PERFORMANCE_PROTOCOL.md)에
+있습니다. 무료 Gate 0의 실제 통과 항목과 아직 막힌 유료 조건은
+[`RELEASE_BRIEF_0.5.0RC1.md`](docs/RELEASE_BRIEF_0.5.0RC1.md)에 고정했습니다. 기존
+`super-sol-codex-ab`은 v0.4 증거 재현용으로 보존합니다.
 
 ## 초보자용 5분 설치
 
@@ -35,8 +86,9 @@ codex plugin list
 태그 전 개발본만 확인할 때는 `--ref main`을 사용합니다. ChatGPT/Codex 데스크톱 앱을 다시
 열고 새 작업을 시작한 뒤 `/hooks`를 확인합니다. macOS/Linux에서는 설치된 Super SOL 폴더의
 `hooks/super_sol_hook.py`를 `/usr/bin/python3`로 실행하고, Windows에서는 같은 파일을 `py -3`로
-실행해야 합니다. 시작·요청 입력·Bash/편집·종료 이벤트 외의 경로나 명령이 보이면 승인하지
-마세요. 훅 내용이 업데이트되면 다시 승인하라는 안내가 나올 수 있습니다.
+실행해야 합니다. v0.5 후보의 정상 이벤트는 요청 입력, Bash 실행 전, Bash 실행 후 세
+가지입니다. 편집·종료 훅이나 다른 경로가 보이면 승인하지 마세요. 훅 내용이 업데이트되면
+다시 승인하라는 안내가 나올 수 있습니다.
 `--dangerously-bypass-hook-trust`는 일반 설치 절차로 권장하지 않습니다.
 
 ```text
@@ -45,10 +97,11 @@ codex plugin list
 이 저장소가 무엇을 하는지 초보자 기준으로 설명해줘.
 ```
 
-플러그인은 요청을 로컬 문자열 규칙으로 `설명`, `일반 작업`, `디버깅`, `배포 점검` 중
-하나로 분류합니다. 프롬프트 원문, 명령, 도구 출력, 모델 출력, 환경변수는 저장하지 않습니다.
-`apply_patch`, `Edit`, `Write` 변경을 관찰했는데 그 뒤 인식 가능한 성공 검증이 없으면 종료 시
-경고합니다. 추가 Codex 사용량을 자동으로 만들지 않도록 추가 모델 응답을 자동 생성하지는 않습니다.
+플러그인은 요청을 로컬 문자열 규칙으로 pass-through, 동시성, 보안 경계, 마이그레이션,
+실패 원자성 중 하나로 분류합니다. 한 영역만 높은 확신으로 감지될 때만 전문 context를
+전달합니다. 프롬프트 원문, 명령, 도구 출력, 모델 출력, 환경변수는 저장하지 않습니다.
+인식 가능한 검증이 실패하면 같은 turn에서 한 번만 표적 수정 context를 전달하며, 별도 모델
+응답이나 새 Codex 프로세스를 자동 생성하지 않습니다.
 
 ### 새 버전으로 업데이트
 
@@ -260,10 +313,10 @@ uv run --with pyyaml python \
 
 ## 알려진 한계
 
-- Codex 훅의 변경 추적은 `apply_patch`, `Edit`, `Write`에 한정됩니다. shell, MCP, formatter,
-  codegen이 직접 바꾼 파일은 놓칠 수 있으며 운영체제 보안 경계가 아닙니다.
-- Stop 훅은 구조화된 zero exit code와 단순 검증 명령을 기준으로 경고만 합니다. shell 연결,
-  검색·출력 속 검증 단어, 실패를 가린 명령은 성공 증거로 세지 않습니다.
+- 자동 라우터는 공개된 보수적 문자열 신호만 사용합니다. 표현이 다르거나 여러 영역이 섞인
+  요청은 의도적으로 pass-through가 될 수 있습니다.
+- Bash 실행 후 훅은 구조화된 nonzero exit code와 단순 검증 명령만 실패 증거로 셉니다.
+  shell 연결, 검색·출력 속 검증 단어, 실패를 가린 명령은 수정 context를 만들지 않습니다.
 - API 하네스의 hosted tool은 로컬 function-tool lifecycle을 우회할 수 있어 ledger 증거로
   등록하지 않습니다.
 - 외부 `final_defect_found` 라벨은 여전히 평가자가 별도로 제공해야 합니다.

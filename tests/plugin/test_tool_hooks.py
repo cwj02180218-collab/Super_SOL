@@ -1,7 +1,8 @@
 import pytest
 from pydantic import JsonValue
+from super_sol_routes import REPAIR_CONTEXT
 
-from .conftest import HookRunner, hook_input
+from .conftest import HookEnvironmentRunner, HookRunner, hook_input
 
 
 def _prime(run_hook: HookRunner, prompt: str = "이 파일을 수정해줘") -> None:
@@ -9,31 +10,22 @@ def _prime(run_hook: HookRunner, prompt: str = "이 파일을 수정해줘") -> 
     assert result.returncode == 0
 
 
-def _post_tool(
+def _post_tool_result(
     run_hook: HookRunner,
-    tool_name: str,
     command: str,
-    response: dict[str, JsonValue],
+    exit_code: int,
     tool_use_id: str,
-) -> None:
+) -> dict[str, JsonValue] | None:
     result = run_hook(
         hook_input(
             "PostToolUse",
-            tool_name=tool_name,
+            tool_name="Bash",
             tool_use_id=tool_use_id,
             tool_input={"command": command},
-            tool_response=response,
+            tool_response={"exit_code": exit_code},
         )
     )
     assert result.returncode == 0
-
-
-def _stop(run_hook: HookRunner, *, active: bool = False) -> dict[str, JsonValue]:
-    result = run_hook(
-        hook_input("Stop", stop_hook_active=active, last_assistant_message="완료했습니다")
-    )
-    assert result.returncode == 0
-    assert result.stdout is not None
     return result.stdout
 
 
@@ -57,6 +49,23 @@ def test_unapproved_live_eval_and_direct_api_are_denied(run_hook: HookRunner) ->
         specific = result.stdout["hookSpecificOutput"]
         assert isinstance(specific, dict)
         assert specific["permissionDecision"] == "deny"
+
+
+def test_unapproved_cleanroom_codex_ab_is_denied(run_hook: HookRunner) -> None:
+    _prime(run_hook)
+    result = run_hook(
+        hook_input(
+            "PreToolUse",
+            tool_name="Bash",
+            tool_use_id="pre-cleanroom",
+            tool_input={"command": "uv run super-sol-codex-ab --tasks tasks.json"},
+        )
+    )
+
+    assert result.stdout is not None
+    specific = result.stdout["hookSpecificOutput"]
+    assert isinstance(specific, dict)
+    assert specific["permissionDecision"] == "deny"
 
 
 @pytest.mark.parametrize(
@@ -182,73 +191,66 @@ def test_dry_run_allowance_rejects_comments_negation_and_shell_chains(
     assert specific["permissionDecision"] == "deny"
 
 
-def test_mutation_without_verification_warns_without_automatic_continuation(
+def test_failed_verification_emits_repair_context_once(run_hook: HookRunner) -> None:
+    _prime(run_hook, "Fix concurrent refresh cancellation and race conditions")
+
+    first = _post_tool_result(run_hook, "uv run pytest -q", 1, "failed-one")
+    second = _post_tool_result(run_hook, "uv run pytest -q", 1, "failed-two")
+
+    assert first is not None
+    specific = first["hookSpecificOutput"]
+    assert isinstance(specific, dict)
+    assert specific["hookEventName"] == "PostToolUse"
+    assert specific["additionalContext"] == REPAIR_CONTEXT
+    assert second is None
+
+
+def test_success_unrecognized_and_pass_through_failures_emit_no_context(
     run_hook: HookRunner,
 ) -> None:
-    _prime(run_hook)
-    _post_tool(run_hook, "apply_patch", "*** Begin Patch", {}, "mutation-one")
+    _prime(run_hook, "Reject path traversal and symlink parents")
+    assert _post_tool_result(run_hook, "uv run pytest -q", 0, "pass") is None
+    assert _post_tool_result(run_hook, "echo pytest", 1, "mention") is None
+    assert _post_tool_result(run_hook, "pytest -q || true", 1, "chain") is None
 
-    result = _stop(run_hook)
-
-    assert result["continue"] is True
-    assert "자동으로 계속하지" in str(result["systemMessage"])
-
-
-@pytest.mark.parametrize(
-    "command",
-    ["rg pytest pyproject.toml", "echo pytest", "pytest -q || true"],
-)
-def test_verifier_mentions_and_masked_failures_do_not_count(
-    run_hook: HookRunner,
-    command: str,
-) -> None:
-    _prime(run_hook)
-    _post_tool(run_hook, "apply_patch", "*** Begin Patch", {}, "mutation-forged")
-    _post_tool(run_hook, "Bash", command, {"exit_code": 0}, "verify-forged")
-
-    result = _stop(run_hook)
-    assert "확인되지" in str(result["systemMessage"])
-
-
-def test_fresh_structured_verification_allows_stop(run_hook: HookRunner) -> None:
-    _prime(run_hook, "버그를 수정해줘")
-    _post_tool(run_hook, "apply_patch", "*** Begin Patch", {}, "mutation-two")
-    _post_tool(run_hook, "Bash", "uv run pytest -q", {"exit_code": 0}, "verify-one")
-
-    assert _stop(run_hook) == {"continue": True}
+    _prime(run_hook, "rename this variable")
+    assert _post_tool_result(run_hook, "uv run pytest -q", 1, "generic-fail") is None
 
 
 @pytest.mark.parametrize(
     "command",
     ["python3 -m pytest -q", "python -m mypy src", "python3 -m basedpyright"],
 )
-def test_python_module_verification_allows_stop(run_hook: HookRunner, command: str) -> None:
-    _prime(run_hook, "버그를 수정해줘")
-    _post_tool(run_hook, "apply_patch", "*** Begin Patch", {}, "mutation-python")
-    _post_tool(run_hook, "Bash", command, {"exit_code": 0}, "verify-python")
-
-    assert _stop(run_hook) == {"continue": True}
-
-
-def test_stale_or_failed_verification_does_not_count(run_hook: HookRunner) -> None:
-    _prime(run_hook)
-    _post_tool(run_hook, "Bash", "uv run pytest -q", {"exit_code": 0}, "verify-old")
-    _post_tool(run_hook, "apply_patch", "*** Begin Patch", {}, "mutation-three")
-    assert "확인되지" in str(_stop(run_hook)["systemMessage"])
-
-    _post_tool(run_hook, "Bash", "uv run pytest -q", {"exit_code": 1}, "verify-failed")
-    assert "확인되지" in str(_stop(run_hook)["systemMessage"])
+def test_python_module_failures_are_recognized_once(
+    run_hook: HookRunner,
+    command: str,
+) -> None:
+    _prime(run_hook, "Validate before mutation and roll back this atomic batch")
+    result = _post_tool_result(run_hook, command, 1, f"failure-{command}")
+    assert result is not None
 
 
-def test_conversation_profile_never_forces_verification(run_hook: HookRunner) -> None:
-    _prime(run_hook, "이 코드가 무엇인지 설명만 해줘")
-    _post_tool(run_hook, "apply_patch", "*** Begin Patch", {}, "mutation-four")
+def test_observe_mode_never_emits_repair_context(
+    run_hook_with_env: HookEnvironmentRunner,
+) -> None:
+    environment = {"SUPER_SOL_DIAGNOSTIC_MODE": "observe"}
+    prompt = run_hook_with_env(
+        hook_input(
+            "UserPromptSubmit",
+            prompt="Fix concurrent refresh cancellation and race conditions",
+        ),
+        environment,
+    )
+    failure = run_hook_with_env(
+        hook_input(
+            "PostToolUse",
+            tool_name="Bash",
+            tool_use_id="observe-failure",
+            tool_input={"command": "uv run pytest -q"},
+            tool_response={"exit_code": 1},
+        ),
+        environment,
+    )
 
-    assert _stop(run_hook) == {"continue": True}
-
-
-def test_mixed_explanation_and_edit_prompt_requires_verification(run_hook: HookRunner) -> None:
-    _prime(run_hook, "Explain this module and update README.md with the explanation")
-    _post_tool(run_hook, "apply_patch", "*** Begin Patch", {}, "mutation-mixed")
-
-    assert "확인되지" in str(_stop(run_hook)["systemMessage"])
+    assert prompt.stdout is None
+    assert failure.stdout is None
