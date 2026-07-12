@@ -103,3 +103,14 @@ def event_path(root: Path, tool_use_id: object, observed_at: int) -> tuple[Path,
     """Build a hashed immutable event path and return its safe tool identifier."""
     identifier = _identifier(tool_use_id)
     return root / "events" / f"{observed_at}-{identifier}.json", identifier
+
+
+def record_event(root: Path, tool_use_id: object, kind: str, success: bool) -> None:
+    """Record one immutable privacy-safe tool outcome."""
+    path, _identifier_value = event_path(root, tool_use_id, time.time_ns())
+    write_private_json(path, {"kind": kind, "success": success})
+
+
+def has_successful_event(events: tuple[dict[str, object], ...], kind: str) -> bool:
+    """Return whether one successful event of the requested kind exists."""
+    return any(event.get("kind") == kind and event.get("success") is True for event in events)

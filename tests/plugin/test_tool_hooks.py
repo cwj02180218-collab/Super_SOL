@@ -29,6 +29,20 @@ def _post_tool_result(
     return result.stdout
 
 
+def _post_edit(run_hook: HookRunner, tool_use_id: str = "edit-before-verification") -> None:
+    result = run_hook(
+        hook_input(
+            "PostToolUse",
+            tool_name="apply_patch",
+            tool_use_id=tool_use_id,
+            tool_input={"patch": "bounded fixture"},
+            tool_response={"success": True},
+        )
+    )
+    assert result.returncode == 0
+    assert result.stdout is None
+
+
 def test_unapproved_live_eval_and_direct_api_are_denied(run_hook: HookRunner) -> None:
     _prime(run_hook)
     commands = (
@@ -193,6 +207,7 @@ def test_dry_run_allowance_rejects_comments_negation_and_shell_chains(
 
 def test_failed_verification_emits_repair_context_once(run_hook: HookRunner) -> None:
     _prime(run_hook, "Fix concurrent refresh cancellation and race conditions")
+    _post_edit(run_hook)
 
     first = _post_tool_result(run_hook, "uv run pytest -q", 1, "failed-one")
     second = _post_tool_result(run_hook, "uv run pytest -q", 1, "failed-two")
@@ -226,6 +241,7 @@ def test_python_module_failures_are_recognized_once(
     command: str,
 ) -> None:
     _prime(run_hook, "Validate before mutation and roll back this atomic batch")
+    _post_edit(run_hook, f"edit-{command}")
     result = _post_tool_result(run_hook, command, 1, f"failure-{command}")
     assert result is not None
 

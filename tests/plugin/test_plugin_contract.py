@@ -44,7 +44,7 @@ def test_hook_config_registers_only_local_python_commands() -> None:
     assert isinstance(pre_group, dict)
     assert isinstance(post_group, dict)
     assert pre_group["matcher"] == "^Bash$"
-    assert post_group["matcher"] == "^Bash$"
+    assert post_group["matcher"] == "^(Bash|apply_patch|Edit|Write)$"
     encoded = json.dumps(hooks)
     assert "$PLUGIN_ROOT/hooks/super_sol_hook.py" in encoded
     assert "commandWindows" in encoded
