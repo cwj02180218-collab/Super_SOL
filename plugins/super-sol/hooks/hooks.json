@@ -29,7 +29,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "^(Bash|apply_patch|Edit|Write)$",
+        "matcher": "^Bash$",
         "hooks": [
           {
             "type": "command",
@@ -37,19 +37,6 @@
             "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\super_sol_hook.py\"",
             "timeout": 5,
             "statusMessage": "작업 증거 확인 중"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/usr/bin/python3 \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
-            "commandWindows": "py -3 \"%PLUGIN_ROOT%\\hooks\\super_sol_hook.py\"",
-            "timeout": 5,
-            "statusMessage": "마지막 검증 확인 중"
           }
         ]
       }

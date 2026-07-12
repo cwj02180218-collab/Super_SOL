@@ -42,7 +42,7 @@ def turn_root(payload: dict[str, object]) -> Path | None:
     plugin_data = os.environ.get("PLUGIN_DATA")
     if not plugin_data:
         return None
-    root = Path(plugin_data) / "super-sol" / "v1"
+    root = Path(plugin_data) / "super-sol" / "v2"
     return root / _identifier(payload.get("session_id")) / _identifier(payload.get("turn_id"))
 
 
@@ -58,6 +58,18 @@ def write_private_json(path: Path, payload: dict[str, object]) -> None:
     except BaseException:
         temporary.unlink(missing_ok=True)
         raise
+
+
+def claim_once(root: Path, name: str) -> bool:
+    """Create one owner-only marker and return whether this caller won."""
+    marker = root / "claims" / hashlib.sha256(name.encode()).hexdigest()
+    marker.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    try:
+        descriptor = os.open(marker, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        return False
+    os.close(descriptor)
+    return True
 
 
 def read_private_json(path: Path) -> dict[str, object] | None:

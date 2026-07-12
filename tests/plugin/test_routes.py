@@ -34,6 +34,7 @@ def test_generic_ambiguous_explanation_and_non_action_pass_through() -> None:
     prompts = (
         "rename this variable",
         "Explain what a race condition and schema migration are",
+        "Explain race conditions and fix this refresh bug",
         "Add path traversal protection and migrate schema versions",
         "동시성과 마이그레이션이 무엇인지 설명만 해줘",
     )

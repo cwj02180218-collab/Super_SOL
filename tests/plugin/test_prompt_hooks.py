@@ -2,13 +2,9 @@ import json
 from pathlib import Path
 
 from pydantic import JsonValue
+from super_sol_routes import Route, context_for
 
 from .conftest import HookRunner, hook_input
-
-CONTRACT_SWEEP = (
-    "Silently map requirements to code and one boundary. After tests pass, re-read once for "
-    "ownership, input, state, and failure semantics. Do not rerun tests."
-)
 
 
 def _context(output: dict[str, JsonValue] | None) -> str:
@@ -24,50 +20,87 @@ def _state_payloads(plugin_data: Path) -> list[dict[str, object]]:
     return [json.loads(path.read_text(encoding="utf-8")) for path in plugin_data.rglob("*.json")]
 
 
-def test_action_and_debug_prompts_emit_one_exact_contract_sweep(run_hook: HookRunner) -> None:
-    assert len(CONTRACT_SWEEP) == 154
-    assert len(CONTRACT_SWEEP.split()) == 24
-    for prompt in ("implement nested copy behavior", "fix the failing retry bug"):
-        result = run_hook(hook_input("UserPromptSubmit", prompt=prompt))
-        assert result.returncode == 0
-        assert _context(result.stdout) == CONTRACT_SWEEP
-        assert _context(result.stdout).count(CONTRACT_SWEEP) == 1
-
-
-def test_korean_debug_prompt_routes_without_persisting_prompt(
+def test_pass_through_prompt_emits_no_model_context(
     run_hook: HookRunner,
     plugin_data: Path,
 ) -> None:
-    prompt = "버그를 고치고 테스트까지 해줘"
-    result = run_hook(hook_input("UserPromptSubmit", prompt=prompt))
-
-    assert result.returncode == 0
-    assert _context(result.stdout) == CONTRACT_SWEEP
-    payloads = _state_payloads(plugin_data)
-    assert payloads == [{"billable_authorized": False, "profile": "debug", "schema_version": 1}]
-    assert prompt not in "".join(
-        path.read_text(encoding="utf-8") for path in plugin_data.rglob("*.*")
-    )
-
-
-def test_explanation_prompt_uses_conversation_profile(
-    run_hook: HookRunner,
-    plugin_data: Path,
-) -> None:
-    result = run_hook(hook_input("UserPromptSubmit", prompt="Explain what this repository does"))
+    result = run_hook(hook_input("UserPromptSubmit", prompt="rename this variable"))
 
     assert result.returncode == 0
     assert result.stdout is None
-    assert _state_payloads(plugin_data)[0]["profile"] == "conversation"
+    assert _state_payloads(plugin_data) == [
+        {
+            "billable_authorized": False,
+            "forced": False,
+            "route": "pass_through",
+            "schema_version": 2,
+            "signal_ids": [],
+        }
+    ]
 
 
-def test_release_prompt_keeps_only_release_context(run_hook: HookRunner) -> None:
-    result = run_hook(hook_input("UserPromptSubmit", prompt="배포 안정성을 검사해줘"))
+def test_specialist_prompt_emits_only_selected_pack(run_hook: HookRunner) -> None:
+    result = run_hook(
+        hook_input(
+            "UserPromptSubmit",
+            prompt="Fix concurrent refresh cancellation and race conditions",
+        )
+    )
 
     assert result.returncode == 0
-    context = _context(result.stdout)
-    assert "배포 경로" in context
-    assert CONTRACT_SWEEP not in context
+    assert _context(result.stdout) == context_for(Route.CONCURRENCY_STATE)
+    assert "same-key coalescing" in _context(result.stdout)
+    assert "migration" not in _context(result.stdout).casefold()
+
+
+def test_korean_security_prompt_routes_without_persisting_prompt(
+    run_hook: HookRunner,
+    plugin_data: Path,
+) -> None:
+    prompt = "심볼릭 링크와 경로 순회를 차단해줘"
+    result = run_hook(hook_input("UserPromptSubmit", prompt=prompt))
+
+    assert result.returncode == 0
+    assert _context(result.stdout) == context_for(Route.SECURITY_BOUNDARY)
+    combined = "".join(path.read_text(encoding="utf-8") for path in plugin_data.rglob("*.*"))
+    assert prompt not in combined
+    assert _state_payloads(plugin_data)[0]["route"] == "security_boundary"
+
+
+def test_ambiguous_and_mixed_prompts_pass_through(run_hook: HookRunner) -> None:
+    prompts = (
+        "Explain what race conditions and migrations are",
+        "Add path traversal protection and migrate schema versions",
+        "Explain this module and update README.md with the explanation",
+    )
+
+    for prompt in prompts:
+        result = run_hook(hook_input("UserPromptSubmit", prompt=prompt))
+        assert result.returncode == 0
+        assert result.stdout is None
+
+
+def test_first_line_route_controls_are_sanitized(run_hook: HookRunner) -> None:
+    off = run_hook(
+        hook_input(
+            "UserPromptSubmit",
+            prompt="SUPER SOL OFF\nFix concurrent refresh race conditions",
+        )
+    )
+    forced = run_hook(
+        hook_input(
+            "UserPromptSubmit",
+            prompt="SUPER SOL ROUTE migration_compatibility\nFix this conversion",
+        )
+    )
+    invalid = run_hook(
+        hook_input("UserPromptSubmit", prompt="SUPER SOL ROUTE unknown\nFix this conversion")
+    )
+
+    assert off.stdout is None
+    assert _context(forced.stdout) == context_for(Route.MIGRATION_COMPATIBILITY)
+    assert invalid.stdout is not None
+    assert "pass-through" in str(invalid.stdout["systemMessage"])
 
 
 def test_likely_api_key_is_blocked_without_echo_or_storage(

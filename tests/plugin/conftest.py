@@ -2,6 +2,7 @@ import json
 import os
 import shlex
 import subprocess
+import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,6 +14,7 @@ REPO_ROOT = Path(__file__).parents[2]
 PLUGIN_ROOT = REPO_ROOT / "plugins" / "super-sol"
 HOOK_SCRIPT = PLUGIN_ROOT / "hooks" / "super_sol_hook.py"
 HOOK_CONFIG = PLUGIN_ROOT / "hooks" / "hooks.json"
+sys.path.insert(0, str(PLUGIN_ROOT / "hooks"))
 _OBJECT_ADAPTER = TypeAdapter[dict[str, JsonValue]](dict[str, JsonValue])
 
 

@@ -265,11 +265,9 @@ def route_prompt(prompt: str) -> RouteDecision:
     if controlled is not None:
         return controlled
     lowered = _normalized(remainder)
-    if not any(phrase in lowered for phrase in _ACTION_PHRASES):
+    if any(phrase in lowered for phrase in _EXPLANATION_PHRASES):
         return RouteDecision(Route.PASS_THROUGH, 0, ())
-    if any(phrase in lowered for phrase in _EXPLANATION_PHRASES) and not any(
-        phrase in lowered for phrase in _ACTION_PHRASES
-    ):
+    if not any(phrase in lowered for phrase in _ACTION_PHRASES):
         return RouteDecision(Route.PASS_THROUGH, 0, ())
 
     scored: dict[Route, tuple[int, tuple[str, ...]]] = {}

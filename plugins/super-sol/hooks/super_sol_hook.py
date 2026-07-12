@@ -6,20 +6,24 @@ import json
 import re
 import shlex
 import sys
-import time
-from typing import Final, cast
+from typing import cast
 
-from super_sol_state import (  # pyright: ignore[reportImplicitRelativeImport]
+from super_sol_routes import (
+    REPAIR_CONTEXT,
+    Route,
+    context_for,
+    route_prompt,
+)
+from super_sol_state import (
     HookInputError,
-    event_path,
-    load_events,
+    claim_once,
     load_state,
     read_input,
     turn_root,
     write_private_json,
 )
 
-_SCHEMA_VERSION = 1
+_SCHEMA_VERSION = 2
 _SECRET = re.compile(r"sk-[A-Za-z0-9_-]{20,}")
 _NEGATIVE_BILLING = (
     "과금 없이",
@@ -34,46 +38,6 @@ _NEGATIVE_BILLING = (
 _BILLABLE_CONFIRMATIONS = (
     "super sol 유료 실행 승인",
     "super sol billable run approved",
-)
-_RELEASE_SIGNALS = (
-    "release",
-    "deploy",
-    "security",
-    "stability",
-    "배포",
-    "릴리즈",
-    "보안",
-    "안정성",
-    "공급망",
-)
-_DEBUG_SIGNALS = ("bug", "error", "fail", "debug", "버그", "오류", "실패", "디버그", "고장")
-_CONVERSATION_SIGNALS = (
-    "explain",
-    "what is",
-    "tell me about",
-    "설명만",
-    "무엇인지",
-    "뭐야",
-    "알려줘",
-)
-_ACTION_SIGNALS = (
-    "add",
-    "change",
-    "create",
-    "edit",
-    "fix",
-    "implement",
-    "remove",
-    "update",
-    "고쳐",
-    "만들",
-    "삭제",
-    "수정",
-    "추가",
-)
-CONTRACT_SWEEP: Final[str] = (
-    "Silently map requirements to code and one boundary. After tests pass, re-read once for "
-    "ownership, input, state, and failure semantics. Do not rerun tests."
 )
 _SHELL_OPERATORS = {"&", "&&", ";", "|", "||"}
 _UV_RUN_VALUE_OPTIONS = {
@@ -144,19 +108,6 @@ def _warning(message: str) -> dict[str, object]:
     return {"continue": True, "systemMessage": f"Super SOL: {message}"}
 
 
-def _profile(prompt: str) -> str:
-    lowered = prompt.casefold()
-    if any(signal in lowered for signal in _RELEASE_SIGNALS):
-        return "release"
-    if any(signal in lowered for signal in _DEBUG_SIGNALS):
-        return "debug"
-    if any(signal in lowered for signal in _CONVERSATION_SIGNALS) and not any(
-        signal in lowered for signal in _ACTION_SIGNALS
-    ):
-        return "conversation"
-    return "action"
-
-
 def _billable_authorized(prompt: str) -> bool:
     lowered = prompt.casefold()
     if any(signal in lowered for signal in _NEGATIVE_BILLING):
@@ -174,25 +125,23 @@ def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:
             "decision": "block",
             "reason": "API 키로 보이는 값이 있습니다. 키를 폐기하고 채팅에서 제거하세요.",
         }
-    profile = _profile(prompt)
+    decision = route_prompt(prompt)
     root = turn_root(payload)
     if root is not None:
         write_private_json(
             root / "request.json",
             {
                 "billable_authorized": _billable_authorized(prompt),
-                "profile": profile,
+                "forced": decision.forced,
+                "route": decision.route.value,
                 "schema_version": _SCHEMA_VERSION,
+                "signal_ids": list(decision.signal_ids),
             },
         )
-    if profile == "conversation":
-        return None
-    if profile in {"action", "debug"}:
-        return _context("UserPromptSubmit", CONTRACT_SWEEP)
-    return _context(
-        "UserPromptSubmit",
-        "배포 경로, 보안, 재현성, 테스트를 확인하고 관찰한 결과와 남은 위험을 구분한다.",
-    )
+    if decision.warning is not None:
+        return _warning(decision.warning)
+    context = context_for(decision.route)
+    return _context("UserPromptSubmit", context) if context is not None else None
 
 
 def _deny(reason: str) -> dict[str, object]:
@@ -329,64 +278,21 @@ def _pre_tool(payload: dict[str, object]) -> dict[str, object] | None:
     return None
 
 
-def _exit_code_zero(value: object) -> bool:
-    if not isinstance(value, dict):
-        return False
-    response = cast("dict[object, object]", value)
-    code = response.get("exit_code")
-    return type(code) is int and code == 0
-
-
 def _post_tool(payload: dict[str, object]) -> dict[str, object] | None:
     root = turn_root(payload)
     state = load_state(payload)
-    if root is None or state is None:
+    if root is None or state is None or state.get("route") == Route.PASS_THROUGH.value:
         return None
-    tool_name = payload.get("tool_name")
     command = _command(payload) or ""
-    mutation = isinstance(tool_name, str) and tool_name.casefold() in {
-        "apply_patch",
-        "edit",
-        "write",
-    }
     verification = _verification_command(_simple_argv(command))
-    if not mutation and not verification:
+    response = payload.get("tool_response")
+    if not verification or not isinstance(response, dict):
         return None
-    observed_at = time.time_ns()
-    event: dict[str, object] = {
-        "mutation": mutation,
-        "observed_at_ns": observed_at,
-        "schema_version": _SCHEMA_VERSION,
-        "verification": verification,
-        "verification_passed": verification and _exit_code_zero(payload.get("tool_response")),
-    }
-    path, identifier = event_path(root, payload.get("tool_use_id"), observed_at)
-    event["tool_use_id"] = identifier
-    write_private_json(path, event)
-    return None
-
-
-def _stop(payload: dict[str, object]) -> dict[str, object]:
-    root = turn_root(payload)
-    state = load_state(payload)
-    if root is None or state is None or state.get("profile") == "conversation":
-        return {"continue": True}
-    events = load_events(root)
-    mutations = [event["observed_at_ns"] for event in events if event.get("mutation") is True]
-    passes = [
-        event["observed_at_ns"] for event in events if event.get("verification_passed") is True
-    ]
-    latest_mutation = max((value for value in mutations if isinstance(value, int)), default=None)
-    latest_pass = max((value for value in passes if isinstance(value, int)), default=None)
-    if latest_mutation is None or (latest_pass is not None and latest_pass > latest_mutation):
-        return {"continue": True}
-    return {
-        "continue": True,
-        "systemMessage": (
-            "Super SOL: 변경 후 성공한 검증은 확인되지 않았습니다. "
-            "추가 사용량을 만들지 않도록 자동으로 계속하지 않습니다."
-        ),
-    }
+    response = cast("dict[object, object]", response)
+    code = response.get("exit_code")
+    if type(code) is not int or code == 0 or not claim_once(root, "repair-context"):
+        return None
+    return _context("PostToolUse", REPAIR_CONTEXT)
 
 
 def _dispatch(payload: dict[str, object]) -> dict[str, object] | None:
@@ -397,8 +303,6 @@ def _dispatch(payload: dict[str, object]) -> dict[str, object] | None:
         return _pre_tool(payload)
     if event == "PostToolUse":
         return _post_tool(payload)
-    if event == "Stop":
-        return _stop(payload)
     return _warning("알 수 없는 훅 이벤트라 자동 절차 없이 계속합니다.")
 
 
