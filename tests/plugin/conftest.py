@@ -45,6 +45,7 @@ class HookResult:
 
 type HookInput = dict[str, JsonValue] | str
 type HookRunner = Callable[[HookInput], HookResult]
+type HookEnvironmentRunner = Callable[[HookInput, dict[str, str]], HookResult]
 
 
 @pytest.fixture
@@ -61,6 +62,32 @@ def run_hook(plugin_data: Path) -> HookRunner:
             "PLUGIN_DATA": str(plugin_data),
             "PLUGIN_ROOT": str(PLUGIN_ROOT),
             "PYTHONUTF8": "1",
+        }
+        completed = subprocess.run(  # noqa: S603
+            _configured_hook_argv(),
+            input=stdin,
+            text=True,
+            capture_output=True,
+            check=False,
+            env=environment,
+        )
+        output = completed.stdout.strip()
+        parsed = _OBJECT_ADAPTER.validate_json(output) if output else None
+        return HookResult(completed.returncode, parsed, output, completed.stderr)
+
+    return invoke
+
+
+@pytest.fixture
+def run_hook_with_env(plugin_data: Path) -> HookEnvironmentRunner:
+    def invoke(payload: HookInput, overrides: dict[str, str]) -> HookResult:
+        stdin = payload if isinstance(payload, str) else json.dumps(payload)
+        environment = {
+            "PATH": os.environ.get("PATH", ""),
+            "PLUGIN_DATA": str(plugin_data),
+            "PLUGIN_ROOT": str(PLUGIN_ROOT),
+            "PYTHONUTF8": "1",
+            **overrides,
         }
         completed = subprocess.run(  # noqa: S603
             _configured_hook_argv(),

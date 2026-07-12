@@ -4,7 +4,7 @@ from pathlib import Path
 from pydantic import JsonValue
 from super_sol_routes import Route, context_for
 
-from .conftest import HookRunner, hook_input
+from .conftest import HookEnvironmentRunner, HookRunner, hook_input
 
 
 def _context(output: dict[str, JsonValue] | None) -> str:
@@ -31,9 +31,11 @@ def test_pass_through_prompt_emits_no_model_context(
     assert _state_payloads(plugin_data) == [
         {
             "billable_authorized": False,
+            "diagnostic_mode": "adaptive",
+            "effective_route": "pass_through",
             "forced": False,
-            "route": "pass_through",
-            "schema_version": 2,
+            "natural_route": "pass_through",
+            "schema_version": 3,
             "signal_ids": [],
         }
     ]
@@ -64,7 +66,8 @@ def test_korean_security_prompt_routes_without_persisting_prompt(
     assert _context(result.stdout) == context_for(Route.SECURITY_BOUNDARY)
     combined = "".join(path.read_text(encoding="utf-8") for path in plugin_data.rglob("*.*"))
     assert prompt not in combined
-    assert _state_payloads(plugin_data)[0]["route"] == "security_boundary"
+    assert _state_payloads(plugin_data)[0]["natural_route"] == "security_boundary"
+    assert _state_payloads(plugin_data)[0]["effective_route"] == "security_boundary"
 
 
 def test_ambiguous_and_mixed_prompts_pass_through(run_hook: HookRunner) -> None:
@@ -155,3 +158,73 @@ def test_malformed_and_oversized_input_fail_open_with_warning(run_hook: HookRunn
         assert result.stdout is not None
         assert result.stdout["continue"] is True
         assert "Super SOL" in str(result.stdout["systemMessage"])
+
+
+def test_observe_mode_records_natural_route_without_model_context(
+    run_hook_with_env: HookEnvironmentRunner,
+    plugin_data: Path,
+) -> None:
+    result = run_hook_with_env(
+        hook_input(
+            "UserPromptSubmit",
+            prompt="Fix concurrent refresh cancellation and race conditions",
+        ),
+        {"SUPER_SOL_DIAGNOSTIC_MODE": "observe"},
+    )
+
+    assert result.returncode == 0
+    assert result.stdout is None
+    assert _state_payloads(plugin_data) == [
+        {
+            "billable_authorized": False,
+            "diagnostic_mode": "observe",
+            "effective_route": "pass_through",
+            "forced": False,
+            "natural_route": "concurrency_state",
+            "schema_version": 3,
+            "signal_ids": [
+                "concurrency.race",
+                "concurrency.concurrent",
+                "concurrency.cancellation",
+            ],
+        }
+    ]
+
+
+def test_forced_mode_applies_preregistered_pack_without_prompt_control(
+    run_hook_with_env: HookEnvironmentRunner,
+    plugin_data: Path,
+) -> None:
+    result = run_hook_with_env(
+        hook_input("UserPromptSubmit", prompt="Fix the implementation and run tests"),
+        {
+            "SUPER_SOL_DIAGNOSTIC_MODE": "forced",
+            "SUPER_SOL_FORCED_ROUTE": "failure_atomicity",
+        },
+    )
+
+    assert _context(result.stdout) == context_for(Route.FAILURE_ATOMICITY)
+    state = _state_payloads(plugin_data)[0]
+    assert state["natural_route"] == "pass_through"
+    assert state["effective_route"] == "failure_atomicity"
+    assert state["diagnostic_mode"] == "forced"
+    assert state["forced"] is True
+
+
+def test_invalid_diagnostic_controls_fail_closed_to_adaptive(
+    run_hook_with_env: HookEnvironmentRunner,
+    plugin_data: Path,
+) -> None:
+    result = run_hook_with_env(
+        hook_input("UserPromptSubmit", prompt="rename this variable"),
+        {
+            "SUPER_SOL_DIAGNOSTIC_MODE": "forced",
+            "SUPER_SOL_FORCED_ROUTE": "unknown",
+        },
+    )
+
+    assert result.stdout is None
+    state = _state_payloads(plugin_data)[0]
+    assert state["diagnostic_mode"] == "adaptive"
+    assert state["diagnostic_warning"] == "invalid_forced_route"
+    assert state["effective_route"] == "pass_through"

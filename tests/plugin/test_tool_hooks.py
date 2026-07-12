@@ -2,7 +2,7 @@ import pytest
 from pydantic import JsonValue
 from super_sol_routes import REPAIR_CONTEXT
 
-from .conftest import HookRunner, hook_input
+from .conftest import HookEnvironmentRunner, HookRunner, hook_input
 
 
 def _prime(run_hook: HookRunner, prompt: str = "이 파일을 수정해줘") -> None:
@@ -228,3 +228,29 @@ def test_python_module_failures_are_recognized_once(
     _prime(run_hook, "Validate before mutation and roll back this atomic batch")
     result = _post_tool_result(run_hook, command, 1, f"failure-{command}")
     assert result is not None
+
+
+def test_observe_mode_never_emits_repair_context(
+    run_hook_with_env: HookEnvironmentRunner,
+) -> None:
+    environment = {"SUPER_SOL_DIAGNOSTIC_MODE": "observe"}
+    prompt = run_hook_with_env(
+        hook_input(
+            "UserPromptSubmit",
+            prompt="Fix concurrent refresh cancellation and race conditions",
+        ),
+        environment,
+    )
+    failure = run_hook_with_env(
+        hook_input(
+            "PostToolUse",
+            tool_name="Bash",
+            tool_use_id="observe-failure",
+            tool_input={"command": "uv run pytest -q"},
+            tool_response={"exit_code": 1},
+        ),
+        environment,
+    )
+
+    assert prompt.stdout is None
+    assert failure.stdout is None

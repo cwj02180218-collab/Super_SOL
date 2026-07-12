@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import shlex
 import sys
@@ -23,7 +24,9 @@ from super_sol_state import (
     write_private_json,
 )
 
-_SCHEMA_VERSION = 2
+_SCHEMA_VERSION = 3
+_DIAGNOSTIC_MODE = "SUPER_SOL_DIAGNOSTIC_MODE"
+_FORCED_ROUTE = "SUPER_SOL_FORCED_ROUTE"
 _SECRET = re.compile(r"sk-[A-Za-z0-9_-]{20,}")
 _NEGATIVE_BILLING = (
     "과금 없이",
@@ -116,6 +119,24 @@ def _billable_authorized(prompt: str) -> bool:
     return any(confirmation in lines for confirmation in _BILLABLE_CONFIRMATIONS)
 
 
+def _diagnostic_control() -> tuple[str, Route | None, str | None]:
+    mode = os.environ.get(_DIAGNOSTIC_MODE, "").strip().casefold()
+    if not mode:
+        return "adaptive", None, None
+    if mode == "observe":
+        return "observe", None, None
+    if mode != "forced":
+        return "adaptive", None, "invalid_diagnostic_mode"
+    forced = os.environ.get(_FORCED_ROUTE, "").strip().casefold()
+    try:
+        route = Route(forced)
+    except ValueError:
+        return "adaptive", None, "invalid_forced_route"
+    if route is Route.PASS_THROUGH:
+        return "adaptive", None, "invalid_forced_route"
+    return "forced", route, None
+
+
 def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:
     prompt = payload.get("prompt")
     if not isinstance(prompt, str):
@@ -126,21 +147,32 @@ def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:
             "reason": "API 키로 보이는 값이 있습니다. 키를 폐기하고 채팅에서 제거하세요.",
         }
     decision = route_prompt(prompt)
+    diagnostic_mode, forced_route, diagnostic_warning = _diagnostic_control()
+    effective_route = decision.route
+    if diagnostic_mode == "observe":
+        effective_route = Route.PASS_THROUGH
+    elif diagnostic_mode == "forced" and forced_route is not None:
+        effective_route = forced_route
     root = turn_root(payload)
     if root is not None:
+        private_state: dict[str, object] = {
+            "billable_authorized": _billable_authorized(prompt),
+            "diagnostic_mode": diagnostic_mode,
+            "effective_route": effective_route.value,
+            "forced": decision.forced or diagnostic_mode == "forced",
+            "natural_route": decision.route.value,
+            "schema_version": _SCHEMA_VERSION,
+            "signal_ids": list(decision.signal_ids),
+        }
+        if diagnostic_warning is not None:
+            private_state["diagnostic_warning"] = diagnostic_warning
         write_private_json(
             root / "request.json",
-            {
-                "billable_authorized": _billable_authorized(prompt),
-                "forced": decision.forced,
-                "route": decision.route.value,
-                "schema_version": _SCHEMA_VERSION,
-                "signal_ids": list(decision.signal_ids),
-            },
+            private_state,
         )
     if decision.warning is not None:
         return _warning(decision.warning)
-    context = context_for(decision.route)
+    context = context_for(effective_route)
     return _context("UserPromptSubmit", context) if context is not None else None
 
 
@@ -281,7 +313,12 @@ def _pre_tool(payload: dict[str, object]) -> dict[str, object] | None:
 def _post_tool(payload: dict[str, object]) -> dict[str, object] | None:
     root = turn_root(payload)
     state = load_state(payload)
-    if root is None or state is None or state.get("route") == Route.PASS_THROUGH.value:
+    if (
+        root is None
+        or state is None
+        or state.get("diagnostic_mode") == "observe"
+        or state.get("effective_route") == Route.PASS_THROUGH.value
+    ):
         return None
     command = _command(payload) or ""
     verification = _verification_command(_simple_argv(command))
