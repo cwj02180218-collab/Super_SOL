@@ -157,3 +157,15 @@ def test_v05_release_candidate_docs_freeze_cells_and_claim_boundary() -> None:
     assert "T109-T116" in protocol
     assert "T117-T124" in protocol
     assert "universal Pro equivalence" in protocol
+
+
+def test_v05_gate0_brief_stops_before_paid_evidence() -> None:
+    brief = Path("docs/RELEASE_BRIEF_0.5.0RC1.md").read_text(encoding="utf-8")
+
+    assert "247 passed" in brief
+    assert "90.15%" in brief
+    assert "63 passed" in brief
+    assert "32 `slot.planned`" in brief
+    assert "No v0.5 performance result exists" in brief
+    assert "holdout-seal digest: **unavailable" in brief
+    assert "SUPER SOL 유료 실행 승인" in brief
