@@ -273,17 +273,13 @@ def route_prompt(prompt: str) -> RouteDecision:
     scored: dict[Route, tuple[int, tuple[str, ...]]] = {}
     for route, signals in _SIGNALS.items():
         matched = tuple(
-            signal
-            for signal in signals
-            if any(phrase in lowered for phrase in signal.phrases)
+            signal for signal in signals if any(phrase in lowered for phrase in signal.phrases)
         )
         scored[route] = (
             sum(signal.weight for signal in matched),
             tuple(signal.identifier for signal in matched),
         )
-    active = tuple(
-        route for route, (score, _) in scored.items() if score >= _ACTIVATION_SCORE
-    )
+    active = tuple(route for route, (score, _) in scored.items() if score >= _ACTIVATION_SCORE)
     if len(active) != 1:
         return RouteDecision(Route.PASS_THROUGH, 0, ())
     route = active[0]

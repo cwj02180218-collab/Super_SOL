@@ -15,9 +15,7 @@ def test_unambiguous_prompts_select_one_specialist_route() -> None:
         "Reject path traversal and symlink parents before extracting files": (
             Route.SECURITY_BOUNDARY
         ),
-        "Migrate v1 and v2 records to schema v3 idempotently": (
-            Route.MIGRATION_COMPATIBILITY
-        ),
+        "Migrate v1 and v2 records to schema v3 idempotently": (Route.MIGRATION_COMPATIBILITY),
         "Validate before mutation and roll back an atomic batch": Route.FAILURE_ATOMICITY,
         "동시 요청의 경쟁 상태와 취소 전파를 고쳐줘": Route.CONCURRENCY_STATE,
         "심볼릭 링크와 경로 순회를 차단해줘": Route.SECURITY_BOUNDARY,
