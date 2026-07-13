@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from pydantic import JsonValue
 from super_sol_routes import Contract, residual_context
@@ -50,6 +52,49 @@ def test_sol_lifecycle_emits_one_residual_context(run_hook: HookRunner) -> None:
         Contract.CONCURRENCY_CANCELLATION
     )
     assert _context(run_hook(verification_payload(model="gpt-5.6-sol")).stdout) is None
+
+
+@pytest.mark.parametrize(
+    ("current_model", "remove_model"),
+    [
+        ("gpt-5.6-terra", False),
+        (None, False),
+        (17, False),
+        ("gpt-5.6-sol", True),
+    ],
+    ids=["non-sol", "null", "malformed", "missing"],
+)
+def test_sol_state_records_verification_but_emits_no_context_after_model_drift(
+    run_hook: HookRunner,
+    plugin_data: Path,
+    current_model: JsonValue,
+    *,
+    remove_model: bool,
+) -> None:
+    prompt = hook_input(
+        "UserPromptSubmit",
+        model="gpt-5.6-sol",
+        prompt="Fix concurrent refresh cancellation and race conditions",
+    )
+    assert run_hook(prompt).stdout is None
+    edit = hook_input(
+        "PostToolUse",
+        model="gpt-5.6-sol",
+        tool_name="apply_patch",
+        tool_use_id="edit-one",
+        tool_input={"patch": "bounded fixture"},
+        tool_response={"success": True},
+    )
+    assert run_hook(edit).stdout is None
+    verification = verification_payload(model=current_model)
+    if remove_model:
+        verification.pop("model")
+
+    assert _context(run_hook(verification).stdout) is None
+    stored = "".join(
+        path.read_text(encoding="utf-8") for path in plugin_data.rglob("*") if path.is_file()
+    )
+    assert '"kind":"verification"' in stored
 
 
 @pytest.mark.parametrize(

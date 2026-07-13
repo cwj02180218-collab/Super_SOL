@@ -370,7 +370,11 @@ def _post_tool(payload: dict[str, object]) -> dict[str, object] | None:  # noqa:
     if not verification:
         return None
     record_event(root, payload.get("tool_use_id"), "verification", success)
-    if state.get("model_profile") != "sol" or state.get("diagnostic_mode") == "observe":
+    if (
+        _model_profile(payload) != "sol"
+        or state.get("model_profile") != "sol"
+        or state.get("diagnostic_mode") == "observe"
+    ):
         return None
     events = load_events(root)
     context_kind = next_context_kind(state, events, success)
