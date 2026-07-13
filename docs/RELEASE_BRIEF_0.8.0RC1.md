@@ -1,7 +1,7 @@
 # Super SOL 0.8.0rc1 candidate brief
 
 Date: 2026-07-13  
-Status: release candidate; Gate 0 and Sol/high validation pending
+Status: local Gate 0 passed; CI and Sol/high validation pending
 
 ## Candidate contract
 
@@ -29,8 +29,30 @@ uplift was not proven.
 
 ## Gate 0 record
 
-Task 4 records the candidate metadata and contract only. Task 5 must add fresh observed results for
-the full suite, plugin suite, coverage, static checks, archive inspection, dependency and secret
-audits, isolated lifecycle, hook p95 measurements, and CI/container-security workflows. Until those
-observations exist, this brief makes no release-readiness claim and `v0.3.1` remains the stable
-release.
+The immutable local candidate is `e5cb8065c1db665c2d87d0acbec65070d9a4e097`. Fresh observations
+from that candidate are:
+
+| Gate | Observed result |
+|---|---|
+| Locked environment | 60 packages resolved; 58 installed packages checked |
+| Full test and coverage gate | 319 passed; 90.10% combined package and hook line coverage |
+| Ruff | lint clean; all 108 Python files formatted |
+| basedpyright | 0 errors, 0 warnings, 0 notes |
+| Distribution build | wheel and sdist built successfully |
+| Archive privacy | 50 wheel members; 183 sdist members; 0 forbidden runtime or T125-T136 artifacts |
+| Production dependency audit | 0 known vulnerabilities in the locked non-development dependency export |
+| Tracked production secret shapes | 0 matches in `src`, `plugins`, `eval`, and `.github` |
+| Hook performance | 300 hook and 150 floor samples; 60.078 ms absolute p95; 37.725 ms incremental p95 |
+| Verifier container | 57 packages; 0 Critical, High, Medium, or Low vulnerabilities |
+| Grader container | 57 packages; 0 Critical, High, Medium, or Low vulnerabilities |
+| Isolated plugin lifecycle | install, list, remove, reinstall, and list passed |
+| Installed topology | 1 enabled plugin, 1 skill, 3 hook groups, and no unrelated configuration |
+
+The dependency audit uses a locked production export with the local editable project omitted;
+auditing the repository environment directly is not a valid production result because `pip-audit`
+rejects the editable root distribution. Test fixtures contain deliberate non-live secret-shaped
+strings, so the release-blocking scan is scoped to tracked production and workflow paths.
+
+Local Gate 0 is complete. GitHub CI and container checks must still pass before the RC tag is
+published. No confirmatory T125-T136 slot has run, no uplift is claimed, and `v0.3.1` remains the
+stable release until the promotion protocol is satisfied.
