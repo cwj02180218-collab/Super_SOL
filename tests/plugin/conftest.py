@@ -114,7 +114,7 @@ def hook_input(event: str, **fields: JsonValue) -> dict[str, JsonValue]:
         "turn_id": "turn-one",
         "cwd": "/workspace",
         "hook_event_name": event,
-        "model": "gpt-5.6-terra",
+        "model": "gpt-5.6-sol",
         "permission_mode": "default",
         **fields,
     }

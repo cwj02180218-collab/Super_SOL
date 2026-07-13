@@ -143,7 +143,14 @@ def _diagnostic_control() -> tuple[str, Route | None, str | None]:
     return "forced", route, None
 
 
-def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:
+def _model_profile(payload: dict[str, object]) -> str:
+    model = payload.get("model")
+    if not isinstance(model, str):
+        return "observe"
+    return "sol" if model.strip().casefold() == "gpt-5.6-sol" else "observe"
+
+
+def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:  # noqa: C901
     prompt = payload.get("prompt")
     if not isinstance(prompt, str):
         return _warning("요청 내용을 읽지 못해 자동 절차 없이 계속합니다.")
@@ -154,13 +161,15 @@ def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:
         }
     decision = route_prompt(prompt)
     diagnostic_mode, forced_route, diagnostic_warning = _diagnostic_control()
+    model_profile = _model_profile(payload)
     effective_route = Route.PASS_THROUGH
-    if diagnostic_mode == "observe":
-        effective_route = Route.PASS_THROUGH
-    elif diagnostic_mode == "forced" and forced_route is not None:
-        effective_route = forced_route
-    elif decision.forced:
-        effective_route = decision.route
+    if model_profile == "sol":
+        if diagnostic_mode == "observe":
+            effective_route = Route.PASS_THROUGH
+        elif diagnostic_mode == "forced" and forced_route is not None:
+            effective_route = forced_route
+        elif decision.forced:
+            effective_route = decision.route
     root = turn_root(payload)
     billable_authorized = _billable_authorized(prompt)
     should_persist = (
@@ -184,6 +193,8 @@ def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:
         }
         if diagnostic_warning is not None:
             private_state["diagnostic_warning"] = diagnostic_warning
+        if diagnostic_mode != "observe":
+            private_state["model_profile"] = model_profile
         write_private_json(
             root / "request.json",
             private_state,
@@ -333,7 +344,7 @@ def _pre_tool(payload: dict[str, object]) -> dict[str, object] | None:
 def _post_tool(payload: dict[str, object]) -> dict[str, object] | None:  # noqa: PLR0911
     root = turn_root(payload)
     state = load_state(payload)
-    if root is None or state is None or state.get("diagnostic_mode") == "observe":
+    if root is None or state is None:
         return None
     response = payload.get("tool_response")
     if not isinstance(response, dict):
@@ -359,6 +370,8 @@ def _post_tool(payload: dict[str, object]) -> dict[str, object] | None:  # noqa:
     if not verification:
         return None
     record_event(root, payload.get("tool_use_id"), "verification", success)
+    if state.get("model_profile") != "sol" or state.get("diagnostic_mode") == "observe":
+        return None
     events = load_events(root)
     context_kind = next_context_kind(state, events, success)
     if context_kind is None:
