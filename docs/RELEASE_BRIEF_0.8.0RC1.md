@@ -1,6 +1,6 @@
 # Super SOL 0.8.0rc1 candidate brief
 
-Date: 2026-07-13  
+Date: 2026-07-13
 Status: local Gate 0 passed; CI and Sol/high validation pending
 
 ## Candidate contract
