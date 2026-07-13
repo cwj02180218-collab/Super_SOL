@@ -1,7 +1,8 @@
 import pytest
 from pydantic import JsonValue
 
-from super_sol_routes import CONTEXT_CODEPOINT_LIMIT, Contract, residual_context
+import super_sol_routes
+from super_sol_routes import Contract, residual_context
 from super_sol_state import next_context_kind
 
 from .conftest import HookRunner, hook_input
@@ -17,14 +18,27 @@ def _context(output: dict[str, JsonValue] | None) -> str | None:
     return value
 
 
-def _verification(model: JsonValue) -> dict[str, JsonValue]:
+def _successful_bash(
+    model: JsonValue,
+    *,
+    command: str,
+    tool_use_id: str,
+) -> dict[str, JsonValue]:
     return hook_input(
         "PostToolUse",
         model=model,
         tool_name="Bash",
-        tool_use_id="verify-one",
-        tool_input={"command": "uv run pytest -q"},
+        tool_use_id=tool_use_id,
+        tool_input={"command": command},
         tool_response={"exit_code": 0},
+    )
+
+
+def _verification(model: JsonValue) -> dict[str, JsonValue]:
+    return _successful_bash(
+        model,
+        command="uv run pytest -q",
+        tool_use_id="verify-one",
     )
 
 
@@ -105,8 +119,17 @@ def test_mutation_removing_model_gating_emits_no_context_for_an_observe_model(
     assert _context(run_hook(_verification("gpt-5.6-terra")).stdout) is None
 
 
-def test_mutation_accepting_a_181_code_point_context_exceeds_the_frozen_limit() -> None:
-    assert len("x" * 181) > CONTEXT_CODEPOINT_LIMIT
+def test_mutation_accepting_a_181_code_point_residual_raises_budget_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(
+        super_sol_routes._RESIDUAL_CONTEXTS,
+        Contract.CONCURRENCY_CANCELLATION,
+        "x" * 181,
+    )
+
+    with pytest.raises(super_sol_routes.ResidualContextBudgetError):
+        _ = super_sol_routes.residual_context(Contract.CONCURRENCY_CANCELLATION)
 
 
 def test_mutation_allowing_a_second_context_injection_is_blocked(run_hook: HookRunner) -> None:
@@ -121,3 +144,16 @@ def test_mutation_allowing_a_second_context_injection_is_blocked(run_hook: HookR
 def test_mutation_emitting_context_before_verification_is_blocked(run_hook: HookRunner) -> None:
     assert _context(run_hook(_prompt("gpt-5.6-sol")).stdout) is None
     assert _context(run_hook(_edit("gpt-5.6-sol")).stdout) is None
+    non_verification = run_hook(
+        _successful_bash(
+            "gpt-5.6-sol",
+            command="git status --short",
+            tool_use_id="non-verification",
+        )
+    )
+
+    assert non_verification.returncode == 0
+    assert _context(non_verification.stdout) is None
+    assert _context(run_hook(_verification("gpt-5.6-sol")).stdout) == residual_context(
+        Contract.CONCURRENCY_CANCELLATION
+    )
