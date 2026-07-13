@@ -1,0 +1,59 @@
+{
+  "affected_arms": [
+    "codex-super-sol"
+  ],
+  "amendment_digest": "d0ad4b2e255a268f953e442a787ccf2ee4b7079d72b5ed55d37db77780da124d",
+  "amendment_sequence": 1,
+  "created_at": "2026-07-13T05:02:14Z",
+  "data_handling": {
+    "next_attempt_must_link_trigger": true,
+    "trigger_attempt_remains_censored": true,
+    "valid_observations_replaced": false
+  },
+  "home_overrides": {
+    "codex-super-sol": {
+      "files": [
+        "auth.json",
+        "config.toml",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/.codex-plugin/plugin.json",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/__init__.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/hooks.json",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/prompt_dispatcher.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/super_sol_hook.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/super_sol_routes.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/super_sol_state.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/skills/super-sol/SKILL.md",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/skills/super-sol/agents/openai.yaml"
+      ],
+      "product_files": [
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/.codex-plugin/plugin.json",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/__init__.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/hooks.json",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/prompt_dispatcher.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/super_sol_hook.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/super_sol_routes.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/super_sol_state.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/skills/super-sol/SKILL.md",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/skills/super-sol/agents/openai.yaml"
+      ],
+      "product_names": [
+        "super-sol"
+      ],
+      "raw_secret": false,
+      "tree_digest": "50c926266906036a26604e848ae4de2b7f6c06215161eb868162dd00c1518d2e"
+    }
+  },
+  "parent_preregistration_digest": "09f4ab2c973dc2c52117b35dee568bcc41060cbf909ea3be30fefa649659160b",
+  "protocol": "v08-four-arm-preregistration-amendment-v1",
+  "reason": "The clean-home manifest omitted prompt_dispatcher.py even though the pinned hooks.json invokes it. The first affected attempt produced zero provider tokens and was infrastructure-censored before scoring.",
+  "source_invariants": {
+    "fablize_commit": "d338460454c340736c16648df0920ca9eea6acea",
+    "super_sol_commit": "e6c78493c8f3309cb3481481938e2ad40509e5a7",
+    "target_commit": "e49b71ac5538a755413ee8d2c1e6a281d3e31345"
+  },
+  "trigger": {
+    "attempt_id": "codex-super-sol:T126:1:attempt-1",
+    "infrastructure_error": "telemetry_parser_error:ValueError",
+    "status": "censored"
+  }
+}

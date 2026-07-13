@@ -1,6 +1,6 @@
 {
   "name": "super-sol",
-  "version": "0.8.0-rc1",
+  "version": "0.8.0",
   "description": "Sol-gated, evidence-bounded raw-first semantic checks for stock Codex",
   "author": {
     "name": "Super SOL contributors",

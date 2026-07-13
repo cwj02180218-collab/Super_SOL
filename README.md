@@ -17,27 +17,29 @@ Codex 작업 자체의 사용량은 그대로 발생하므로 비용 0을 보장
 
 ![Super SOL 상황별 사용 가이드](docs/assets/super-sol-guide-wide.png)
 
-## v0.8 Sol-Gated 후보
+## v0.8 Sol-Gated 안정판
 
-`0.8.0rc1`은 **raw-first** 후보입니다. 정규화한 모델 식별자가 정확히 `gpt-5.6-sol`일 때만,
+`0.8.0`은 **raw-first** 안정판입니다. 정규화한 모델 식별자가 정확히 `gpt-5.6-sol`일 때만,
 실제 편집 뒤 첫 검증 결과가 관찰된 경우에 한해 **one model-visible injection**을 허용합니다.
 모든 context는 180 Unicode code points 이하여야 합니다. `gpt-5.6-terra`, Luna, 누락·손상·알 수
 없는 모델 메타데이터는 observation-only로 동작하며 model-visible context를 내보내지 않습니다.
 
 자동 모델 전환, 추가 model call 또는 additional API call, 서브에이전트, 자동 재시도와 통과한
-테스트 재실행은 없습니다. Sol/high validation is pending. 이 RC는 **not a performance-uplift
-claim**이며, stable noninferiority와 quality uplift는 서로 다른 확인 기준입니다. 96/96 valid
-slots와 모든 승격 기준은 [`V0.8_PROMOTION_PROTOCOL.md`](docs/V0.8_PROMOTION_PROTOCOL.md), 후보의
-무료 검증 상태는 [`RELEASE_BRIEF_0.8.0RC1.md`](docs/RELEASE_BRIEF_0.8.0RC1.md)에 고정합니다.
+테스트 재실행은 없습니다. 동결 후보로 수행한 96/96 valid slots에서 Codex raw 대비 평균 점수는
+동률, paired token은 2.33% 감소, wall time은 7.91% 증가했습니다. 사전등록한 모든 안정판 게이트를
+통과해 **noninferior quality with bounded overhead**만 주장합니다. **quality uplift was not
+proven**입니다. 전체 기준은 [`V0.8_PROMOTION_PROTOCOL.md`](docs/V0.8_PROMOTION_PROTOCOL.md), 실제
+결과와 해시는 [`RELEASE_BRIEF_0.8.0.md`](docs/RELEASE_BRIEF_0.8.0.md)에 고정합니다.
 
-후보 설치와 훅 계약은 아래 안정판 설치와 분리해 안내합니다. 안정판은 여전히 v0.3.1입니다.
+**v0.8.0 is the stable release.** RC의 무료 검증 기록은
+[`RELEASE_BRIEF_0.8.0RC1.md`](docs/RELEASE_BRIEF_0.8.0RC1.md)에 변경 없이 보존합니다.
 
 ## v0.5 Performance Amplifier 실패 후보
 
-**v0.3.1 remains the stable release.** `0.5.0rc1`은 Plus 사용자의 실전 코딩
+`0.5.0rc1`은 Plus 사용자의 실전 코딩
 결과를 더 강한 raw 모델에 가깝게 만들 수 있는지 검증하는 개발 후보입니다. 일상 설치 명령은
-계속 `v0.3.1`을 가리킵니다. 새 unseen holdout과 독립 감사 전에는 성능 증폭이나 Pro급 결과를
-주장하지 않습니다.
+현재 안정판을 가리킵니다. 당시 unseen holdout과 독립 감사 전에는 성능 증폭이나 Pro급 결과를
+주장하지 않았습니다.
 
 Orca clean-room에서 72 paid slots를 완료한 결과, v0.3.1은 raw와 품질이 같았지만 token
 +26.86%, 시간 +30.86%였고, v0.4rc1은 품질 동률과 token -0.50%까지 개선했지만 시간
@@ -77,34 +79,20 @@ T117~T124 봉인 규칙은 [`V0.5_PERFORMANCE_PROTOCOL.md`](docs/V0.5_PERFORMANC
 `/usr/bin/python3`가 없거나 3.9보다 낮으면 훅을 승인하지 말고 운영체제 Python을 먼저
 업데이트합니다. 벤치마크에는 별도로 Python 3.12가 필요합니다.
 
-### 현재 안정판 v0.3.1 설치
+### 현재 안정판 v0.8.0 설치
 
-현재 안정판은 `v0.3.1`입니다. 정식 배포본은 이 버전을 고정해 설치합니다.
+v0.8.0은 현재 안정판입니다. 정식 배포본은 이 버전을 고정해 설치합니다.
 
 ```bash
-codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.3.1
+codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.8.0
 codex plugin add super-sol@super-sol
 codex plugin list
 ```
 
-ChatGPT/Codex 데스크톱 앱을 다시 열고 새 작업을 시작한 뒤 `/hooks`를 확인합니다. v0.3.1은
-legacy five-hook contract이므로 `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`,
-`Stop`을 기대합니다. macOS/Linux에서는 설치된 Super SOL 폴더의 `hooks/super_sol_hook.py`를
-`/usr/bin/python3`로 실행하고, Windows에서는 같은 파일을 `py -3`로 실행해야 합니다.
-
-### v0.8.0-rc1 후보 설치
-
-`v0.8.0-rc1`은 격리 확인용 후보입니다. v0.8.0은 안정판이 아닙니다. 후보의 세-hook contract은
+ChatGPT/Codex 데스크톱 앱을 다시 열고 새 작업을 시작한 뒤 `/hooks`를 확인합니다. 세-hook contract은
 `UserPromptSubmit`, `PreToolUse`, `PostToolUse`이며, 종료 훅이나 다른 이벤트가 보이면 승인하지
 마세요.
-
-```bash
-codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.8.0-rc1
-codex plugin add super-sol@super-sol
-codex plugin list
-```
-
-앱을 다시 열고 새 작업을 시작한 뒤 `/hooks`를 확인합니다. 후보는 `gpt-5.6-sol`에서만 실제
+안정판은 `gpt-5.6-sol`에서만 실제
 편집 뒤 첫 검증에 한 번의 의미 context를 전달합니다. Terra, Luna, 누락·손상·알 수 없는 모델은
 observation-only이며 model-visible context를 내보내지 않습니다. 훅 내용이 업데이트되면 다시
 승인하라는 안내가 나올 수 있습니다.

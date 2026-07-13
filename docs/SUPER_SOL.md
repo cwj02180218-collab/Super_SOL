@@ -25,13 +25,14 @@ Super SOL은 `fablized-sol`의 재현 가능한 평가 하네스와 `cuj0218/GPT
 
 ## 현재 모델 기준
 
-v0.8은 새 모델이 아니라 Sol-gated raw-first 증거 제한형 후보입니다. 정규화한 모델 식별자가
+v0.8은 새 모델이 아니라 Sol-gated raw-first 증거 제한형 안정판입니다. 정규화한 모델 식별자가
 정확히 `gpt-5.6-sol`일 때만 실제 편집과 첫 검증 뒤 one model-visible injection을 허용합니다.
 모든 context는 180 Unicode code points 이하여야 합니다. Terra, Luna, 누락·손상·알 수 없는 모델
 메타데이터는 observation-only로 동작해 model-visible context를 내보내지 않습니다. 자동 model
-switch, subprocess, subagent, retry, additional API call은 없습니다. Sol/high validation is pending;
-stable noninferiority는 확인 전 quality uplift를 뜻하지 않습니다. 자세한 계약은
-[v0.8 promotion protocol](V0.8_PROMOTION_PROTOCOL.md)에 있습니다.
+switch, subprocess, subagent, retry, additional API call은 없습니다. 동결 후보의 Sol/high 96-slot
+검증에서 stable noninferiority 기준을 통과했지만 quality uplift는 입증되지 않았습니다. 자세한
+계약과 결과는 [v0.8 promotion protocol](V0.8_PROMOTION_PROTOCOL.md)과
+[v0.8 release brief](RELEASE_BRIEF_0.8.0.md)에 있습니다.
 
 [OpenAI의 2026-07-09 GPT-5.6 정식 출시 발표](https://openai.com/index/gpt-5-6/)를 기준으로
 일상 기본값은 `gpt-5.6-terra/medium`, Pro급 품질 통제 비교군은
