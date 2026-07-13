@@ -5,8 +5,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/python3 -S \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
-            "commandWindows": "py -3 -S \"%PLUGIN_ROOT%\\hooks\\super_sol_hook.py\"",
+            "command": "/usr/bin/python3 -S \"$PLUGIN_ROOT/hooks/prompt_dispatcher.py\"",
+            "commandWindows": "py -3 -S \"%PLUGIN_ROOT%\\hooks\\prompt_dispatcher.py\"",
             "timeout": 5,
             "statusMessage": "작업 유형 확인 중"
           }

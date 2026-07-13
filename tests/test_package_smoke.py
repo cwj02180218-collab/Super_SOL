@@ -229,3 +229,17 @@ def test_v07_candidate_docs_freeze_evidence_bounded_claim() -> None:
         "Sol +2.53",
     ):
         assert expected in combined
+
+
+def test_v08_release_budget_spec_freezes_latency_and_profile_privacy_gates() -> None:
+    brief = Path(".superpowers/sdd/task-3-brief.md").read_text(encoding="utf-8")
+    normalized = " ".join(brief.split())
+
+    for expected in (
+        "300 real prompt-hook invocations",
+        "150 empty Python processes",
+        "Assert absolute p95 below 100 ms and incremental p95 below 70 ms",
+        "Sol, Terra, Luna, missing-model, and malformed-model",
+        "every file is at most 4096 bytes",
+    ):
+        assert expected in normalized

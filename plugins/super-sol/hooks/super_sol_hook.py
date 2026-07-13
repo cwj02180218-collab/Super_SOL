@@ -18,12 +18,12 @@ from super_sol_routes import (
     route_prompt,
 )
 from super_sol_state import (
+    MAX_INPUT_BYTES,
     HookInputError,
     claim_once,
     load_events,
     load_state,
     next_context_kind,
-    read_input,
     record_event,
     turn_root,
     write_private_json,
@@ -402,13 +402,34 @@ def _dispatch(payload: dict[str, object]) -> dict[str, object] | None:
     return _warning("알 수 없는 훅 이벤트라 자동 절차 없이 계속합니다.")
 
 
+def _decode_raw(raw: bytes) -> dict[str, object]:
+    if len(raw) > MAX_INPUT_BYTES:
+        raise HookInputError
+    decoded = cast("object", json.loads(raw.decode("utf-8")))
+    if not isinstance(decoded, dict):
+        raise HookInputError
+    return cast("dict[str, object]", decoded)
+
+
+def process_raw(raw: bytes) -> dict[str, object] | None:
+    """Process one bounded raw hook payload without reading global standard input."""
+    try:
+        output = _dispatch(_decode_raw(raw))
+    except (
+        HookInputError,
+        json.JSONDecodeError,
+        OSError,
+        TypeError,
+        UnicodeDecodeError,
+        ValueError,
+    ):
+        output = _warning("로컬 상태를 읽지 못해 자동 절차 없이 계속합니다.")
+    return output
+
+
 def main() -> int:
     """Read one hook event and emit one documented Codex hook response."""
-    try:
-        payload = read_input()
-        output = _dispatch(payload)
-    except (HookInputError, OSError, TypeError, ValueError):
-        output = _warning("로컬 상태를 읽지 못해 자동 절차 없이 계속합니다.")
+    output = process_raw(sys.stdin.buffer.read(MAX_INPUT_BYTES + 1))
     if output is not None:
         json.dump(output, sys.stdout, ensure_ascii=False, separators=(",", ":"))
     return 0
