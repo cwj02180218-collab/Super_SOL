@@ -18,12 +18,12 @@ from super_sol_routes import (
     route_prompt,
 )
 from super_sol_state import (
+    MAX_INPUT_BYTES,
     HookInputError,
     claim_once,
     load_events,
     load_state,
     next_context_kind,
-    read_input,
     record_event,
     turn_root,
     write_private_json,
@@ -143,7 +143,14 @@ def _diagnostic_control() -> tuple[str, Route | None, str | None]:
     return "forced", route, None
 
 
-def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:
+def _model_profile(payload: dict[str, object]) -> str:
+    model = payload.get("model")
+    if not isinstance(model, str):
+        return "observe"
+    return "sol" if model.strip().casefold() == "gpt-5.6-sol" else "observe"
+
+
+def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:  # noqa: C901
     prompt = payload.get("prompt")
     if not isinstance(prompt, str):
         return _warning("요청 내용을 읽지 못해 자동 절차 없이 계속합니다.")
@@ -154,13 +161,15 @@ def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:
         }
     decision = route_prompt(prompt)
     diagnostic_mode, forced_route, diagnostic_warning = _diagnostic_control()
+    model_profile = _model_profile(payload)
     effective_route = Route.PASS_THROUGH
-    if diagnostic_mode == "observe":
-        effective_route = Route.PASS_THROUGH
-    elif diagnostic_mode == "forced" and forced_route is not None:
-        effective_route = forced_route
-    elif decision.forced:
-        effective_route = decision.route
+    if model_profile == "sol":
+        if diagnostic_mode == "observe":
+            effective_route = Route.PASS_THROUGH
+        elif diagnostic_mode == "forced" and forced_route is not None:
+            effective_route = forced_route
+        elif decision.forced:
+            effective_route = decision.route
     root = turn_root(payload)
     billable_authorized = _billable_authorized(prompt)
     should_persist = (
@@ -184,6 +193,8 @@ def _user_prompt(payload: dict[str, object]) -> dict[str, object] | None:
         }
         if diagnostic_warning is not None:
             private_state["diagnostic_warning"] = diagnostic_warning
+        if diagnostic_mode != "observe":
+            private_state["model_profile"] = model_profile
         write_private_json(
             root / "request.json",
             private_state,
@@ -333,7 +344,7 @@ def _pre_tool(payload: dict[str, object]) -> dict[str, object] | None:
 def _post_tool(payload: dict[str, object]) -> dict[str, object] | None:  # noqa: PLR0911
     root = turn_root(payload)
     state = load_state(payload)
-    if root is None or state is None or state.get("diagnostic_mode") == "observe":
+    if root is None or state is None:
         return None
     response = payload.get("tool_response")
     if not isinstance(response, dict):
@@ -359,6 +370,12 @@ def _post_tool(payload: dict[str, object]) -> dict[str, object] | None:  # noqa:
     if not verification:
         return None
     record_event(root, payload.get("tool_use_id"), "verification", success)
+    if (
+        _model_profile(payload) != "sol"
+        or state.get("model_profile") != "sol"
+        or state.get("diagnostic_mode") == "observe"
+    ):
+        return None
     events = load_events(root)
     context_kind = next_context_kind(state, events, success)
     if context_kind is None:
@@ -385,13 +402,34 @@ def _dispatch(payload: dict[str, object]) -> dict[str, object] | None:
     return _warning("알 수 없는 훅 이벤트라 자동 절차 없이 계속합니다.")
 
 
+def _decode_raw(raw: bytes) -> dict[str, object]:
+    if len(raw) > MAX_INPUT_BYTES:
+        raise HookInputError
+    decoded = cast("object", json.loads(raw.decode("utf-8")))
+    if not isinstance(decoded, dict):
+        raise HookInputError
+    return cast("dict[str, object]", decoded)
+
+
+def process_raw(raw: bytes) -> dict[str, object] | None:
+    """Process one bounded raw hook payload without reading global standard input."""
+    try:
+        output = _dispatch(_decode_raw(raw))
+    except (
+        HookInputError,
+        json.JSONDecodeError,
+        OSError,
+        TypeError,
+        UnicodeDecodeError,
+        ValueError,
+    ):
+        output = _warning("로컬 상태를 읽지 못해 자동 절차 없이 계속합니다.")
+    return output
+
+
 def main() -> int:
     """Read one hook event and emit one documented Codex hook response."""
-    try:
-        payload = read_input()
-        output = _dispatch(payload)
-    except (HookInputError, OSError, TypeError, ValueError):
-        output = _warning("로컬 상태를 읽지 못해 자동 절차 없이 계속합니다.")
+    output = process_raw(sys.stdin.buffer.read(MAX_INPUT_BYTES + 1))
     if output is not None:
         json.dump(output, sys.stdout, ensure_ascii=False, separators=(",", ":"))
     return 0

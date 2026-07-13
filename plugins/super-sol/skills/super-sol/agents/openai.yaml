@@ -1,6 +1,6 @@
 interface:
   display_name: "Super SOL"
-  short_description: "검증 뒤 의미 경계를 한 번 점검하는 Codex 도우미"
+  short_description: "GPT-5.6 Sol 검증 뒤 의미 경계를 한 번 점검하는 Codex 도우미"
   default_prompt: "Use $super-sol to complete and verify this task in plain language."
 policy:
   allow_implicit_invocation: false

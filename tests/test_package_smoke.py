@@ -81,7 +81,7 @@ def test_package_exports_version() -> None:
     version = fablized_sol.__version__
 
     # Then the package exports the distribution version
-    assert version == "0.7.0rc1"
+    assert version == "0.8.0rc1"
 
 
 def test_sdist_uses_an_explicit_source_allowlist() -> None:
@@ -102,7 +102,7 @@ def test_sdist_uses_an_explicit_source_allowlist() -> None:
         "/NOTICE",
         "/README.md",
         "/SECURITY.md",
-        "/benchmarks",
+        "/benchmarks/day3-contract-v2/README.md",
         "/docs",
         "/eval",
         "/pyproject.toml",
@@ -128,6 +128,39 @@ def test_readme_exposes_beginner_plugin_and_current_model_contract() -> None:
     assert "v0.3.1 remains the stable release" in readme
     assert "super-sol-codex-ab" in readme
     assert "unseen holdout" in readme
+
+
+def test_readme_separates_stable_and_candidate_plugin_contracts() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    stable_heading = "### 현재 안정판 v0.3.1 설치"
+    candidate_heading = "### v0.8.0-rc1 후보 설치"
+
+    assert stable_heading in readme
+    assert candidate_heading in readme
+    stable_section = readme.split(stable_heading, maxsplit=1)[1].split(
+        candidate_heading, maxsplit=1
+    )[0]
+    candidate_section = readme.split(candidate_heading, maxsplit=1)[1].split(
+        "### 새 버전으로 업데이트", maxsplit=1
+    )[0]
+
+    assert (
+        "codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.3.1" in stable_section
+    )
+    for hook_event in (
+        "SessionStart",
+        "UserPromptSubmit",
+        "PreToolUse",
+        "PostToolUse",
+        "Stop",
+    ):
+        assert f"`{hook_event}`" in stable_section
+    assert (
+        "codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.8.0-rc1"
+        in candidate_section
+    )
+    assert "`UserPromptSubmit`, `PreToolUse`, `PostToolUse`" in candidate_section
+    assert "v0.8.0은 안정판이 아닙니다." in candidate_section
 
 
 def test_v05_release_candidate_docs_freeze_cells_and_claim_boundary() -> None:
@@ -229,3 +262,43 @@ def test_v07_candidate_docs_freeze_evidence_bounded_claim() -> None:
         "Sol +2.53",
     ):
         assert expected in combined
+
+
+def test_v08_release_budget_spec_freezes_latency_and_profile_privacy_gates() -> None:
+    plan = Path("docs/superpowers/plans/2026-07-13-super-sol-v0.8-masterpiece.md").read_text(
+        encoding="utf-8"
+    )
+    normalized = " ".join(plan.split())
+
+    for expected in (
+        "300 real prompt-hook invocations",
+        "150 empty Python processes",
+        "Assert absolute p95 below 100 ms and incremental p95 below 70 ms",
+        "Sol, Terra, Luna, missing-model, and malformed-model",
+        "every file is at most 4096 bytes",
+    ):
+        assert expected in normalized
+
+
+def test_v08_candidate_docs_freeze_sol_only_evidence_boundary() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    product = Path("docs/SUPER_SOL.md").read_text(encoding="utf-8")
+    protocol = Path("docs/V0.8_PROMOTION_PROTOCOL.md").read_text(encoding="utf-8")
+    brief = Path("docs/RELEASE_BRIEF_0.8.0RC1.md").read_text(encoding="utf-8")
+    combined = f"{readme}\n{product}\n{protocol}\n{brief}"
+
+    for expected in (
+        "0.8.0rc1",
+        "0.8.0-rc1",
+        "gpt-5.6-sol",
+        "180 Unicode code points",
+        "observation-only",
+        "additional API call",
+        "96/96 valid slots",
+        "Sol/high validation is pending",
+        "uplift was not proven",
+    ):
+        assert expected in combined
+
+    assert "raises underlying model intelligence" in combined
+    assert "performance amplifier" not in brief

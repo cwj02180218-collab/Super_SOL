@@ -89,7 +89,7 @@ _EXPLANATION_PHRASES = (
 )
 _ACTIVATION_SCORE = 2
 _CONFIDENCE_MARGIN = 1
-CONTEXT_CODEPOINT_LIMIT = 220
+CONTEXT_CODEPOINT_LIMIT = 180
 
 
 class ResidualContextBudgetError(ValueError):
@@ -469,6 +469,37 @@ REPAIR_CONTEXT = (
     "make the smallest correction, and rerun the same focused verification once."
 )
 
+_RESIDUAL_CONTEXTS = {
+    Contract.OWNERSHIP_ALIASING: (
+        "One final semantic check: nested alias isolation. Inspect one untested mutation path; "
+        "do not broaden the patch or rerun a passing test."
+    ),
+    Contract.INPUT_ERROR_SEMANTICS: (
+        "One final semantic check: unknown-input exit semantics. Inspect one untested command; "
+        "do not broaden the patch or rerun a passing test."
+    ),
+    Contract.RETRY_STATE: (
+        "One final semantic check: retry identity after failure. Inspect one untested retry "
+        "result; do not broaden the patch or rerun a passing test."
+    ),
+    Contract.CONCURRENCY_CANCELLATION: (
+        "One final semantic check: cancellation propagation. Inspect one untested awaiting "
+        "caller; do not broaden the patch or rerun a passing test."
+    ),
+    Contract.FAILURE_ATOMICITY: (
+        "One final semantic check: all-or-nothing publication. Inspect one untested failed "
+        "write; do not broaden the patch or rerun a passing test."
+    ),
+    Contract.MIGRATION_COMPATIBILITY: (
+        "One final semantic check: old/future schema behavior. Inspect one untested version "
+        "boundary; do not broaden the patch or rerun a passing test."
+    ),
+    Contract.SECURITY_PATH_BOUNDARY: (
+        "One final semantic check: canonical path containment. Inspect one untested symlink "
+        "path; do not broaden the patch or rerun a passing test."
+    ),
+}
+
 _ROUTE_CONTROL = re.compile(r"^SUPER SOL ROUTE ([a-z_]+)$", re.ASCII)
 
 
@@ -547,14 +578,13 @@ def context_for(route: Route) -> Optional[str]:
     return _PACKS.get(route)
 
 
-def residual_context(contract: Contract) -> str:
-    """Return one bounded post-verification semantic check."""
-    label = contract.value.replace("_", " ")
-    context = (
-        f"Final semantic check only: compare the patch once with the requested {label} behavior. "
-        "If one explicit edge is missing, make one focused correction; otherwise stop. "
-        "Do not rerun passed tests."
-    )
+def validate_residual_context(context: str) -> str:
+    """Return a residual context only when it fits the public code-point budget."""
     if len(context) > CONTEXT_CODEPOINT_LIMIT:
         raise ResidualContextBudgetError
     return context
+
+
+def residual_context(contract: Contract) -> str:
+    """Return one bounded post-verification semantic check."""
+    return validate_residual_context(_RESIDUAL_CONTEXTS[contract])

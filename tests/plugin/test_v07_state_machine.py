@@ -1,9 +1,31 @@
 from pathlib import Path
 
+import pytest
 from pydantic import JsonValue
 from super_sol_routes import Contract, residual_context
 
 from .conftest import HookEnvironmentRunner, HookRunner, hook_input
+
+
+def _profile_payload(
+    profile: str,
+    model: JsonValue | None,
+    *,
+    event: str,
+    **fields: JsonValue,
+) -> dict[str, JsonValue]:
+    payload = hook_input(
+        event,
+        session_id=f"SESSION_FIXTURE_{profile}",
+        turn_id=f"TURN_FIXTURE_{profile}",
+        model_fixture=f"MODEL_FIXTURE_{profile}",
+        **fields,
+    )
+    if model is None:
+        _ = payload.pop("model")
+    else:
+        payload["model"] = model
+    return payload
 
 
 def _context(output: dict[str, JsonValue] | None) -> str | None:
@@ -149,3 +171,73 @@ def test_private_events_store_no_prompt_source_command_or_output(
     assert "race conditions" not in stored
     assert '"kind":"edit"' in stored
     assert '"kind":"verification"' in stored
+
+
+@pytest.mark.parametrize(
+    ("profile", "model"),
+    [
+        ("SOL", "gpt-5.6-sol"),
+        ("TERRA", "gpt-5.6-terra"),
+        ("LUNA", "gpt-5.6-luna"),
+        ("MISSING", None),
+        ("MALFORMED", {"fixture": "MODEL_FIXTURE_MALFORMED_VALUE"}),
+    ],
+)
+def test_all_model_profiles_retain_no_raw_turn_fixtures(
+    run_hook: HookRunner,
+    plugin_data: Path,
+    profile: str,
+    model: JsonValue | None,
+) -> None:
+    prompt = f"PROMPT_FIXTURE_{profile} Fix concurrent refresh cancellation and race conditions"
+    source = f"SOURCE_FIXTURE_{profile}"
+    path = f"PATH_FIXTURE_{profile}.py"
+    command = f"COMMAND_FIXTURE_{profile}"
+    output = f"OUTPUT_FIXTURE_{profile}"
+    fixtures = (prompt, source, path, command, output, f"MODEL_FIXTURE_{profile}")
+
+    assert (
+        run_hook(
+            _profile_payload(
+                profile,
+                model,
+                event="UserPromptSubmit",
+                prompt=prompt,
+            )
+        ).stdout
+        is None
+    )
+    assert (
+        run_hook(
+            _profile_payload(
+                profile,
+                model,
+                event="PostToolUse",
+                tool_name="apply_patch",
+                tool_use_id=f"EDIT_FIXTURE_{profile}",
+                tool_input={"file_path": path, "patch": source},
+                tool_response={"success": True},
+            )
+        ).stdout
+        is None
+    )
+    assert (
+        run_hook(
+            _profile_payload(
+                profile,
+                model,
+                event="PostToolUse",
+                tool_name="Bash",
+                tool_use_id=f"VERIFY_FIXTURE_{profile}",
+                tool_input={"command": f"uv run pytest -q {command}"},
+                tool_response={"exit_code": 0, "output": output},
+            )
+        ).returncode
+        == 0
+    )
+
+    files = [path for path in plugin_data.rglob("*") if path.is_file()]
+    assert files
+    assert all(path.stat().st_size <= 4096 for path in files)
+    stored = "".join(path.read_text(encoding="utf-8") for path in files)
+    assert all(fixture not in stored for fixture in fixtures)
