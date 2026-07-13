@@ -1,7 +1,6 @@
 import pytest
-from pydantic import JsonValue
-
 import super_sol_routes
+from pydantic import JsonValue
 from super_sol_routes import Contract, residual_context
 from super_sol_state import next_context_kind
 
