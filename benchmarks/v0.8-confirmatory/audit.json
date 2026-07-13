@@ -1,0 +1,49 @@
+{
+  "attempt_history": {
+    "checks": {
+      "censored_unscored": true,
+      "linked_retries": true,
+      "records_final": true,
+      "valid_immutability": true
+    },
+    "counts": {
+      "attempts": 103,
+      "censored": 7,
+      "running": 0,
+      "valid": 96
+    },
+    "passed": true,
+    "protocol": "v08-four-arm-attempt-history-audit-v1"
+  },
+  "lattice": {
+    "checks": {
+      "all_valid": true,
+      "amendment_chain": true,
+      "artifact_omission_zero": true,
+      "complete_lattice": true,
+      "contamination_zero": true,
+      "external_grader_artifacts": true,
+      "hidden_test_leak_zero": true,
+      "home_digests": true,
+      "model_effort_pins": true,
+      "positive_telemetry": true,
+      "preregistration_digest": true,
+      "provenance_mismatch_zero": true,
+      "resolved_primary_models": true,
+      "scope_integrity": true,
+      "secret_count_zero": true,
+      "target_commit": true,
+      "unique_identities": true
+    },
+    "counts": {
+      "arms": 4,
+      "repetitions": 2,
+      "rows": 96,
+      "tasks": 12
+    },
+    "passed": true,
+    "protocol": "v08-four-arm-audit-v2"
+  },
+  "passed": true,
+  "protocol": "v08-four-arm-combined-audit-v1"
+}

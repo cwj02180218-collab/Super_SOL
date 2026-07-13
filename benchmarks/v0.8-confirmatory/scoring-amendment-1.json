@@ -1,0 +1,41 @@
+{
+  "affected_arms": [
+    "codex-raw",
+    "codex-super-sol",
+    "claude-raw",
+    "claude-fablize"
+  ],
+  "amendment_digest": "caa6dbcb9108829ace75ca24d38d371ce4053da7527f84f820b9c47a447ecee8",
+  "amendment_sequence": 1,
+  "created_at": "2026-07-13T05:09:18Z",
+  "correction": {
+    "apply_to_all_slots": true,
+    "derived_scores_only": true,
+    "ignored_names": [
+      ".coverage",
+      ".DS_Store"
+    ],
+    "ignored_path_parts": [
+      ".hypothesis",
+      ".mypy_cache",
+      ".pytest_cache",
+      ".ruff_cache",
+      ".venv",
+      "__pycache__"
+    ],
+    "ignored_suffixes": [
+      ".pyc"
+    ],
+    "original_records_remain_immutable": true
+  },
+  "parent_home_amendment_digest": "d0ad4b2e255a268f953e442a787ccf2ee4b7079d72b5ed55d37db77780da124d",
+  "parent_preregistration_digest": "09f4ab2c973dc2c52117b35dee568bcc41060cbf909ea3be30fefa649659160b",
+  "protocol": "v08-four-arm-scoring-amendment-v1",
+  "reason": "The pilot revealed that untracked interpreter and test-runner caches were counted as source and test edits. These files contain no task behavior and caused an arm-independent regression and focus penalty.",
+  "trigger_identities": [
+    "claude-fablize:T128:1",
+    "claude-raw:T127:1",
+    "codex-raw:T125:1",
+    "codex-super-sol:T126:1"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "protocol": "v08-four-arm-output-manifest-v1",
+  "sha256": {
+    "analysis.json": "ea79d54af78f6c0ecfffedc15bac4a38c878e31a3a3034ad408285969a1e18b7",
+    "attempts.csv": "b8bad479add16a057f46134f0cf71eeaafdd96fb9d351d261ba4c1cd93412979",
+    "audit.json": "5d4492bf5d942de33f7e822ab08b1ba731cd49557eb82c0a1310b8d38f0d3021",
+    "brief-en.md": "953b735c05690b4e38a163fc4aacdd94ad7ff46125109afb75d7913eea6dd120",
+    "brief-ko.md": "e5ee2b1213a9e93aad40ae18d675e60139dd2bf01784eb333c60aff812f93dff",
+    "slots.csv": "80b0fff309fa474f1de42f6254b09de0691d333180988afc392e7b21b34ffdfb",
+    "slots.json": "65939ac87f469d7e915e6d6b84a9c428976b4c748dba494c5e0da28e4dd2f907"
+  }
+}

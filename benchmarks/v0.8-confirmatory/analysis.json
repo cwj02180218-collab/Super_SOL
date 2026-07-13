@@ -1,0 +1,105 @@
+{
+  "bootstrap": {
+    "cluster": "task",
+    "samples": 20000,
+    "seed": 664429233687623535
+  },
+  "effects": {
+    "fablize_within_claude": {
+      "enhanced_arm": "claude-fablize",
+      "full_pass_rate_difference": 0.0,
+      "mean_score_difference": 6.041667,
+      "paired_rank_biserial": 0.780952,
+      "paired_time_ratio": 1.26257,
+      "paired_token_ratio": 1.272961,
+      "pairs": 24,
+      "raw_arm": "claude-raw",
+      "repeated_regression_10_points": false,
+      "score_ci95": [
+        3.125,
+        8.541667
+      ],
+      "sign_test_p_two_sided": 0.002576828003,
+      "task_mean_differences": {
+        "T125": 0.0,
+        "T126": 10.0,
+        "T127": 10.0,
+        "T128": -5.0,
+        "T129": 10.0,
+        "T130": 2.5,
+        "T131": 5.0,
+        "T132": 10.0,
+        "T133": 10.0,
+        "T134": 5.0,
+        "T135": 5.0,
+        "T136": 10.0
+      },
+      "verifier_rate_difference": 0.625
+    },
+    "super_sol_within_codex": {
+      "enhanced_arm": "codex-super-sol",
+      "full_pass_rate_difference": 0.0,
+      "mean_score_difference": 0.0,
+      "paired_rank_biserial": 0.0,
+      "paired_time_ratio": 1.079052,
+      "paired_token_ratio": 0.97673,
+      "pairs": 24,
+      "raw_arm": "codex-raw",
+      "repeated_regression_10_points": false,
+      "score_ci95": [
+        0.0,
+        0.0
+      ],
+      "sign_test_p_two_sided": 1.0,
+      "task_mean_differences": {
+        "T125": 0.0,
+        "T126": 0.0,
+        "T127": 0.0,
+        "T128": 0.0,
+        "T129": 0.0,
+        "T130": 0.0,
+        "T131": 0.0,
+        "T132": 0.0,
+        "T133": 0.0,
+        "T134": 0.0,
+        "T135": 0.0,
+        "T136": 0.0
+      },
+      "verifier_rate_difference": 0.0
+    }
+  },
+  "interaction": {
+    "definition": "super_sol_score_effect_minus_fablize_score_effect",
+    "mean_score_difference": -6.041667,
+    "score_ci95": [
+      -8.541667,
+      -3.125
+    ]
+  },
+  "lattice": {
+    "repetitions": 2,
+    "rows": 96,
+    "task_clusters": 12
+  },
+  "preregistration_digest": "09f4ab2c973dc2c52117b35dee568bcc41060cbf909ea3be30fefa649659160b",
+  "protocol": "v08-four-arm-analysis-v2",
+  "super_sol_promotion": {
+    "gates": {
+      "artifact_omission_zero": true,
+      "contamination_zero": true,
+      "exact_96_valid_slots_after_linked_retries": true,
+      "full_pass_rate_not_lower": true,
+      "hidden_test_leak_zero": true,
+      "mean_score_noninferior": true,
+      "no_repeated_10_point_regression": true,
+      "provenance_mismatch_zero": true,
+      "score_ci_lower_at_least_minus_2": true,
+      "secret_count_zero": true,
+      "time_ratio_at_most_1_10": true,
+      "token_ratio_at_most_1_03": true,
+      "verifier_observation_rate_not_lower": true
+    },
+    "quality_uplift": false,
+    "stable_release": true
+  }
+}

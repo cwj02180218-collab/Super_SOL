@@ -1,0 +1,1063 @@
+{
+  "analysis": {
+    "bootstrap_samples": 20000,
+    "bootstrap_seed_source": "preregistration_digest",
+    "cluster_unit": "task",
+    "cross_provider_tokens": "descriptive_only",
+    "primary_effects": [
+      "super_sol_within_codex",
+      "fablize_within_claude"
+    ]
+  },
+  "billable_execution_approved": true,
+  "execution": {
+    "agent_timeout_seconds": 1800,
+    "claude_auth_isolation": "fresh_home_oauth_setting_sources_user",
+    "claude_bare_mode": false,
+    "fresh_session_per_identity": true,
+    "fresh_worktree_per_identity": true,
+    "grader_timeout_seconds": 120,
+    "provider_pair_pause_after_matching_failures": 2,
+    "retry_only_censored": true,
+    "valid_attempts_are_immutable": true
+  },
+  "homes": {
+    "claude-fablize": {
+      "files": [
+        ".claude/.credentials.json",
+        ".claude-plugin/plugin.json",
+        "hooks/gate_post_tool.py",
+        "hooks/gate_prompt.py",
+        "hooks/gate_stop.py",
+        "hooks/hooks.json",
+        "hooks/router.sh",
+        "packs/investigation-protocol.txt",
+        "packs/verification-grounding-pack.txt",
+        "scripts/gate/classify_task.py",
+        "scripts/gate/ledger.py",
+        "scripts/gate/parse_tool_result.py",
+        "scripts/gate/verify_state.py",
+        "scripts/goals.py",
+        "skills/fablize/SKILL.md"
+      ],
+      "product_files": [
+        ".claude-plugin/plugin.json",
+        "hooks/gate_post_tool.py",
+        "hooks/gate_prompt.py",
+        "hooks/gate_stop.py",
+        "hooks/hooks.json",
+        "hooks/router.sh",
+        "packs/investigation-protocol.txt",
+        "packs/verification-grounding-pack.txt",
+        "scripts/gate/classify_task.py",
+        "scripts/gate/ledger.py",
+        "scripts/gate/parse_tool_result.py",
+        "scripts/gate/verify_state.py",
+        "scripts/goals.py",
+        "skills/fablize/SKILL.md"
+      ],
+      "product_names": [
+        "fablize"
+      ],
+      "raw_secret": false,
+      "tree_digest": "c0e94ad5fd31a09c0d4c6b4b66742c71a1763628fd56ac4a2d37161cbfbf1865"
+    },
+    "claude-raw": {
+      "files": [
+        ".claude/.credentials.json"
+      ],
+      "product_files": [],
+      "product_names": [],
+      "raw_secret": false,
+      "tree_digest": "b923c125312e4648a23419fe58ee7e1574fa36ca62f57de6430780b69c3a53c6"
+    },
+    "codex-raw": {
+      "files": [
+        "auth.json",
+        "config.toml"
+      ],
+      "product_files": [],
+      "product_names": [],
+      "raw_secret": false,
+      "tree_digest": "42121333be64080a5bf3422c02b841e56a8265e3ad353c0cbeadcd5ed22313b5"
+    },
+    "codex-super-sol": {
+      "files": [
+        "auth.json",
+        "config.toml",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/.codex-plugin/plugin.json",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/__init__.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/hooks.json",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/super_sol_hook.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/super_sol_routes.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/super_sol_state.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/skills/super-sol/SKILL.md",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/skills/super-sol/agents/openai.yaml"
+      ],
+      "product_files": [
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/.codex-plugin/plugin.json",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/__init__.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/hooks.json",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/super_sol_hook.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/super_sol_routes.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/hooks/super_sol_state.py",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/skills/super-sol/SKILL.md",
+        "plugins/cache/super-sol/super-sol/0.8.0-rc1/skills/super-sol/agents/openai.yaml"
+      ],
+      "product_names": [
+        "super-sol"
+      ],
+      "raw_secret": false,
+      "tree_digest": "24caff20aeb107dc03ea26d9154ebd25bc53e184bfe01c65d67a9d7cf114fb46"
+    }
+  },
+  "preregistration_digest": "09f4ab2c973dc2c52117b35dee568bcc41060cbf909ea3be30fefa649659160b",
+  "products": {
+    "fablize": {
+      "commit": "d338460454c340736c16648df0920ca9eea6acea",
+      "tag": "v2.1.0",
+      "version": "2.1.0"
+    },
+    "super_sol": {
+      "commit": "e6c78493c8f3309cb3481481938e2ad40509e5a7",
+      "tag": "v0.8.0-rc1",
+      "version": "0.8.0-rc1"
+    }
+  },
+  "protocol": "v08-four-arm-preregistration-v1",
+  "sealed_before_first_slot": true,
+  "taskpack": {
+    "arms": {
+      "claude-fablize": {
+        "effort": "high",
+        "model": "claude-fable-5",
+        "name": "claude-fablize",
+        "product": "fablize",
+        "provider": "claude"
+      },
+      "claude-raw": {
+        "effort": "high",
+        "model": "claude-fable-5",
+        "name": "claude-raw",
+        "product": null,
+        "provider": "claude"
+      },
+      "codex-raw": {
+        "effort": "high",
+        "model": "gpt-5.6-sol",
+        "name": "codex-raw",
+        "product": null,
+        "provider": "codex"
+      },
+      "codex-super-sol": {
+        "effort": "high",
+        "model": "gpt-5.6-sol",
+        "name": "codex-super-sol",
+        "product": "super-sol",
+        "provider": "codex"
+      }
+    },
+    "product_pins": {
+      "fablize": "d338460454c340736c16648df0920ca9eea6acea",
+      "super_sol": "e6c78493c8f3309cb3481481938e2ad40509e5a7"
+    },
+    "protocol": "v08-four-arm-taskpack-v1",
+    "schedule": [
+      [
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T125:1",
+          "ordinal": 1,
+          "repetition": 1,
+          "task_id": "T125",
+          "wave": 1
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T126:1",
+          "ordinal": 2,
+          "repetition": 1,
+          "task_id": "T126",
+          "wave": 1
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T127:1",
+          "ordinal": 3,
+          "repetition": 1,
+          "task_id": "T127",
+          "wave": 1
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T128:1",
+          "ordinal": 4,
+          "repetition": 1,
+          "task_id": "T128",
+          "wave": 1
+        }
+      ],
+      [
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T129:1",
+          "ordinal": 1,
+          "repetition": 1,
+          "task_id": "T129",
+          "wave": 2
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T126:1",
+          "ordinal": 2,
+          "repetition": 1,
+          "task_id": "T126",
+          "wave": 2
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T127:1",
+          "ordinal": 3,
+          "repetition": 1,
+          "task_id": "T127",
+          "wave": 2
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T128:1",
+          "ordinal": 4,
+          "repetition": 1,
+          "task_id": "T128",
+          "wave": 2
+        }
+      ],
+      [
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T129:1",
+          "ordinal": 1,
+          "repetition": 1,
+          "task_id": "T129",
+          "wave": 3
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T130:1",
+          "ordinal": 2,
+          "repetition": 1,
+          "task_id": "T130",
+          "wave": 3
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T127:1",
+          "ordinal": 3,
+          "repetition": 1,
+          "task_id": "T127",
+          "wave": 3
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T128:1",
+          "ordinal": 4,
+          "repetition": 1,
+          "task_id": "T128",
+          "wave": 3
+        }
+      ],
+      [
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T129:1",
+          "ordinal": 1,
+          "repetition": 1,
+          "task_id": "T129",
+          "wave": 4
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T130:1",
+          "ordinal": 2,
+          "repetition": 1,
+          "task_id": "T130",
+          "wave": 4
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T131:1",
+          "ordinal": 3,
+          "repetition": 1,
+          "task_id": "T131",
+          "wave": 4
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T128:1",
+          "ordinal": 4,
+          "repetition": 1,
+          "task_id": "T128",
+          "wave": 4
+        }
+      ],
+      [
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T129:1",
+          "ordinal": 1,
+          "repetition": 1,
+          "task_id": "T129",
+          "wave": 5
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T130:1",
+          "ordinal": 2,
+          "repetition": 1,
+          "task_id": "T130",
+          "wave": 5
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T131:1",
+          "ordinal": 3,
+          "repetition": 1,
+          "task_id": "T131",
+          "wave": 5
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T132:1",
+          "ordinal": 4,
+          "repetition": 1,
+          "task_id": "T132",
+          "wave": 5
+        }
+      ],
+      [
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T133:1",
+          "ordinal": 1,
+          "repetition": 1,
+          "task_id": "T133",
+          "wave": 6
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T130:1",
+          "ordinal": 2,
+          "repetition": 1,
+          "task_id": "T130",
+          "wave": 6
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T131:1",
+          "ordinal": 3,
+          "repetition": 1,
+          "task_id": "T131",
+          "wave": 6
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T132:1",
+          "ordinal": 4,
+          "repetition": 1,
+          "task_id": "T132",
+          "wave": 6
+        }
+      ],
+      [
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T133:1",
+          "ordinal": 1,
+          "repetition": 1,
+          "task_id": "T133",
+          "wave": 7
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T134:1",
+          "ordinal": 2,
+          "repetition": 1,
+          "task_id": "T134",
+          "wave": 7
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T131:1",
+          "ordinal": 3,
+          "repetition": 1,
+          "task_id": "T131",
+          "wave": 7
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T132:1",
+          "ordinal": 4,
+          "repetition": 1,
+          "task_id": "T132",
+          "wave": 7
+        }
+      ],
+      [
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T133:1",
+          "ordinal": 1,
+          "repetition": 1,
+          "task_id": "T133",
+          "wave": 8
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T134:1",
+          "ordinal": 2,
+          "repetition": 1,
+          "task_id": "T134",
+          "wave": 8
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T135:1",
+          "ordinal": 3,
+          "repetition": 1,
+          "task_id": "T135",
+          "wave": 8
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T132:1",
+          "ordinal": 4,
+          "repetition": 1,
+          "task_id": "T132",
+          "wave": 8
+        }
+      ],
+      [
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T133:1",
+          "ordinal": 1,
+          "repetition": 1,
+          "task_id": "T133",
+          "wave": 9
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T134:1",
+          "ordinal": 2,
+          "repetition": 1,
+          "task_id": "T134",
+          "wave": 9
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T135:1",
+          "ordinal": 3,
+          "repetition": 1,
+          "task_id": "T135",
+          "wave": 9
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T136:1",
+          "ordinal": 4,
+          "repetition": 1,
+          "task_id": "T136",
+          "wave": 9
+        }
+      ],
+      [
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T125:1",
+          "ordinal": 1,
+          "repetition": 1,
+          "task_id": "T125",
+          "wave": 10
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T134:1",
+          "ordinal": 2,
+          "repetition": 1,
+          "task_id": "T134",
+          "wave": 10
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T135:1",
+          "ordinal": 3,
+          "repetition": 1,
+          "task_id": "T135",
+          "wave": 10
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T136:1",
+          "ordinal": 4,
+          "repetition": 1,
+          "task_id": "T136",
+          "wave": 10
+        }
+      ],
+      [
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T125:1",
+          "ordinal": 1,
+          "repetition": 1,
+          "task_id": "T125",
+          "wave": 11
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T126:1",
+          "ordinal": 2,
+          "repetition": 1,
+          "task_id": "T126",
+          "wave": 11
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T135:1",
+          "ordinal": 3,
+          "repetition": 1,
+          "task_id": "T135",
+          "wave": 11
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T136:1",
+          "ordinal": 4,
+          "repetition": 1,
+          "task_id": "T136",
+          "wave": 11
+        }
+      ],
+      [
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T125:1",
+          "ordinal": 1,
+          "repetition": 1,
+          "task_id": "T125",
+          "wave": 12
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T126:1",
+          "ordinal": 2,
+          "repetition": 1,
+          "task_id": "T126",
+          "wave": 12
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T127:1",
+          "ordinal": 3,
+          "repetition": 1,
+          "task_id": "T127",
+          "wave": 12
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T136:1",
+          "ordinal": 4,
+          "repetition": 1,
+          "task_id": "T136",
+          "wave": 12
+        }
+      ],
+      [
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T125:2",
+          "ordinal": 1,
+          "repetition": 2,
+          "task_id": "T125",
+          "wave": 13
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T126:2",
+          "ordinal": 2,
+          "repetition": 2,
+          "task_id": "T126",
+          "wave": 13
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T127:2",
+          "ordinal": 3,
+          "repetition": 2,
+          "task_id": "T127",
+          "wave": 13
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T128:2",
+          "ordinal": 4,
+          "repetition": 2,
+          "task_id": "T128",
+          "wave": 13
+        }
+      ],
+      [
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T129:2",
+          "ordinal": 1,
+          "repetition": 2,
+          "task_id": "T129",
+          "wave": 14
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T126:2",
+          "ordinal": 2,
+          "repetition": 2,
+          "task_id": "T126",
+          "wave": 14
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T127:2",
+          "ordinal": 3,
+          "repetition": 2,
+          "task_id": "T127",
+          "wave": 14
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T128:2",
+          "ordinal": 4,
+          "repetition": 2,
+          "task_id": "T128",
+          "wave": 14
+        }
+      ],
+      [
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T129:2",
+          "ordinal": 1,
+          "repetition": 2,
+          "task_id": "T129",
+          "wave": 15
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T130:2",
+          "ordinal": 2,
+          "repetition": 2,
+          "task_id": "T130",
+          "wave": 15
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T127:2",
+          "ordinal": 3,
+          "repetition": 2,
+          "task_id": "T127",
+          "wave": 15
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T128:2",
+          "ordinal": 4,
+          "repetition": 2,
+          "task_id": "T128",
+          "wave": 15
+        }
+      ],
+      [
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T129:2",
+          "ordinal": 1,
+          "repetition": 2,
+          "task_id": "T129",
+          "wave": 16
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T130:2",
+          "ordinal": 2,
+          "repetition": 2,
+          "task_id": "T130",
+          "wave": 16
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T131:2",
+          "ordinal": 3,
+          "repetition": 2,
+          "task_id": "T131",
+          "wave": 16
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T128:2",
+          "ordinal": 4,
+          "repetition": 2,
+          "task_id": "T128",
+          "wave": 16
+        }
+      ],
+      [
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T129:2",
+          "ordinal": 1,
+          "repetition": 2,
+          "task_id": "T129",
+          "wave": 17
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T130:2",
+          "ordinal": 2,
+          "repetition": 2,
+          "task_id": "T130",
+          "wave": 17
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T131:2",
+          "ordinal": 3,
+          "repetition": 2,
+          "task_id": "T131",
+          "wave": 17
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T132:2",
+          "ordinal": 4,
+          "repetition": 2,
+          "task_id": "T132",
+          "wave": 17
+        }
+      ],
+      [
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T133:2",
+          "ordinal": 1,
+          "repetition": 2,
+          "task_id": "T133",
+          "wave": 18
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T130:2",
+          "ordinal": 2,
+          "repetition": 2,
+          "task_id": "T130",
+          "wave": 18
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T131:2",
+          "ordinal": 3,
+          "repetition": 2,
+          "task_id": "T131",
+          "wave": 18
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T132:2",
+          "ordinal": 4,
+          "repetition": 2,
+          "task_id": "T132",
+          "wave": 18
+        }
+      ],
+      [
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T133:2",
+          "ordinal": 1,
+          "repetition": 2,
+          "task_id": "T133",
+          "wave": 19
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T134:2",
+          "ordinal": 2,
+          "repetition": 2,
+          "task_id": "T134",
+          "wave": 19
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T131:2",
+          "ordinal": 3,
+          "repetition": 2,
+          "task_id": "T131",
+          "wave": 19
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T132:2",
+          "ordinal": 4,
+          "repetition": 2,
+          "task_id": "T132",
+          "wave": 19
+        }
+      ],
+      [
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T133:2",
+          "ordinal": 1,
+          "repetition": 2,
+          "task_id": "T133",
+          "wave": 20
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T134:2",
+          "ordinal": 2,
+          "repetition": 2,
+          "task_id": "T134",
+          "wave": 20
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T135:2",
+          "ordinal": 3,
+          "repetition": 2,
+          "task_id": "T135",
+          "wave": 20
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T132:2",
+          "ordinal": 4,
+          "repetition": 2,
+          "task_id": "T132",
+          "wave": 20
+        }
+      ],
+      [
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T133:2",
+          "ordinal": 1,
+          "repetition": 2,
+          "task_id": "T133",
+          "wave": 21
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T134:2",
+          "ordinal": 2,
+          "repetition": 2,
+          "task_id": "T134",
+          "wave": 21
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T135:2",
+          "ordinal": 3,
+          "repetition": 2,
+          "task_id": "T135",
+          "wave": 21
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T136:2",
+          "ordinal": 4,
+          "repetition": 2,
+          "task_id": "T136",
+          "wave": 21
+        }
+      ],
+      [
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T125:2",
+          "ordinal": 1,
+          "repetition": 2,
+          "task_id": "T125",
+          "wave": 22
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T134:2",
+          "ordinal": 2,
+          "repetition": 2,
+          "task_id": "T134",
+          "wave": 22
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T135:2",
+          "ordinal": 3,
+          "repetition": 2,
+          "task_id": "T135",
+          "wave": 22
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T136:2",
+          "ordinal": 4,
+          "repetition": 2,
+          "task_id": "T136",
+          "wave": 22
+        }
+      ],
+      [
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T125:2",
+          "ordinal": 1,
+          "repetition": 2,
+          "task_id": "T125",
+          "wave": 23
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T126:2",
+          "ordinal": 2,
+          "repetition": 2,
+          "task_id": "T126",
+          "wave": 23
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T135:2",
+          "ordinal": 3,
+          "repetition": 2,
+          "task_id": "T135",
+          "wave": 23
+        },
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T136:2",
+          "ordinal": 4,
+          "repetition": 2,
+          "task_id": "T136",
+          "wave": 23
+        }
+      ],
+      [
+        {
+          "arm": "codex-super-sol",
+          "key": "codex-super-sol:T125:2",
+          "ordinal": 1,
+          "repetition": 2,
+          "task_id": "T125",
+          "wave": 24
+        },
+        {
+          "arm": "claude-raw",
+          "key": "claude-raw:T126:2",
+          "ordinal": 2,
+          "repetition": 2,
+          "task_id": "T126",
+          "wave": 24
+        },
+        {
+          "arm": "claude-fablize",
+          "key": "claude-fablize:T127:2",
+          "ordinal": 3,
+          "repetition": 2,
+          "task_id": "T127",
+          "wave": 24
+        },
+        {
+          "arm": "codex-raw",
+          "key": "codex-raw:T136:2",
+          "ordinal": 4,
+          "repetition": 2,
+          "task_id": "T136",
+          "wave": 24
+        }
+      ]
+    ],
+    "seal_digest": "3c9a10aeeef4ec0b7cee58a2008974d83e5e0cb5faa60aafa121a92cc2b164cf",
+    "target": {
+      "commit": "e49b71ac5538a755413ee8d2c1e6a281d3e31345",
+      "public_digest": "20da9ffa8e16cdf94e010b58743839f7d9a92c925f3ad262d671f69e6ebaf027"
+    },
+    "tasks": [
+      {
+        "family": "incident-diagnosis",
+        "private_digest": "16a8dd0bce705603ffe93b6775eeed9ba71f5c7a6e32d8c19ab06ddec3890e7d",
+        "public_digest": "b28cd4a04006553efd7c9e9789825d4436d1be138eb1a08bee77fec8cc7df239",
+        "task_id": "T125"
+      },
+      {
+        "family": "multi-story-checkout",
+        "private_digest": "e38ff44b119188df0168fd534d7fc09f822051dfbf8a54d7a527d402de6e6f72",
+        "public_digest": "8e3e434d962a17da3b3a6d06f61dac76c16f8d868e01f1225ae0a3659db57a4d",
+        "task_id": "T126"
+      },
+      {
+        "family": "render-export",
+        "private_digest": "eb4f7ac3b3c80c29f203d38e91e964d967839980eb17ad62df6abc120845d8e9",
+        "public_digest": "ba89f16b3f4d50ab485a5d2aa5a3db25d18754e1cc13201a129300680663dcc2",
+        "task_id": "T127"
+      },
+      {
+        "family": "cancellation-pool",
+        "private_digest": "1b7aada01d32561cfeb4aa3f2b9476ec23904b738b45115760f2c8b245e2f8dd",
+        "public_digest": "bc879e9c4d894c87c540b49c7e3b958342432e4686b4dbe0490c0eebbc2ead83",
+        "task_id": "T128"
+      },
+      {
+        "family": "schema-records",
+        "private_digest": "2e0f80b8a2d1b9b014c17af890c9955a57e973e0c343f15e46b7e60313fc254d",
+        "public_digest": "a134070c64519ef0151f1fba2793ad2662786bc7752bb11fddd63b9f35b61060",
+        "task_id": "T129"
+      },
+      {
+        "family": "safe-archive",
+        "private_digest": "83833e1f7dd96e97d2c60db54a581cb520f65b3243b763fc9e3b06e9158dde6c",
+        "public_digest": "ee50815b8fc9f81bb2e264fadae8a5537054057dac35a9a7f29b67901458d4f2",
+        "task_id": "T130"
+      },
+      {
+        "family": "cli-batch",
+        "private_digest": "5d45f6ca6e1e06bd5c02b799c32516acb1210a0e0fd9c51f0aa96390f6c57621",
+        "public_digest": "6ca1faa802e9eed0508b9f2fc6f7cf596784e0d8a706b82b415eb308686280a0",
+        "task_id": "T131"
+      },
+      {
+        "family": "cursor-feed",
+        "private_digest": "9b1107c3bb251411a0f93fe6612072fe659eb9ae2f2dabbfc915a9833e340669",
+        "public_digest": "3fff5a20920473d370cfcdcb77a80802b96592aa08075e5ccefd92e7e259fc2d",
+        "task_id": "T132"
+      },
+      {
+        "family": "expiring-cache",
+        "private_digest": "4ca8101597173267b5e6a94fddd0d10eb771fa84eb81d7f02b16ba3c53e613ed",
+        "public_digest": "e87034b32072d692abd81f4d0bdcdb6e9a3bcf1a2ec233c41e88a3a3827e89fc",
+        "task_id": "T133"
+      },
+      {
+        "family": "atomic-publish",
+        "private_digest": "7f736d5314b407243e4d189f0ef648c2a7c544939379ace43e2e3f4b1d8964cb",
+        "public_digest": "e00badf5d93298a8ccee4d9def2989a9f5ad5ea013953da72aa9eabfe8f2f9ad",
+        "task_id": "T134"
+      },
+      {
+        "family": "fair-scheduler",
+        "private_digest": "efdf9c50f1808a53dd770e2786a0b3bb15f2ca1e9272127d3a00c39e0df35801",
+        "public_digest": "f8c02ee01c16868c55482972bb0f02e67ca74910d066452562d22a00db78b799",
+        "task_id": "T135"
+      },
+      {
+        "family": "release-manifest",
+        "private_digest": "dcd844c0315d18d73f9b9ae0d96556b5e0b3775f44ad8f96009329fa99b5e77f",
+        "public_digest": "2af863b3e93361b89390e192a9657a649a27eb227da07d387a5b957ea36f42b7",
+        "task_id": "T136"
+      }
+    ]
+  }
+}
