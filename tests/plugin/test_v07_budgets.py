@@ -5,14 +5,15 @@ import subprocess
 import time
 from pathlib import Path
 
-from super_sol_routes import CONTEXT_CODEPOINT_LIMIT, Contract, residual_context
+from super_sol_routes import CONTEXT_CODEPOINT_LIMIT, REPAIR_CONTEXT, Contract, residual_context
 from super_sol_state import MAX_INJECTIONS_PER_TURN
 
 from .conftest import HOOK_SCRIPT, PLUGIN_ROOT, HookRunner, hook_input
 
 
 def test_public_context_and_injection_budgets_are_frozen() -> None:
-    assert CONTEXT_CODEPOINT_LIMIT == 220
+    assert CONTEXT_CODEPOINT_LIMIT == 180
+    assert len(REPAIR_CONTEXT) <= CONTEXT_CODEPOINT_LIMIT
     assert MAX_INJECTIONS_PER_TURN == 1
     assert all(len(residual_context(contract)) <= CONTEXT_CODEPOINT_LIMIT for contract in Contract)
 

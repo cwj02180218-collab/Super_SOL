@@ -49,12 +49,38 @@ def test_equal_contract_scores_are_observe_only() -> None:
 
 
 def test_residual_context_is_bounded_and_does_not_repeat_tests() -> None:
-    for contract in Contract:
-        context = residual_context(contract)
-        assert len(context) <= 220
-        assert contract.value.replace("_", " ") in context
-        assert "Do not rerun passed tests" in context
-        assert "T109" not in context
+    expected = {
+        Contract.OWNERSHIP_ALIASING: (
+            "One final semantic check: nested alias isolation. Inspect one untested mutation "
+            "path; do not broaden the patch or rerun a passing test."
+        ),
+        Contract.INPUT_ERROR_SEMANTICS: (
+            "One final semantic check: unknown-input exit semantics. Inspect one untested "
+            "command; do not broaden the patch or rerun a passing test."
+        ),
+        Contract.RETRY_STATE: (
+            "One final semantic check: retry identity after failure. Inspect one untested "
+            "retry result; do not broaden the patch or rerun a passing test."
+        ),
+        Contract.CONCURRENCY_CANCELLATION: (
+            "One final semantic check: cancellation propagation. Inspect one untested awaiting "
+            "caller; do not broaden the patch or rerun a passing test."
+        ),
+        Contract.FAILURE_ATOMICITY: (
+            "One final semantic check: all-or-nothing publication. Inspect one untested failed "
+            "write; do not broaden the patch or rerun a passing test."
+        ),
+        Contract.MIGRATION_COMPATIBILITY: (
+            "One final semantic check: old/future schema behavior. Inspect one untested version "
+            "boundary; do not broaden the patch or rerun a passing test."
+        ),
+        Contract.SECURITY_PATH_BOUNDARY: (
+            "One final semantic check: canonical path containment. Inspect one untested symlink "
+            "path; do not broaden the patch or rerun a passing test."
+        ),
+    }
+
+    assert {contract: residual_context(contract) for contract in Contract} == expected
 
 
 def test_unambiguous_prompts_select_one_specialist_route() -> None:
