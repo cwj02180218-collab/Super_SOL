@@ -265,8 +265,10 @@ def test_v07_candidate_docs_freeze_evidence_bounded_claim() -> None:
 
 
 def test_v08_release_budget_spec_freezes_latency_and_profile_privacy_gates() -> None:
-    brief = Path(".superpowers/sdd/task-3-brief.md").read_text(encoding="utf-8")
-    normalized = " ".join(brief.split())
+    plan = Path("docs/superpowers/plans/2026-07-13-super-sol-v0.8-masterpiece.md").read_text(
+        encoding="utf-8"
+    )
+    normalized = " ".join(plan.split())
 
     for expected in (
         "300 real prompt-hook invocations",
