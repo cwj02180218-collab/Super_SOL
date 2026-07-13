@@ -17,23 +17,23 @@ Codex 작업 자체의 사용량은 그대로 발생하므로 비용 0을 보장
 
 ![Super SOL 상황별 사용 가이드](docs/assets/super-sol-guide-wide.png)
 
-## v0.7 Evidence-Bounded Router 개발 후보
+## v0.8 Sol-Gated 후보
 
-`0.7.0rc1`은 **raw-first** 후보입니다. 일반 Codex가 먼저 구현하고 검증하도록 요청 시점에는
-아무 context도 넣지 않습니다. 요청에서 하나의 의미 계약이 높은 확신으로 감지되고, 실제 편집
-뒤 첫 검증 결과가 관찰된 경우에만 **one model-visible injection**을 허용합니다. 통과한 테스트의
-반복, 자동 모델 전환, 추가 API 호출, 서브에이전트는 만들지 않습니다.
+`0.8.0rc1`은 **raw-first** 후보입니다. 정규화한 모델 식별자가 정확히 `gpt-5.6-sol`일 때만,
+실제 편집 뒤 첫 검증 결과가 관찰된 경우에 한해 **one model-visible injection**을 허용합니다.
+모든 context는 180 Unicode code points 이하여야 합니다. `gpt-5.6-terra`, Luna, 누락·손상·알 수
+없는 모델 메타데이터는 observation-only로 동작하며 model-visible context를 내보내지 않습니다.
 
-이 RC는 **not a performance-uplift claim**입니다. v0.6은 Terra -0.71점, Sol +2.53점이었지만
-두 신뢰구간이 모두 0을 포함했고 token/time 예산도 넘었습니다. 원인과 정확한 수치는
-[`BENCHMARK_POSTMORTEM_0.6.md`](docs/BENCHMARK_POSTMORTEM_0.6.md), T117-T124의 64 valid slots와
-승격 기준은 [`V0.7_PROMOTION_PROTOCOL.md`](docs/V0.7_PROMOTION_PROTOCOL.md), 무료 검증 상태는
-[`RELEASE_BRIEF_0.7.0RC1.md`](docs/RELEASE_BRIEF_0.7.0RC1.md)에 고정합니다.
+자동 모델 전환, 추가 model call 또는 additional API call, 서브에이전트, 자동 재시도와 통과한
+테스트 재실행은 없습니다. Sol/high validation is pending. 이 RC는 **not a performance-uplift
+claim**이며, stable noninferiority와 quality uplift는 서로 다른 확인 기준입니다. 96/96 valid
+slots와 모든 승격 기준은 [`V0.8_PROMOTION_PROTOCOL.md`](docs/V0.8_PROMOTION_PROTOCOL.md), 후보의
+무료 검증 상태는 [`RELEASE_BRIEF_0.8.0RC1.md`](docs/RELEASE_BRIEF_0.8.0RC1.md)에 고정합니다.
 
 후보를 격리 확인할 때만 다음 고정 태그를 사용합니다. 안정판은 여전히 v0.3.1입니다.
 
 ```bash
-codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.7.0-rc1
+codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.8.0-rc1
 codex plugin add super-sol@super-sol
 codex plugin list
 ```
@@ -94,7 +94,7 @@ codex plugin list
 태그 전 개발본만 확인할 때는 `--ref main`을 사용합니다. ChatGPT/Codex 데스크톱 앱을 다시
 열고 새 작업을 시작한 뒤 `/hooks`를 확인합니다. macOS/Linux에서는 설치된 Super SOL 폴더의
 `hooks/super_sol_hook.py`를 `/usr/bin/python3`로 실행하고, Windows에서는 같은 파일을 `py -3`로
-실행해야 합니다. v0.7 후보의 정상 이벤트는 요청 입력, Bash 실행 전, Bash 및 편집 실행 후
+실행해야 합니다. v0.8 후보의 정상 이벤트는 요청 입력, Bash 실행 전, Bash 및 편집 실행 후
 세 가지입니다. 종료 훅이나 다른 경로가 보이면 승인하지 마세요. 훅 내용이 업데이트되면
 다시 승인하라는 안내가 나올 수 있습니다.
 `--dangerously-bypass-hook-trust`는 일반 설치 절차로 권장하지 않습니다.

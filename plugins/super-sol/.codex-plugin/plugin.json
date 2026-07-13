@@ -1,7 +1,7 @@
 {
   "name": "super-sol",
-  "version": "0.7.0-rc1",
-  "description": "Evidence-bounded raw-first semantic checks for stock Codex",
+  "version": "0.8.0-rc1",
+  "description": "Sol-gated, evidence-bounded raw-first semantic checks for stock Codex",
   "author": {
     "name": "Super SOL contributors",
     "url": "https://github.com/cwj02180218-collab/Super_SOL"

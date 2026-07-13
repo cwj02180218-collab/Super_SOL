@@ -81,7 +81,7 @@ def test_package_exports_version() -> None:
     version = fablized_sol.__version__
 
     # Then the package exports the distribution version
-    assert version == "0.7.0rc1"
+    assert version == "0.8.0rc1"
 
 
 def test_sdist_uses_an_explicit_source_allowlist() -> None:
@@ -102,7 +102,7 @@ def test_sdist_uses_an_explicit_source_allowlist() -> None:
         "/NOTICE",
         "/README.md",
         "/SECURITY.md",
-        "/benchmarks",
+        "/benchmarks/day3-contract-v2/README.md",
         "/docs",
         "/eval",
         "/pyproject.toml",
@@ -243,3 +243,27 @@ def test_v08_release_budget_spec_freezes_latency_and_profile_privacy_gates() -> 
         "every file is at most 4096 bytes",
     ):
         assert expected in normalized
+
+
+def test_v08_candidate_docs_freeze_sol_only_evidence_boundary() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    product = Path("docs/SUPER_SOL.md").read_text(encoding="utf-8")
+    protocol = Path("docs/V0.8_PROMOTION_PROTOCOL.md").read_text(encoding="utf-8")
+    brief = Path("docs/RELEASE_BRIEF_0.8.0RC1.md").read_text(encoding="utf-8")
+    combined = f"{readme}\n{product}\n{protocol}\n{brief}"
+
+    for expected in (
+        "0.8.0rc1",
+        "0.8.0-rc1",
+        "gpt-5.6-sol",
+        "180 Unicode code points",
+        "observation-only",
+        "additional API call",
+        "96/96 valid slots",
+        "Sol/high validation is pending",
+        "uplift was not proven",
+    ):
+        assert expected in combined
+
+    assert "raises underlying model intelligence" in combined
+    assert "performance amplifier" not in brief
