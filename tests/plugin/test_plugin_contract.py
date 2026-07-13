@@ -22,6 +22,16 @@ def test_plugin_manifest_and_marketplace_are_release_ready() -> None:
     assert manifest["repository"] == "https://github.com/cwj02180218-collab/Super_SOL"
     assert "mcpServers" not in manifest
     assert "apps" not in manifest
+    interface = manifest["interface"]
+    assert isinstance(interface, dict)
+    long_description = interface["longDescription"]
+    assert isinstance(long_description, str)
+    for expected in (
+        "`gpt-5.6-sol`에서만 능동 의미 개입(active semantic intervention)",
+        "non-Sol 모델은 observation-only",
+        "추가 model/API call, 모델 전환, 자동 재시도는 없습니다.",
+    ):
+        assert expected in long_description
     entries = marketplace["plugins"]
     assert isinstance(entries, list)
     entry = entries[0]

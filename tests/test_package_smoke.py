@@ -130,6 +130,39 @@ def test_readme_exposes_beginner_plugin_and_current_model_contract() -> None:
     assert "unseen holdout" in readme
 
 
+def test_readme_separates_stable_and_candidate_plugin_contracts() -> None:
+    readme = Path("README.md").read_text(encoding="utf-8")
+    stable_heading = "### 현재 안정판 v0.3.1 설치"
+    candidate_heading = "### v0.8.0-rc1 후보 설치"
+
+    assert stable_heading in readme
+    assert candidate_heading in readme
+    stable_section = readme.split(stable_heading, maxsplit=1)[1].split(
+        candidate_heading, maxsplit=1
+    )[0]
+    candidate_section = readme.split(candidate_heading, maxsplit=1)[1].split(
+        "### 새 버전으로 업데이트", maxsplit=1
+    )[0]
+
+    assert (
+        "codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.3.1" in stable_section
+    )
+    for hook_event in (
+        "SessionStart",
+        "UserPromptSubmit",
+        "PreToolUse",
+        "PostToolUse",
+        "Stop",
+    ):
+        assert f"`{hook_event}`" in stable_section
+    assert (
+        "codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.8.0-rc1"
+        in candidate_section
+    )
+    assert "`UserPromptSubmit`, `PreToolUse`, `PostToolUse`" in candidate_section
+    assert "v0.8.0은 안정판이 아닙니다." in candidate_section
+
+
 def test_v05_release_candidate_docs_freeze_cells_and_claim_boundary() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
     postmortem = Path("docs/BENCHMARK_POSTMORTEM_0.4.md").read_text(encoding="utf-8")

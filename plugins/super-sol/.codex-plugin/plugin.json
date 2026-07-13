@@ -14,7 +14,7 @@
   "interface": {
     "displayName": "Super SOL",
     "shortDescription": "검증 뒤 한 번만 의미 경계를 점검하는 Codex 도우미",
-    "longDescription": "순정 Codex가 먼저 구현하고 검증한 뒤, 요청에서 확실히 감지된 의미 계약만 한 번 점검합니다. 자동 모델 전환, API 호출, 서브에이전트, 반복 테스트가 없으며 프롬프트와 도구 출력은 저장하지 않습니다.",
+    "longDescription": "`gpt-5.6-sol`에서만 능동 의미 개입(active semantic intervention)을 수행하고 non-Sol 모델은 observation-only로 동작합니다. 추가 model/API call, 모델 전환, 자동 재시도는 없습니다. 프롬프트와 도구 출력은 저장하지 않습니다.",
     "developerName": "Super SOL contributors",
     "category": "Productivity",
     "capabilities": ["Interactive", "Write"],
