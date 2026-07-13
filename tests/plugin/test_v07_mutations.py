@@ -118,17 +118,9 @@ def test_mutation_removing_model_gating_emits_no_context_for_an_observe_model(
     assert _context(run_hook(_verification("gpt-5.6-terra")).stdout) is None
 
 
-def test_mutation_accepting_a_181_code_point_residual_raises_budget_error(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setitem(
-        super_sol_routes._RESIDUAL_CONTEXTS,
-        Contract.CONCURRENCY_CANCELLATION,
-        "x" * 181,
-    )
-
+def test_mutation_accepting_a_181_code_point_residual_raises_budget_error() -> None:
     with pytest.raises(super_sol_routes.ResidualContextBudgetError):
-        _ = super_sol_routes.residual_context(Contract.CONCURRENCY_CANCELLATION)
+        _ = super_sol_routes.validate_residual_context("x" * 181)
 
 
 def test_mutation_allowing_a_second_context_injection_is_blocked(run_hook: HookRunner) -> None:

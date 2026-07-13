@@ -578,9 +578,13 @@ def context_for(route: Route) -> Optional[str]:
     return _PACKS.get(route)
 
 
-def residual_context(contract: Contract) -> str:
-    """Return one bounded post-verification semantic check."""
-    context = _RESIDUAL_CONTEXTS[contract]
+def validate_residual_context(context: str) -> str:
+    """Return a residual context only when it fits the public code-point budget."""
     if len(context) > CONTEXT_CODEPOINT_LIMIT:
         raise ResidualContextBudgetError
     return context
+
+
+def residual_context(contract: Contract) -> str:
+    """Return one bounded post-verification semantic check."""
+    return validate_residual_context(_RESIDUAL_CONTEXTS[contract])

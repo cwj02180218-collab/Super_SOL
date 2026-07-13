@@ -6,6 +6,7 @@ import sys
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from pydantic import JsonValue, TypeAdapter
@@ -16,6 +17,8 @@ HOOK_SCRIPT = PLUGIN_ROOT / "hooks" / "super_sol_hook.py"
 PROMPT_DISPATCHER = PLUGIN_ROOT / "hooks" / "prompt_dispatcher.py"
 HOOK_CONFIG = PLUGIN_ROOT / "hooks" / "hooks.json"
 sys.path.insert(0, str(PLUGIN_ROOT / "hooks"))
+import super_sol_hook  # noqa: E402
+
 _OBJECT_ADAPTER = TypeAdapter[dict[str, JsonValue]](dict[str, JsonValue])
 
 
@@ -58,6 +61,7 @@ def plugin_data(tmp_path: Path) -> Path:
 @pytest.fixture
 def run_hook(plugin_data: Path) -> HookRunner:
     argv = configured_prompt_argv()
+    shadow_data = plugin_data.parent / "coverage-shadow"
 
     def invoke(payload: HookInput) -> HookResult:
         stdin = payload if isinstance(payload, str) else json.dumps(payload)
@@ -77,6 +81,10 @@ def run_hook(plugin_data: Path) -> HookRunner:
         )
         output = completed.stdout.strip()
         parsed = _OBJECT_ADAPTER.validate_json(output) if output else None
+        shadow_environment = {**environment, "PLUGIN_DATA": str(shadow_data)}
+        with patch.dict(os.environ, shadow_environment, clear=True):
+            shadow = super_sol_hook.process_raw(stdin.encode())
+        assert shadow == parsed
         return HookResult(completed.returncode, parsed, output, completed.stderr)
 
     return invoke
@@ -85,6 +93,7 @@ def run_hook(plugin_data: Path) -> HookRunner:
 @pytest.fixture
 def run_hook_with_env(plugin_data: Path) -> HookEnvironmentRunner:
     argv = configured_prompt_argv()
+    shadow_data = plugin_data.parent / "coverage-shadow"
 
     def invoke(payload: HookInput, overrides: dict[str, str]) -> HookResult:
         stdin = payload if isinstance(payload, str) else json.dumps(payload)
@@ -105,6 +114,10 @@ def run_hook_with_env(plugin_data: Path) -> HookEnvironmentRunner:
         )
         output = completed.stdout.strip()
         parsed = _OBJECT_ADAPTER.validate_json(output) if output else None
+        shadow_environment = {**environment, "PLUGIN_DATA": str(shadow_data)}
+        with patch.dict(os.environ, shadow_environment, clear=True):
+            shadow = super_sol_hook.process_raw(stdin.encode())
+        assert shadow == parsed
         return HookResult(completed.returncode, parsed, output, completed.stderr)
 
     return invoke

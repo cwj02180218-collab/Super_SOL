@@ -7,6 +7,7 @@ from typing import Protocol, cast
 
 import prompt_dispatcher
 import pytest
+import super_sol_hook
 import super_sol_routes
 from pydantic import JsonValue
 
@@ -110,6 +111,25 @@ def test_non_prompt_malformed_and_oversized_input_delegate_safely() -> None:
     assert _delegated(hook_input("PreToolUse", tool_input={}))
     assert _delegated("not-json")
     assert _delegated("{" + ("x" * 1_048_576))
+
+
+def test_default_dispatcher_delegates_non_prompt_event_to_full_hook() -> None:
+    raw = json.dumps(hook_input("PreToolUse", tool_input={})).encode()
+
+    assert prompt_dispatcher.dispatch(raw, {}) is None
+
+
+def test_full_hook_warns_for_unknown_event_and_non_object_json() -> None:
+    unknown = json.dumps(hook_input("UnknownEvent")).encode()
+
+    assert super_sol_hook.process_raw(unknown) == {
+        "continue": True,
+        "systemMessage": "Super SOL: 알 수 없는 훅 이벤트라 자동 절차 없이 계속합니다.",
+    }
+    assert super_sol_hook.process_raw(b"[]") == {
+        "continue": True,
+        "systemMessage": "Super SOL: 로컬 상태를 읽지 못해 자동 절차 없이 계속합니다.",
+    }
 
 
 @pytest.mark.parametrize(

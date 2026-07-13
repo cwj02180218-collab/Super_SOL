@@ -88,7 +88,7 @@ def test_sol_state_records_verification_but_emits_no_context_after_model_drift(
     assert run_hook(edit).stdout is None
     verification = verification_payload(model=current_model)
     if remove_model:
-        verification.pop("model")
+        _ = verification.pop("model")
 
     assert _context(run_hook(verification).stdout) is None
     stored = "".join(
@@ -110,7 +110,7 @@ def test_lifecycle_without_model_emits_no_context(run_hook: HookRunner) -> None:
         "UserPromptSubmit",
         prompt="Fix concurrent refresh cancellation and race conditions",
     )
-    prompt.pop("model")
+    _ = prompt.pop("model")
     assert run_hook(prompt).stdout is None
     edit = hook_input(
         "PostToolUse",
@@ -119,10 +119,10 @@ def test_lifecycle_without_model_emits_no_context(run_hook: HookRunner) -> None:
         tool_input={"patch": "bounded fixture"},
         tool_response={"success": True},
     )
-    edit.pop("model")
+    _ = edit.pop("model")
     assert run_hook(edit).stdout is None
     verification = verification_payload(model="gpt-5.6-sol")
-    verification.pop("model")
+    _ = verification.pop("model")
     assert _context(run_hook(verification).stdout) is None
 
 
