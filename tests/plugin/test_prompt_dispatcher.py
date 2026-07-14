@@ -1,6 +1,8 @@
+import importlib
 import json
 import os
 import subprocess
+import sys
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Protocol, cast
@@ -8,8 +10,11 @@ from typing import Protocol, cast
 import prompt_dispatcher
 import pytest
 import super_sol_hook
+import super_sol_loop_state
 import super_sol_routes
 from pydantic import JsonValue
+from super_sol_loop_state import LoopLedger, load_loop_ledger, mutate_loop_ledger
+from super_sol_state import turn_root
 
 from .conftest import HOOK_SCRIPT, PLUGIN_ROOT, PROMPT_DISPATCHER, hook_input
 
@@ -104,7 +109,100 @@ def test_clearly_generic_prompts_exit_without_full_hook() -> None:
         "format the response as a table",
     )
 
-    assert all(not _delegated(hook_input("UserPromptSubmit", prompt=prompt)) for prompt in prompts)
+    assert all(
+        not _delegated(hook_input("UserPromptSubmit", model="gpt-5.6-terra", prompt=prompt))
+        for prompt in prompts
+    )
+
+
+def test_clean_generic_sol_is_silent_without_writes_or_heavy_imports(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    module_names = {
+        "super_sol_commands",
+        "super_sol_evidence_hook",
+        "super_sol_hook",
+        "super_sol_loop_policy",
+        "super_sol_routes",
+        "super_sol_state",
+    }
+    plugin_data = tmp_path / "plugin-data"
+    with monkeypatch.context() as isolated:
+        for name in module_names:
+            isolated.delitem(sys.modules, name, raising=False)
+        isolated.setenv("PLUGIN_DATA", str(plugin_data))
+        _ = importlib.reload(prompt_dispatcher)
+        calls: list[bytes] = []
+
+        assert (
+            prompt_dispatcher.dispatch(
+                json.dumps(hook_input("UserPromptSubmit", prompt="rename this variable")).encode(),
+                os.environ,
+                calls.append,
+            )
+            is None
+        )
+        assert calls == []
+        assert not (module_names & set(sys.modules))
+    assert not plugin_data.exists()
+    assert importlib.import_module("super_sol_loop_state") is super_sol_loop_state
+
+
+def test_generic_sol_prompt_resets_only_an_existing_same_turn_ledger(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    plugin_data = tmp_path / "plugin-data"
+    payload = hook_input("UserPromptSubmit", prompt="rename this variable")
+    unrelated = hook_input("UserPromptSubmit", turn_id="unrelated", prompt="rename this variable")
+    monkeypatch.setenv("PLUGIN_DATA", str(plugin_data))
+    root = turn_root(cast("dict[str, object]", payload))
+    unrelated_root = turn_root(cast("dict[str, object]", unrelated))
+    assert root is not None
+    assert unrelated_root is not None
+    _ = mutate_loop_ledger(root, lambda state: LoopLedger.fresh(1))
+    _ = mutate_loop_ledger(unrelated_root, lambda state: LoopLedger.fresh(2))
+    calls: list[bytes] = []
+
+    assert (
+        prompt_dispatcher.dispatch(json.dumps(payload).encode(), os.environ, calls.append) is None
+    )
+    assert calls == []
+    assert load_loop_ledger(root).last_event_ns > 1
+    assert load_loop_ledger(unrelated_root).last_event_ns == 2
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "use sk-abcdefghijklmnopqrst for this request",
+        "SUPER SOL OFF\nrename this variable",
+        "Fix concurrent refresh race conditions",
+    ],
+)
+def test_guarded_sol_prompts_still_delegate_to_the_full_processor(prompt: str) -> None:
+    assert _delegated(hook_input("UserPromptSubmit", prompt=prompt))
+
+
+def test_generic_sol_without_loop_state_skips_event_modules(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    module_names = {
+        "super_sol_commands",
+        "super_sol_evidence_hook",
+        "super_sol_loop_hook",
+        "super_sol_loop_policy",
+    }
+    plugin_data = tmp_path / "plugin-data"
+    with monkeypatch.context() as isolated:
+        for name in module_names:
+            isolated.delitem(sys.modules, name, raising=False)
+        isolated.setenv("PLUGIN_DATA", str(plugin_data))
+        _ = importlib.reload(super_sol_hook)
+        payload = json.dumps(hook_input("UserPromptSubmit", prompt="rename this variable")).encode()
+
+        assert super_sol_hook.process_raw(payload) is None
+        assert not (module_names & set(sys.modules))
+    assert not (tmp_path / "plugin-data").exists()
 
 
 def test_non_prompt_malformed_and_oversized_input_delegate_safely() -> None:
@@ -119,16 +217,30 @@ def test_default_dispatcher_delegates_non_prompt_event_to_full_hook() -> None:
     assert prompt_dispatcher.dispatch(raw, {}) is None
 
 
-def test_full_hook_warns_for_unknown_event_and_non_object_json() -> None:
+@pytest.mark.parametrize("raw", [b"[]", b"null", b"1"])
+def test_full_hook_warns_for_non_object_json(raw: bytes) -> None:
+    assert super_sol_hook.process_raw(raw) == {
+        "continue": True,
+        "systemMessage": "Super SOL: 로컬 상태를 읽지 못해 자동 절차 없이 계속합니다.",
+    }
+
+
+def test_hook_shaped_top_level_array_delegates_and_fails_open() -> None:
+    raw = json.dumps([hook_input("UserPromptSubmit", prompt="rename this variable")])
+
+    assert _delegated(raw)
+    assert super_sol_hook.process_raw(raw.encode()) == {
+        "continue": True,
+        "systemMessage": "Super SOL: 로컬 상태를 읽지 못해 자동 절차 없이 계속합니다.",
+    }
+
+
+def test_full_hook_warns_for_unknown_event() -> None:
     unknown = json.dumps(hook_input("UnknownEvent")).encode()
 
     assert super_sol_hook.process_raw(unknown) == {
         "continue": True,
         "systemMessage": "Super SOL: 알 수 없는 훅 이벤트라 자동 절차 없이 계속합니다.",
-    }
-    assert super_sol_hook.process_raw(b"[]") == {
-        "continue": True,
-        "systemMessage": "Super SOL: 로컬 상태를 읽지 못해 자동 절차 없이 계속합니다.",
     }
 
 
@@ -139,7 +251,11 @@ def test_full_hook_warns_for_unknown_event_and_non_object_json() -> None:
         hook_input("UserPromptSubmit", prompt="Fix concurrent refresh race conditions"),
         hook_input("UserPromptSubmit", prompt="SUPER SOL ROUTE unknown\nFix this conversion"),
         hook_input("UserPromptSubmit", prompt="use sk-abcdefghijklmnopqrst now"),
+        hook_input("UserPromptSubmit", model="gpt-5.6-terra", prompt="rename this variable"),
+        json.dumps([hook_input("UserPromptSubmit", prompt="rename this variable")]),
         "not-json",
+        "null",
+        "1",
     ],
 )
 def test_prompt_dispatcher_matches_full_hook_output(

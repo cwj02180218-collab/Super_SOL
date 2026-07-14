@@ -220,6 +220,26 @@ def test_failed_verification_emits_repair_context_once(run_hook: HookRunner) -> 
     assert second is None
 
 
+def test_cmd_alias_verification_emits_repair_context(run_hook: HookRunner) -> None:
+    _prime(run_hook, "Fix concurrent refresh cancellation and race conditions")
+    _post_edit(run_hook)
+
+    result = run_hook(
+        hook_input(
+            "PostToolUse",
+            tool_name="Bash",
+            tool_use_id="failed-cmd-alias",
+            tool_input={"cmd": "uv run pytest -q"},
+            tool_response={"exit_code": 1},
+        )
+    )
+
+    assert result.stdout is not None
+    specific = result.stdout["hookSpecificOutput"]
+    assert isinstance(specific, dict)
+    assert specific["additionalContext"] == REPAIR_CONTEXT
+
+
 def test_success_unrecognized_and_pass_through_failures_emit_no_context(
     run_hook: HookRunner,
 ) -> None:

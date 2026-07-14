@@ -1061,7 +1061,7 @@ execution; `evaluate` only parses options and translates its exit code.
 
 Run: `uv run pytest tests/measure/test_shadow.py tests/eval -v`
 
-Run: `uv run fablized-sol-eval --tasks eval/tasks.example.json --output-dir /tmp/fablized-sol-dry --run-id day0-smoke --dry-run`
+Run: `uv run fablized-sol-eval --tasks eval/tasks.example.json --output-dir $TMPDIR/fablized-sol-dry --run-id day0-smoke --dry-run`
 
 Expected: tests pass; dry-run exits 0 and writes planned events for both models without reading an API key.
 

@@ -17,6 +17,45 @@ Codex 작업 자체의 사용량은 그대로 발생하므로 비용 0을 보장
 
 ![Super SOL 상황별 사용 가이드](docs/assets/super-sol-guide-wide.png)
 
+## v0.9.0-rc1 Loop Fuse prerelease
+
+`v0.9.0-rc1 is a prerelease.` It keeps v0.8 raw-first behavior and adds a bounded loop fuse only
+when the normalized model identifier is exactly `gpt-5.6-sol`. Non-Sol profiles pass through without
+active intervention. The v0.9 candidate does not make an additional API call, retry, start a
+continuation, substitute a model, create a replacement agent, or use a process killer.
+
+The tested limits are exact: passed verifier replay is blocked until edit; the third identical
+no-progress result warns; fourth blocks; maximum depth is one; maximum 2 concurrent children;
+maximum 3 total starts including failures. Manual compaction is excluded. The third no-progress
+automatic `PostCompact` returns `continue:false`, and user input resets the turn budget. There is no
+process killer: a sampler already in flight cannot be interrupted before a lifecycle hook, and no
+`Stop` hook is installed.
+
+Gate 0 attempt 5 completed for product candidate
+`ec5a153e1487065f3f3a33aab5394ed48f453377`: 465/465 tests passed in 40.87s with 90.56% coverage;
+Ruff, formatting, basedpyright, build, dependency lock, archive inventory, installed-wheel smoke,
+container audit, and the stock Codex lifecycle passed. The privacy-safe 300-hook/150-floor latency
+artifact has SHA-256 `6689e3b8b7d75f25ec5a5da4e2d5fcf7baf6d1d5523cbacd515a99564bdcec00`;
+hook p95 was `59.684106236090884 ms` and paired incremental p95 was
+`37.984207982663065 ms`, below the required 100/70 ms limits.
+
+Gate 1 completed at 12/12, with 0 failures, 0 unexpected contexts, and `billable_calls: 0`; the
+credential-stripped five-file suite passed 42/42 in 9.73s. Kernel network denial was required and
+enforced, successful network operations were 0, corrupt recovery was evidenced, and named
+credentials were absent. The plugin tree, manifest, replay report, and audit SHA-256 values are
+`ab7ff273f66c0ea3a7472484a0ecca05b7a7aef5876d959129946443388d7f74`,
+`9412d22d97e6558adb645b59be48de38f0d8187f4e83a8a61cc9b644197c98b5`,
+`50219870b1ad89d72f03ed97e1125047e0315f226d278ae518e8f1dbe9cae048`, and
+`db619a1a2d39459ac051db15fb310f05976901255862bdbeaa779ca593273332` respectively.
+
+Gate 2 has not run and remains **NOT RUN**: its separately approved 32 paid slots are the only
+basis for stable performance or uplift claims, so both remain unproven. **v0.8.0 remains the stable
+release.** See
+[`V0.9_PROMOTION_PROTOCOL.md`](docs/V0.9_PROMOTION_PROTOCOL.md) and
+[`RELEASE_BRIEF_0.9.0RC1.md`](docs/RELEASE_BRIEF_0.9.0RC1.md).
+Both the wheel and sdist carry the same release assets. The wheel uses the stable package-data path
+`fablized_sol/_release/v0_9/` for the plugin, v0.9 eval helpers, release docs, and replay evidence.
+
 ## v0.8 Sol-Gated 안정판
 
 `0.8.0`은 **raw-first** 안정판입니다. 정규화한 모델 식별자가 정확히 `gpt-5.6-sol`일 때만,
@@ -97,6 +136,22 @@ ChatGPT/Codex 데스크톱 앱을 다시 열고 새 작업을 시작한 뒤 `/ho
 observation-only이며 model-visible context를 내보내지 않습니다. 훅 내용이 업데이트되면 다시
 승인하라는 안내가 나올 수 있습니다.
 `--dangerously-bypass-hook-trust`는 일반 설치 절차로 권장하지 않습니다.
+
+### v0.9.0-rc1 prerelease 설치
+
+v0.8.0 is the stable release until Gate 2 completes. The v0.9 candidate can be installed only as a
+prerelease for its documented hook surface and does not establish stable performance or uplift.
+
+```bash
+codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.9.0-rc1
+codex plugin add super-sol@super-sol
+codex plugin list
+```
+
+After reopening ChatGPT/Codex Desktop, review `/hooks`. The shipped manifest has seven top-level
+events and deliberately has no `Stop`: six loop lifecycle capability events (`PreToolUse`,
+`PostToolUse`, `SubagentStart`, `SubagentStop`, `PreCompact`, and `PostCompact`) plus a separate
+`UserPromptSubmit` reset check.
 
 ```text
 이 오류를 고치고 테스트까지 해줘.
@@ -303,7 +358,8 @@ uv sync --locked --dev
 uv run ruff format --check .
 uv run ruff check .
 uv run basedpyright
-uv run pytest --cov=fablized_sol --cov-report=term-missing
+uv run pytest --cov=src --cov=plugins/super-sol/hooks --cov-report=term-missing --cov-fail-under=90
+uv run super-sol-hook-latency --plugin-root plugins/super-sol --output <fresh>
 uv build
 ```
 

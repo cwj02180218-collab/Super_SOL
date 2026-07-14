@@ -1,0 +1,332 @@
+{
+  "schema": "super-sol-v0.9-gate0/v1",
+  "candidate_commit": "ec5a153e1487065f3f3a33aab5394ed48f453377",
+  "product_candidate_commit": "ec5a153e1487065f3f3a33aab5394ed48f453377",
+  "prior_evidence_commit": "78a39ea2c09ba73cafdd4e9e39d24fdded13d45a",
+  "evidence_commit_note": "This record is committed in an evidence-only child commit after the frozen product candidate.",
+  "attempt": 5,
+  "status": "passed",
+  "success": true,
+  "stop_reason": null,
+  "repair_commits": [
+    "a075c000337de107878e76690fe4faddb0c1cb46",
+    "83329f083eb3e98d61478e796c8accc992cb719e"
+  ],
+  "report_reseal_commit": "9c91a5d30ab5a7720e7eefe7fd4ebcd2b65174b9",
+  "privacy_repair_commit": "ec5a153e1487065f3f3a33aab5394ed48f453377",
+  "latency_gate_commits": [
+    "f0fcd01fcf6ba62c071b9db7bf5f8caa966e633d",
+    "2ce7fc8ce951a3c5027a13dd39abe5e8a033d935",
+    "ec5a153e1487065f3f3a33aab5394ed48f453377"
+  ],
+  "attempts": [
+    {
+      "attempt": 1,
+      "evidence_commit": "fe91cf17e18a664fb62a9aefb55e851706443ee1",
+      "candidate_commit": "5689e948beca972cdd795de7ddf73668f66ca21e",
+      "status": "failed",
+      "command": {
+        "argv": "uv run pytest --cov=src --cov=plugins/super-sol/hooks --cov-report=term-missing --cov-fail-under=90",
+        "exit_code": 1,
+        "test_count": { "collected": 431, "passed": 429, "failed": 2 },
+        "coverage_percent": 90.58
+      },
+      "summary": "2 failed, 429 passed of 431 collected in 71.10s; coverage 90.58%.",
+      "failures": [
+        "tests/eval/test_day0_ab.py::test_dry_run_emits_two_models_without_api_key: stale harness_version 0.8.0 expectation.",
+        "tests/eval/test_provenance.py::test_packaged_dependency_lock_digest_matches_uv_lock: stale packaged dependency-lock digest."
+      ],
+      "artifacts": { "wheel": null, "sdist": null, "digests": null }
+    },
+    {
+      "attempt": 2,
+      "evidence_commit": "6bf857b84acb10ba551c2161a09291a5c3cf045c",
+      "candidate_commit": "83329f083eb3e98d61478e796c8accc992cb719e",
+      "status": "failed",
+      "command": {
+        "argv": "uv run pytest --cov=src --cov=plugins/super-sol/hooks --cov-report=term-missing --cov-fail-under=90",
+        "exit_code": 1,
+        "test_count": { "collected": 431, "passed": 429, "failed": 2 },
+        "coverage_percent": 90.58,
+        "latency_ms": { "hook_invocations": 300, "absolute_p95": 106.79754642769694, "threshold": 100 }
+      },
+      "summary": "2 failed, 429 passed of 431 collected in 69.95s; coverage 90.58%.",
+      "failures": [
+        "tests/eval/test_v09_loop_replay.py::test_loop_replay_report_is_immutable_and_passing: fresh replay output did not byte-match the sealed report.",
+        "tests/plugin/test_v07_budgets.py::test_local_prompt_hook_has_bounded_absolute_and_incremental_p95: the observed 300-invocation hook absolute p95 was 106.79754642769694 ms, above the required 100 ms threshold."
+      ],
+      "artifacts": { "wheel": null, "sdist": null, "digests": null }
+    },
+    {
+      "attempt": 3,
+      "candidate_commit": "9c91a5d30ab5a7720e7eefe7fd4ebcd2b65174b9",
+      "status": "failed",
+      "command": {
+        "argv": "uv run pytest --cov=src --cov=plugins/super-sol/hooks --cov-report=term-missing --cov-fail-under=90",
+        "exit_code": 1,
+        "test_count": { "collected": 431, "passed": 430, "failed": 1 },
+        "coverage_percent": 90.58,
+        "latency_ms": { "hook_invocations": 300, "absolute_p95": 147.90276812855154, "threshold": 100 }
+      },
+      "summary": "1 failed, 430 passed of 431 collected in 84.61s; coverage 90.58%.",
+      "failures": [
+        "tests/plugin/test_v07_budgets.py::test_local_prompt_hook_has_bounded_absolute_and_incremental_p95: the observed 300-invocation hook absolute p95 was 147.90276812855154 ms, above the required 100 ms threshold."
+      ],
+      "artifacts": { "wheel": null, "sdist": null, "digests": null }
+    },
+    {
+      "attempt": 4,
+      "evidence_commit": "78a39ea2c09ba73cafdd4e9e39d24fdded13d45a",
+      "candidate_commit": "2ce7fc8ce951a3c5027a13dd39abe5e8a033d935",
+      "status": "passed",
+      "command": {
+        "argv": "uv run pytest --cov=src --cov=plugins/super-sol/hooks --cov-report=term-missing --cov-fail-under=90",
+        "exit_code": 0,
+        "test_count": { "collected": 463, "passed": 463, "failed": 0 },
+        "coverage_percent": 90.55
+      },
+      "summary": "463 passed of 463 collected in 45.96s; coverage 90.55%.",
+      "failures": [],
+      "latency_ms": {
+        "artifact_sha256": "5dfb63f492a0b37559998d6a389d71917b606573d6323ac3628d24f120be235b",
+        "hook_invocations": 300,
+        "floor_invocations": 150,
+        "absolute_p95": 59.967531589791186,
+        "absolute_threshold_lt": 100,
+        "paired_incremental_p95": 36.61352920462378,
+        "paired_incremental_threshold_lt": 70,
+        "passed": true,
+        "raw_artifact_published": false,
+        "raw_artifact_exclusion_reason": "The raw artifact contained a local absolute path. Its metrics and original digest are retained as textual history only."
+      },
+      "artifacts": {
+        "wheel": "super_sol_harness-0.9.0rc1-py3-none-any.whl",
+        "sdist": "super_sol_harness-0.9.0rc1.tar.gz",
+        "digests": {
+          "wheel_sha256": "69f53c34cd88e9ea5c26551d260425bbd787a0271e31f0184ca15e793e78f211",
+          "sdist_sha256": "84688cd549faa47c8f2bceac7451071e21f66ef6da2d0c388bac4b6cec6bbd94"
+        }
+      }
+    },
+    {
+      "attempt": 5,
+      "candidate_commit": "ec5a153e1487065f3f3a33aab5394ed48f453377",
+      "status": "passed",
+      "quality_suite_pre_correction_runs": [
+        {
+          "exit_code": 1,
+          "test_count": { "collected": 465, "passed": 464, "failed": 1 },
+          "coverage_percent": 90.56,
+          "duration_seconds": 41.16,
+          "failure": "The owned release brief lacked the exact current Gate 2 status wording."
+        },
+        {
+          "exit_code": 1,
+          "test_count": { "collected": 465, "passed": 464, "failed": 1 },
+          "coverage_percent": 90.56,
+          "duration_seconds": 42.00,
+          "failure": "The owned release brief lacked the packaged release-root wording."
+        }
+      ],
+      "command": {
+        "argv": "uv run pytest --cov=src --cov=plugins/super-sol/hooks --cov-report=term-missing --cov-fail-under=90",
+        "exit_code": 0,
+        "test_count": { "collected": 465, "passed": 465, "failed": 0 },
+        "coverage_percent": 90.56
+      },
+      "summary": "465 passed of 465 collected in 40.87s; coverage 90.56%.",
+      "failures": [],
+      "latency_ms": {
+        "artifact_sha256": "6689e3b8b7d75f25ec5a5da4e2d5fcf7baf6d1d5523cbacd515a99564bdcec00",
+        "command_sha256": "d33a440ae3bce96c1231bbd5e2b7134d9e85c7192aa3445e2f3a08cc6d2673eb",
+        "hook_invocations": 300,
+        "floor_invocations": 150,
+        "absolute_p95": 59.684106236090884,
+        "absolute_threshold_lt": 100,
+        "paired_incremental_p95": 37.984207982663065,
+        "paired_incremental_threshold_lt": 70,
+        "passed": true,
+        "official_measurement_executions": 1,
+        "measurement_actor": "parent process"
+      },
+      "artifacts": {
+        "wheel": "super_sol_harness-0.9.0rc1-py3-none-any.whl",
+        "sdist": "super_sol_harness-0.9.0rc1.tar.gz",
+        "digests": {
+          "wheel_sha256": "eafceb0d592fe0cbc809eceb544723b00d5439ea615eb4d61c4745c2608eac6e",
+          "sdist_sha256": "9159b4affd03b24039f2acc22452f2cecd039f5dd6d69346daaa3c1c22873839"
+        }
+      }
+    }
+  ],
+  "commands": [
+    {
+      "argv": "uv run pytest --cov=src --cov=plugins/super-sol/hooks --cov-report=term-missing --cov-fail-under=90",
+      "exit_code": 0,
+      "status": "passed",
+      "summary": "465 passed in 40.87s; total coverage 90.56% (required minimum 90%).",
+      "test_count": { "collected": 465, "passed": 465, "failed": 0 },
+      "coverage_percent": 90.56,
+      "failures": []
+    },
+    { "argv": "uv run ruff check .", "exit_code": 0, "status": "passed", "summary": "All checks passed." },
+    { "argv": "uv run ruff format --check .", "exit_code": 0, "status": "passed", "summary": "147 files already formatted." },
+    { "argv": "uv run basedpyright", "exit_code": 0, "status": "passed", "summary": "0 errors, 0 warnings, 0 notes." },
+    {
+      "argv": "uv build",
+      "exit_code": 0,
+      "status": "passed",
+      "summary": "Built the final evidence-document 0.9.0rc1 sdist and wheel."
+    },
+    {
+      "argv": "uv run super-sol-container-audit",
+      "exit_code": 0,
+      "status": "passed",
+      "summary": "Verifier and grader each indexed 57 packages and reported 0C 0H 0M 0L at candidate ec5a153e1487065f3f3a33aab5394ed48f453377. Audit-generated SBOM rewrites were restored byte-for-byte."
+    },
+    { "argv": "git diff --check", "exit_code": 0, "status": "passed", "summary": "No output." },
+    {
+      "argv": "compare shasum -a 256 uv.lock with src/fablized_sol/eval/DEPENDENCY_LOCK.sha256",
+      "exit_code": 0,
+      "status": "passed",
+      "summary": "Exact SHA-256 match: c82fc4b58a9661d3b4adde7751b744d948758029ac53f9b8b0de78b0fe89e39e."
+    },
+    {
+      "argv": "uv run python <structured archive inventory helper>",
+      "exit_code": 0,
+      "status": "passed",
+      "summary": "27/27 required assets in both archives; 0 missing, 0 forbidden, 0 byte mismatches; 133 sdist files and 81 wheel files."
+    },
+    {
+      "argv": "install dist wheel with dependencies into a disposable uv venv; run super-sol-hook-latency --help",
+      "exit_code": 0,
+      "status": "passed",
+      "summary": "Installed 0.9.0rc1; CLI help exposed only --plugin-root and --output beyond standard help; packaged plugin manifest present."
+    },
+    {
+      "argv": "uv run python <tracked production secret and privacy scan helper>",
+      "exit_code": 0,
+      "status": "passed",
+      "summary": "99 tracked files under src, plugins, eval, and .github scanned; 0 secret-shape, local-path, or forbidden-name matches."
+    }
+  ],
+  "clean_room": {
+    "status": "passed",
+    "candidate_commit": "ec5a153e1487065f3f3a33aab5394ed48f453377",
+    "codex_version": "codex-cli 0.144.1",
+    "codex_binary_sha256": "29915529b97697def1a957b0505e770aa6a45744435d62fc263e98d7619e167a",
+    "source": "exact candidate checkout via local marketplace",
+    "lifecycle": [
+      { "command": "codex plugin marketplace add <candidate-checkout> --json", "exit_code": 0, "status": "passed" },
+      { "command": "codex plugin add super-sol@super-sol --json", "exit_code": 0, "status": "passed" },
+      { "command": "codex plugin list --json", "exit_code": 0, "status": "passed", "plugin_count": 1, "skill_count": 1 },
+      { "command": "codex plugin remove super-sol@super-sol --json", "exit_code": 0, "status": "passed" },
+      { "command": "codex plugin marketplace remove super-sol --json", "exit_code": 0, "status": "passed" },
+      { "command": "codex plugin list --json", "exit_code": 0, "status": "passed", "plugin_count": 0, "skill_count": 0 },
+      { "command": "codex plugin marketplace add <candidate-checkout> --json", "exit_code": 0, "status": "passed" },
+      { "command": "codex plugin add super-sol@super-sol --json", "exit_code": 0, "status": "passed" },
+      { "command": "codex plugin list --json", "exit_code": 0, "status": "passed", "plugin_count": 1, "skill_count": 1 }
+    ],
+    "plugin_count": 1,
+    "skill_count": 1,
+    "hook_inventory": {
+      "PostCompact": 1,
+      "PostToolUse": 1,
+      "PreCompact": 1,
+      "PreToolUse": 1,
+      "SubagentStart": 1,
+      "SubagentStop": 1,
+      "UserPromptSubmit": 1
+    },
+    "stop_hook_count": 0,
+    "temp_home_removed": true,
+    "latency_ms": {
+      "official_protocol": "uv run super-sol-hook-latency --plugin-root plugins/super-sol --output <fresh>",
+      "measurement_execution": "The parent process ran the official 450-process measurement exactly once for attempt 5. This recording pass independently verified the generated artifact and did not rerun it.",
+      "artifact": "benchmarks/v0.9-loop-replay/latency-attempt5.json",
+      "artifact_sha256": "6689e3b8b7d75f25ec5a5da4e2d5fcf7baf6d1d5523cbacd515a99564bdcec00",
+      "command": {
+        "argv": ["/usr/bin/python3", "-S", "$PLUGIN_ROOT/hooks/prompt_dispatcher.py"],
+        "sha256": "d33a440ae3bce96c1231bbd5e2b7134d9e85c7192aa3445e2f3a08cc6d2673eb"
+      },
+      "sample_counts": { "hook": 300, "floor": 150 },
+      "absolute": { "p50": 51.8779584672302, "p95": 59.684106236090884, "p99": 70.47763176844444 },
+      "floor": { "p50": 21.424166508950293, "p95": 25.30089111533016, "p99": 40.682711384724755 },
+      "incremental": { "p50": 30.51731240702793, "p95": 37.984207982663065, "p99": 49.48958753026079 },
+      "thresholds": { "absolute_p95_lt": 100, "incremental_p95_lt": 70 },
+      "passed": true
+    },
+    "api_model_switch_retry_continuation_agent_checks": "passed by the 465-test candidate contract and Gate 1 static hook audit",
+    "billable_calls": 0
+  },
+  "gate1": {
+    "status": "passed",
+    "candidate_commit": "ec5a153e1487065f3f3a33aab5394ed48f453377",
+    "replay_regeneration": { "exit_code": 0, "report_byte_stable": true },
+    "audit_suite": { "exit_code": 0, "passed": 42, "failed": 0, "duration_seconds": 9.73 },
+    "case_count": 12,
+    "pass_count": 12,
+    "failure_count": 0,
+    "unexpected_context_count": 0,
+    "billable_calls": 0,
+    "kernel_network_deny": { "required": true, "enforced": true, "benign_child": "passed", "connect": "denied", "bind": "denied" },
+    "digests": {
+      "codex_binary_sha256": "29915529b97697def1a957b0505e770aa6a45744435d62fc263e98d7619e167a",
+      "plugin_tree_sha256": "ab7ff273f66c0ea3a7472484a0ecca05b7a7aef5876d959129946443388d7f74",
+      "manifest_sha256": "9412d22d97e6558adb645b59be48de38f0d8187f4e83a8a61cc9b644197c98b5",
+      "report_sha256": "50219870b1ad89d72f03ed97e1125047e0315f226d278ae518e8f1dbe9cae048",
+      "audit_sha256": "db619a1a2d39459ac051db15fb310f05976901255862bdbeaa779ca593273332"
+    }
+  },
+  "observer_setup_corrections": [
+    {
+      "scope": "latency artifact schema preflight",
+      "exit_code": 1,
+      "candidate_gate": false,
+      "summary": "The first observer probe addressed nonexistent flat fields and did not fail fast. It was discarded before publication; a fail-fast assertion against sample_counts, hook_ms, and incremental_ms then verified every required value and the exact SHA-256."
+    },
+    {
+      "scope": "installed-wheel smoke preflight",
+      "exit_code": 1,
+      "candidate_gate": false,
+      "summary": "The observer used --no-deps, so CLI import failed on absent pydantic. The release smoke was rerun with the wheel's declared dependencies and passed."
+    },
+    {
+      "scope": "Codex lifecycle summary preflight",
+      "exit_code": 1,
+      "candidate_gate": false,
+      "summary": "The observer expected a plugins array; Codex 0.144.1 returned installed and available arrays. A new temporary home and schema-correct summary assertion completed the full lifecycle."
+    }
+  ],
+  "attempt5_evidence_document_corrections": {
+    "candidate_gate": false,
+    "product_behavior_changed": false,
+    "summary": "Two pre-correction full-suite runs each found one stale owned release-brief contract phrase. After evidence-only wording corrections, the focused contract passed and the final full suite passed 465/465."
+  },
+  "historical_artifact_policy": {
+    "attempt4_raw_artifact_published": false,
+    "attempt4_raw_artifact_exclusion_reason": "The raw artifact contained a local absolute path.",
+    "attempt4_textual_metrics_preserved": true,
+    "attempt5_current_artifact": "benchmarks/v0.9-loop-replay/latency-attempt5.json"
+  },
+  "final_focused_suite": {
+    "credential_keys_stripped": ["CODEX_API_KEY", "OPENAI_API_KEY"],
+    "exit_code": 0,
+    "passed": 80,
+    "failed": 0,
+    "duration_seconds": 10.02
+  },
+  "artifacts": {
+    "wheel": { "name": "super_sol_harness-0.9.0rc1-py3-none-any.whl", "sha256": "eafceb0d592fe0cbc809eceb544723b00d5439ea615eb4d61c4745c2608eac6e", "file_count": 81 },
+    "sdist": { "name": "super_sol_harness-0.9.0rc1.tar.gz", "sha256": "9159b4affd03b24039f2acc22452f2cecd039f5dd6d69346daaa3c1c22873839", "file_count": 133 },
+    "latency": { "path": "benchmarks/v0.9-loop-replay/latency-attempt5.json", "sha256": "6689e3b8b7d75f25ec5a5da4e2d5fcf7baf6d1d5523cbacd515a99564bdcec00" },
+    "report": { "path": "benchmarks/v0.9-loop-replay/report.json", "sha256": "50219870b1ad89d72f03ed97e1125047e0315f226d278ae518e8f1dbe9cae048" },
+    "audit": { "path": "benchmarks/v0.9-loop-replay/audit.json", "sha256": "db619a1a2d39459ac051db15fb310f05976901255862bdbeaa779ca593273332" }
+  },
+  "promotion": {
+    "gate2_status": "NOT RUN",
+    "performance_claim": false,
+    "uplift_claim": false,
+    "publication_performed": false
+  }
+}

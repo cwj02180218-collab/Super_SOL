@@ -1,0 +1,120 @@
+{
+  "billable_calls": 0,
+  "candidate_commit": "ec5a153e1487065f3f3a33aab5394ed48f453377",
+  "prior_evidence_commit": "78a39ea2c09ba73cafdd4e9e39d24fdded13d45a",
+  "codex": {
+    "binary_sha256": "29915529b97697def1a957b0505e770aa6a45744435d62fc263e98d7619e167a",
+    "version": "codex-cli 0.144.1"
+  },
+  "digests": {
+    "manifest_sha256": "9412d22d97e6558adb645b59be48de38f0d8187f4e83a8a61cc9b644197c98b5",
+    "plugin_tree_sha256": "ab7ff273f66c0ea3a7472484a0ecca05b7a7aef5876d959129946443388d7f74",
+    "report_sha256": "50219870b1ad89d72f03ed97e1125047e0315f226d278ae518e8f1dbe9cae048"
+  },
+  "hooks": {
+    "commands_per_event": 1,
+    "event_count": 7,
+    "inventory": [
+      {
+        "command": "/usr/bin/python3 -S \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
+        "event": "PostCompact",
+        "timeout_seconds": 5
+      },
+      {
+        "command": "/usr/bin/python3 -S \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
+        "event": "PostToolUse",
+        "timeout_seconds": 5
+      },
+      {
+        "command": "/usr/bin/python3 -S \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
+        "event": "PreCompact",
+        "timeout_seconds": 5
+      },
+      {
+        "command": "/usr/bin/python3 -S \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
+        "event": "PreToolUse",
+        "timeout_seconds": 5
+      },
+      {
+        "command": "/usr/bin/python3 -S \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
+        "event": "SubagentStart",
+        "timeout_seconds": 5
+      },
+      {
+        "command": "/usr/bin/python3 -S \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
+        "event": "SubagentStop",
+        "timeout_seconds": 5
+      },
+      {
+        "command": "/usr/bin/python3 -S \"$PLUGIN_ROOT/hooks/prompt_dispatcher.py\"",
+        "event": "UserPromptSubmit",
+        "timeout_seconds": 5
+      }
+    ],
+    "stop_event_count": 0
+  },
+  "isolation": {
+    "calls_counted": false,
+    "credential_keys_absent": [
+      "AWS_ACCESS_KEY_ID",
+      "AWS_SECRET_ACCESS_KEY",
+      "AWS_SESSION_TOKEN",
+      "CODEX_API_KEY",
+      "OPENAI_API_KEY",
+      "SUPER_SOL_FORCED_ROUTE"
+    ],
+    "credentials_stripped_for_gate": [
+      "CODEX_API_KEY",
+      "OPENAI_API_KEY"
+    ],
+    "kernel_network_deny": {
+      "benign_child": "passed",
+      "bind": "denied",
+      "connect": "denied",
+      "enforced": true,
+      "required": true
+    },
+    "launcher_env_keys": [
+      "PATH",
+      "PLUGIN_DATA",
+      "PLUGIN_ROOT",
+      "PYTHONUTF8"
+    ],
+    "static_audit": {
+      "calls_counted": false,
+      "command_sha256": "de9a57c4fb8e3d18284c8685813a7d0ab4fdb98a0f77d122b660ed4ddc7eb000",
+      "hook_files_audited": 12,
+      "static_audit": "passed"
+    },
+    "successful_network_calls": 0
+  },
+  "passed": true,
+  "replay": {
+    "case_count": 12,
+    "failure_count": 0,
+    "pass_count": 12,
+    "unexpected_context_count": 0
+  },
+  "report_immutability": {
+    "after_regeneration_sha256": "50219870b1ad89d72f03ed97e1125047e0315f226d278ae518e8f1dbe9cae048",
+    "before_regeneration_sha256": "50219870b1ad89d72f03ed97e1125047e0315f226d278ae518e8f1dbe9cae048",
+    "byte_equality_test": "passed"
+  },
+  "schema": "super-sol-v0.9-loop-audit/v1",
+  "verification": {
+    "audit_suite_exit_code": 0,
+    "audit_suite_summary": "42 passed in 9.73s",
+    "credential_keys_stripped": [
+      "CODEX_API_KEY",
+      "OPENAI_API_KEY"
+    ],
+    "files": [
+      "tests/eval/test_v09_loop_replay.py",
+      "tests/eval/test_codex_hook_compat.py",
+      "tests/eval/test_codex_hook_runtime.py",
+      "tests/eval/test_v09_loop_audit.py",
+      "tests/eval/test_v09_loop_isolation.py"
+    ],
+    "replay_regeneration_exit_code": 0
+  }
+}

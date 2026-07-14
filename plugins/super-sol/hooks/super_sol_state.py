@@ -38,12 +38,12 @@ def read_input() -> dict[str, object]:
     return cast("dict[str, object]", value)
 
 
-def turn_root(payload: dict[str, object]) -> Path | None:
+def turn_root(payload: dict[str, object]) -> "Path | None":  # noqa: UP037
     """Return the privacy-preserving state directory for one turn."""
     plugin_data = os.environ.get("PLUGIN_DATA")
     if not plugin_data:
         return None
-    root = Path(plugin_data) / "super-sol" / "v2"
+    root = Path(plugin_data) / "super-sol" / "v3"
     return root / _identifier(payload.get("session_id")) / _identifier(payload.get("turn_id"))
 
 
@@ -79,7 +79,7 @@ def read_private_json(path: Path) -> dict[str, object] | None:
         if path.stat().st_size > _MAX_STATE_BYTES:
             return None
         value = cast("object", json.loads(path.read_text(encoding="utf-8")))
-    except (OSError, json.JSONDecodeError):
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return None
     return cast("dict[str, object]", value) if isinstance(value, dict) else None
 

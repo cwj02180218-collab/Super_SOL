@@ -1,0 +1,131 @@
+{
+  "cases": [
+    {
+      "events": 2,
+      "failures": [],
+      "id": "passed-verifier-replay",
+      "passed": true,
+      "unexpected_contexts": 0
+    },
+    {
+      "events": 2,
+      "failures": [],
+      "id": "unchanged-failing-verifier-replay",
+      "passed": true,
+      "unexpected_contexts": 0
+    },
+    {
+      "events": 8,
+      "failures": [],
+      "id": "healthy-edit-verify-edit-verify",
+      "passed": true,
+      "unexpected_contexts": 0
+    },
+    {
+      "events": 7,
+      "failures": [],
+      "id": "generic-read-replay",
+      "passed": true,
+      "unexpected_contexts": 0
+    },
+    {
+      "events": 1,
+      "failures": [],
+      "id": "nested-spawn",
+      "passed": true,
+      "unexpected_contexts": 0
+    },
+    {
+      "events": 3,
+      "failures": [],
+      "id": "concurrent-child-exhaustion",
+      "passed": true,
+      "unexpected_contexts": 0
+    },
+    {
+      "events": 10,
+      "failures": [],
+      "id": "total-child-exhaustion",
+      "passed": true,
+      "unexpected_contexts": 0
+    },
+    {
+      "events": 7,
+      "failures": [],
+      "id": "repeated-wait",
+      "passed": true,
+      "unexpected_contexts": 0
+    },
+    {
+      "events": 3,
+      "failures": [],
+      "id": "three-no-progress-auto-compactions",
+      "passed": true,
+      "unexpected_contexts": 0
+    },
+    {
+      "events": 5,
+      "failures": [],
+      "id": "healthy-progress-separated-compactions",
+      "passed": true,
+      "setup": {
+        "evidenced": true,
+        "kind": "corrupt_loop_state"
+      },
+      "unexpected_contexts": 0
+    },
+    {
+      "events": 4,
+      "failures": [],
+      "id": "terminal-internal-continuation",
+      "passed": true,
+      "unexpected_contexts": 0
+    },
+    {
+      "events": 3,
+      "failures": [],
+      "id": "non-sol-pass-through",
+      "passed": true,
+      "unexpected_contexts": 0
+    }
+  ],
+  "manifest_sha256": "9412d22d97e6558adb645b59be48de38f0d8187f4e83a8a61cc9b644197c98b5",
+  "network_calls": 0,
+  "network_calls_semantics": "successful-network-operations",
+  "network_isolation": {
+    "calls_counted": false,
+    "command_sha256": "de9a57c4fb8e3d18284c8685813a7d0ab4fdb98a0f77d122b660ed4ddc7eb000",
+    "credential_keys_absent": [
+      "AWS_ACCESS_KEY_ID",
+      "AWS_SECRET_ACCESS_KEY",
+      "AWS_SESSION_TOKEN",
+      "CODEX_API_KEY",
+      "OPENAI_API_KEY",
+      "SUPER_SOL_FORCED_ROUTE"
+    ],
+    "hook_files_audited": 12,
+    "kernel_network_deny": {
+      "benign_child": "passed",
+      "bind": "denied",
+      "connect": "denied",
+      "enforced": true,
+      "required": true
+    },
+    "launcher_env_keys": [
+      "PATH",
+      "PLUGIN_DATA",
+      "PLUGIN_ROOT",
+      "PYTHONUTF8"
+    ],
+    "static_audit": "passed"
+  },
+  "plugin_tree_sha256": "ab7ff273f66c0ea3a7472484a0ecca05b7a7aef5876d959129946443388d7f74",
+  "schema": "super-sol-loop-replay/v1",
+  "successful_network_calls": 0,
+  "summary": {
+    "failed": 0,
+    "passed": 12,
+    "total": 12,
+    "unexpected_contexts": 0
+  }
+}
