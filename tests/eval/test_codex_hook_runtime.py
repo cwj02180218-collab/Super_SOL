@@ -21,7 +21,8 @@ from fake_codex_responses import (  # pyright: ignore[reportImplicitRelativeImpo
     read_adapter_records,
 )
 
-_CODEX = Path("/Applications/ChatGPT.app/Contents/Resources/codex")
+_BUNDLED_CODEX = Path("/Applications/ChatGPT.app/Contents/Resources/codex")
+_CODEX = Path(shutil.which("codex") or _BUNDLED_CODEX)
 _REPO_ROOT = Path(__file__).parents[2]
 _PLUGIN_SOURCE = _REPO_ROOT / "plugins" / "super-sol"
 _TIMEOUT_SECONDS = 10

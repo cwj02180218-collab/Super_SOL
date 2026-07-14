@@ -216,6 +216,7 @@ def test_missing_sandbox_dynamic_socket_probe_fails_without_server_hit(
         "from __future__ import annotations\n", "from __future__ import annotations\n" + probe
     )
     _ = hook.write_text(source, encoding="utf-8")
+    monkeypatch.setattr(isolation_module(), "kernel_platform", lambda: "Darwin")
     monkeypatch.setattr(isolation_module(), "SANDBOX", tmp_path / "missing-sandbox")
     failure: ValueError | None = None
     try:
