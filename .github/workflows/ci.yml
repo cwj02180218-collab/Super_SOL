@@ -22,9 +22,11 @@ jobs:
         with:
           python-version: "3.12"
           enable-cache: true
+      - name: Install pinned Codex runtime
+        run: npm install --global @openai/codex@0.144.1
       - run: uv sync --locked --dev
       - run: uv run ruff format --check .
       - run: uv run ruff check .
       - run: uv run basedpyright
-      - run: uv run pytest --cov=fablized_sol --cov-report=term-missing
+      - run: uv run pytest --cov=src --cov=plugins/super-sol/hooks --cov-report=term-missing --cov-fail-under=90
       - run: uv build

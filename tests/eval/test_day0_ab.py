@@ -6,6 +6,7 @@ import pytest
 from pydantic import JsonValue, TypeAdapter
 from typer.testing import CliRunner
 
+from fablized_sol import __version__
 from fablized_sol.eval.day0_ab import app
 from fablized_sol.measure.super_sol import SUPER_SOL_PROFILE
 
@@ -86,7 +87,7 @@ def test_dry_run_emits_two_models_without_api_key(
     assert {_text(row, "verification_image") for row in planned} == {"dry-run"}
     assert {_text(row, "grader_image") for row in planned} == {"dry-run"}
     assert all(_text(row, "preregistration_digest") for row in planned)
-    assert all(_text(row, "harness_version") == "0.8.0" for row in planned)
+    assert all(_text(row, "harness_version") == __version__ for row in planned)
     assert all(_text(row, "agents_sdk_version") for row in planned)
     assert all(_text(row, "openai_sdk_version") for row in planned)
 

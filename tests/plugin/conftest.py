@@ -22,14 +22,14 @@ import super_sol_hook  # noqa: E402
 _OBJECT_ADAPTER = TypeAdapter[dict[str, JsonValue]](dict[str, JsonValue])
 
 
-def configured_prompt_argv() -> list[str]:
-    """Return the installed UserPromptSubmit command as an argument vector."""
+def configured_hook_argv(event: str) -> list[str]:
+    """Return the installed command for one configured hook event."""
     payload = _OBJECT_ADAPTER.validate_json(HOOK_CONFIG.read_text(encoding="utf-8"))
     hooks = payload["hooks"]
     assert isinstance(hooks, dict)
-    prompt_submit = hooks["UserPromptSubmit"]
-    assert isinstance(prompt_submit, list)
-    group = prompt_submit[0]
+    configured = hooks[event]
+    assert isinstance(configured, list)
+    group = configured[0]
     assert isinstance(group, dict)
     handlers = group["hooks"]
     assert isinstance(handlers, list)
@@ -38,6 +38,11 @@ def configured_prompt_argv() -> list[str]:
     command = handler["command"]
     assert isinstance(command, str)
     return shlex.split(command.replace("$PLUGIN_ROOT", str(PLUGIN_ROOT)))
+
+
+def configured_prompt_argv() -> list[str]:
+    """Return the installed UserPromptSubmit command for legacy performance tests."""
+    return configured_hook_argv("UserPromptSubmit")
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,11 +65,13 @@ def plugin_data(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def run_hook(plugin_data: Path) -> HookRunner:
-    argv = configured_prompt_argv()
     shadow_data = plugin_data.parent / "coverage-shadow"
 
     def invoke(payload: HookInput) -> HookResult:
         stdin = payload if isinstance(payload, str) else json.dumps(payload)
+        event = payload.get("hook_event_name") if isinstance(payload, dict) else "UserPromptSubmit"
+        assert isinstance(event, str)
+        argv = configured_hook_argv(event)
         environment = {
             "PATH": os.environ.get("PATH", ""),
             "PLUGIN_DATA": str(plugin_data),
@@ -92,11 +99,13 @@ def run_hook(plugin_data: Path) -> HookRunner:
 
 @pytest.fixture
 def run_hook_with_env(plugin_data: Path) -> HookEnvironmentRunner:
-    argv = configured_prompt_argv()
     shadow_data = plugin_data.parent / "coverage-shadow"
 
     def invoke(payload: HookInput, overrides: dict[str, str]) -> HookResult:
         stdin = payload if isinstance(payload, str) else json.dumps(payload)
+        event = payload.get("hook_event_name") if isinstance(payload, dict) else "UserPromptSubmit"
+        assert isinstance(event, str)
+        argv = configured_hook_argv(event)
         environment = {
             "PATH": os.environ.get("PATH", ""),
             "PLUGIN_DATA": str(plugin_data),
@@ -133,3 +142,21 @@ def hook_input(event: str, **fields: JsonValue) -> dict[str, JsonValue]:
         "permission_mode": "default",
         **fields,
     }
+
+
+def textual_state_artifacts(plugin_data: Path) -> tuple[Path, ...]:
+    """Return every readable state artifact after validating the approved binary key."""
+    artifacts = tuple(path for path in plugin_data.rglob("*") if path.is_file())
+    keys = tuple(path for path in artifacts if path.name == ".loop-key")
+    for key in keys:
+        assert key == plugin_data / "super-sol" / "v3" / ".loop-key"
+        assert key.stat().st_size == 32
+        assert key.stat().st_mode & 0o777 == 0o600
+    return tuple(path for path in artifacts if path not in keys)
+
+
+def read_textual_state(plugin_data: Path) -> str:
+    """Read every non-key state artifact so privacy assertions remain exhaustive."""
+    return "".join(
+        path.read_text(encoding="utf-8") for path in textual_state_artifacts(plugin_data)
+    )

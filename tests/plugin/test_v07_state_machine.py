@@ -4,7 +4,13 @@ import pytest
 from pydantic import JsonValue
 from super_sol_routes import Contract, residual_context
 
-from .conftest import HookEnvironmentRunner, HookRunner, hook_input
+from .conftest import (
+    HookEnvironmentRunner,
+    HookRunner,
+    hook_input,
+    read_textual_state,
+    textual_state_artifacts,
+)
 
 
 def _profile_payload(
@@ -162,9 +168,7 @@ def test_private_events_store_no_prompt_source_command_or_output(
     _edit(run_hook)
     _ = _verify(run_hook, exit_code=0, tool_use_id="private-verify")
 
-    stored = "".join(
-        path.read_text(encoding="utf-8") for path in plugin_data.rglob("*") if path.is_file()
-    )
+    stored = read_textual_state(plugin_data)
     assert "secret source text" not in stored
     assert "secret_test_name" not in stored
     assert "secret tool output" not in stored
@@ -236,7 +240,7 @@ def test_all_model_profiles_retain_no_raw_turn_fixtures(
         == 0
     )
 
-    files = [path for path in plugin_data.rglob("*") if path.is_file()]
+    files = textual_state_artifacts(plugin_data)
     assert files
     assert all(path.stat().st_size <= 4096 for path in files)
     stored = "".join(path.read_text(encoding="utf-8") for path in files)

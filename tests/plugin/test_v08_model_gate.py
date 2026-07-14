@@ -4,7 +4,7 @@ import pytest
 from pydantic import JsonValue
 from super_sol_routes import Contract, residual_context
 
-from .conftest import HookEnvironmentRunner, HookRunner, hook_input
+from .conftest import HookEnvironmentRunner, HookRunner, hook_input, read_textual_state
 
 
 def _context(output: dict[str, JsonValue] | None) -> str | None:
@@ -91,9 +91,7 @@ def test_sol_state_records_verification_but_emits_no_context_after_model_drift(
         _ = verification.pop("model")
 
     assert _context(run_hook(verification).stdout) is None
-    stored = "".join(
-        path.read_text(encoding="utf-8") for path in plugin_data.rglob("*") if path.is_file()
-    )
+    stored = read_textual_state(plugin_data)
     assert '"kind":"verification"' in stored
 
 
@@ -180,3 +178,30 @@ def test_terra_unapproved_billable_command_is_denied(run_hook: HookRunner) -> No
     specific = command.stdout["hookSpecificOutput"]
     assert isinstance(specific, dict)
     assert specific["permissionDecision"] == "deny"
+
+
+@pytest.mark.parametrize("model", ["gpt-5.6-terra", "gpt-5.6-luna", None, 17])
+def test_non_sol_loop_events_are_observation_only(run_hook: HookRunner, model: JsonValue) -> None:
+    prompt = hook_input("UserPromptSubmit", model=model, prompt="Fix the cache bug")
+    assert run_hook(prompt).stdout is None
+    events = (
+        hook_input(
+            "PreToolUse",
+            model=model,
+            tool_name="Bash",
+            tool_input={"command": "pytest tests/cache -q"},
+        ),
+        hook_input(
+            "PostToolUse",
+            model=model,
+            tool_name="Bash",
+            tool_input={"command": "pytest tests/cache -q"},
+            tool_response={"exit_code": 0},
+        ),
+        hook_input("SubagentStart", model=model, agent_id="child-private-id"),
+        hook_input("SubagentStop", model=model, agent_id="child-private-id"),
+        hook_input("PreCompact", model=model, trigger="auto"),
+        hook_input("PostCompact", model=model, trigger="auto"),
+    )
+
+    assert all(run_hook(event).stdout is None for event in events)

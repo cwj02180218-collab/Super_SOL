@@ -1,0 +1,121 @@
+{
+  "schema": "super-sol-loop-sequences/v1",
+  "cases": [
+    {
+      "id": "passed-verifier-replay",
+      "events": [
+        {"payload": {"hook_event_name": "PostToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "passed-verifier-replay", "tool_name": "bash", "tool_input": {"command": "uv run pytest fixture-verifier -q"}, "tool_response": {"exit_code": 0}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "passed-verifier-replay", "tool_name": "bash", "tool_input": {"command": "uv run pytest fixture-verifier -q"}}, "expected_action": {"kind": "deny"}}
+      ]
+    },
+    {
+      "id": "unchanged-failing-verifier-replay",
+      "events": [
+        {"payload": {"hook_event_name": "PostToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "unchanged-failing-verifier-replay", "tool_name": "bash", "tool_input": {"command": "uv run pytest fixture-failure -q"}, "tool_response": {"exit_code": 1}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "unchanged-failing-verifier-replay", "tool_name": "bash", "tool_input": {"command": "uv run pytest fixture-failure -q"}}, "expected_action": {"kind": "deny"}}
+      ]
+    },
+    {
+      "id": "healthy-edit-verify-edit-verify",
+      "events": [
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "healthy-edit-verify-edit-verify", "tool_name": "edit"}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "healthy-edit-verify-edit-verify", "tool_name": "edit", "tool_response": {"exit_code": 0}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "healthy-edit-verify-edit-verify", "tool_name": "bash", "tool_input": {"command": "uv run pytest fixture-cycle -q"}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "healthy-edit-verify-edit-verify", "tool_name": "bash", "tool_input": {"command": "uv run pytest fixture-cycle -q"}, "tool_response": {"exit_code": 0}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "healthy-edit-verify-edit-verify", "tool_name": "edit"}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "healthy-edit-verify-edit-verify", "tool_name": "edit", "tool_response": {"exit_code": 0}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "healthy-edit-verify-edit-verify", "tool_name": "bash", "tool_input": {"command": "uv run pytest fixture-cycle -q"}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "healthy-edit-verify-edit-verify", "tool_name": "bash", "tool_input": {"command": "uv run pytest fixture-cycle -q"}, "tool_response": {"exit_code": 0}}, "expected_action": {"kind": "pass"}}
+      ]
+    },
+    {
+      "id": "generic-read-replay",
+      "events": [
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "generic-read-replay", "tool_name": "bash", "tool_input": {"command": "cat fixture-read"}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "generic-read-replay", "tool_name": "bash", "tool_input": {"command": "cat fixture-read"}, "tool_response": {"exit_code": 0}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "generic-read-replay", "tool_name": "bash", "tool_input": {"command": "cat fixture-read"}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "generic-read-replay", "tool_name": "bash", "tool_input": {"command": "cat fixture-read"}, "tool_response": {"exit_code": 0}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "generic-read-replay", "tool_name": "bash", "tool_input": {"command": "cat fixture-read"}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "generic-read-replay", "tool_name": "bash", "tool_input": {"command": "cat fixture-read"}, "tool_response": {"exit_code": 0}}, "expected_action": {"kind": "context"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "generic-read-replay", "tool_name": "bash", "tool_input": {"command": "cat fixture-read"}}, "expected_action": {"kind": "deny"}}
+      ]
+    },
+    {
+      "id": "nested-spawn",
+      "events": [
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "nested-spawn", "tool_name": "bash", "tool_input": {"command": "agent fixture-nested"}, "is_subagent": true}, "expected_action": {"kind": "deny"}}
+      ]
+    },
+    {
+      "id": "concurrent-child-exhaustion",
+      "events": [
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "concurrent-child-exhaustion", "tool_name": "bash", "tool_input": {"command": "agent fixture-first"}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "concurrent-child-exhaustion", "tool_name": "bash", "tool_input": {"command": "agent fixture-second"}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "concurrent-child-exhaustion", "tool_name": "bash", "tool_input": {"command": "agent fixture-third"}}, "expected_action": {"kind": "deny"}}
+      ]
+    },
+    {
+      "id": "total-child-exhaustion",
+      "events": [
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "total-child-exhaustion", "tool_name": "bash", "tool_input": {"command": "agent fixture-first"}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "SubagentStart", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "total-child-exhaustion", "agent_id": "fixture-first"}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "SubagentStop", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "total-child-exhaustion", "agent_id": "fixture-first"}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "total-child-exhaustion", "tool_name": "bash", "tool_input": {"command": "agent fixture-second"}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "SubagentStart", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "total-child-exhaustion", "agent_id": "fixture-second"}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "SubagentStop", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "total-child-exhaustion", "agent_id": "fixture-second"}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "total-child-exhaustion", "tool_name": "bash", "tool_input": {"command": "agent fixture-third"}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "SubagentStart", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "total-child-exhaustion", "agent_id": "fixture-third"}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "SubagentStop", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "total-child-exhaustion", "agent_id": "fixture-third"}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "total-child-exhaustion", "tool_name": "bash", "tool_input": {"command": "agent fixture-fourth"}}, "expected_action": {"kind": "deny"}}
+      ]
+    },
+    {
+      "id": "repeated-wait",
+      "events": [
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "repeated-wait", "tool_name": "bash", "tool_input": {"command": "sleep fixture-wait"}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "repeated-wait", "tool_name": "bash", "tool_input": {"command": "sleep fixture-wait"}, "tool_response": {"exit_code": 0}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "repeated-wait", "tool_name": "bash", "tool_input": {"command": "sleep fixture-wait"}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "repeated-wait", "tool_name": "bash", "tool_input": {"command": "sleep fixture-wait"}, "tool_response": {"exit_code": 0}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "repeated-wait", "tool_name": "bash", "tool_input": {"command": "sleep fixture-wait"}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "repeated-wait", "tool_name": "bash", "tool_input": {"command": "sleep fixture-wait"}, "tool_response": {"exit_code": 0}}, "expected_action": {"kind": "context"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "repeated-wait", "tool_name": "bash", "tool_input": {"command": "sleep fixture-wait"}}, "expected_action": {"kind": "deny"}}
+      ]
+    },
+    {
+      "id": "three-no-progress-auto-compactions",
+      "events": [
+        {"payload": {"hook_event_name": "PostCompact", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "three-no-progress-auto-compactions", "trigger": "auto"}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostCompact", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "three-no-progress-auto-compactions", "trigger": "auto"}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostCompact", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "three-no-progress-auto-compactions", "trigger": "auto"}, "expected_action": {"kind": "stop", "reason": "loop_fuse_no_progress_compaction"}}
+      ]
+    },
+    {
+      "id": "healthy-progress-separated-compactions",
+      "setup": {"kind": "corrupt_loop_state", "before_event": 0},
+      "events": [
+        {"payload": {"hook_event_name": "PostToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "healthy-progress-separated-compactions", "tool_name": "edit", "tool_response": {"exit_code": 0}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostCompact", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "healthy-progress-separated-compactions", "trigger": "auto"}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostCompact", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "healthy-progress-separated-compactions", "trigger": "auto"}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostToolUse", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "healthy-progress-separated-compactions", "tool_name": "edit", "tool_response": {"exit_code": 0}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostCompact", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "healthy-progress-separated-compactions", "trigger": "auto"}, "expected_action": {"kind": "pass"}}
+      ]
+    },
+    {
+      "id": "terminal-internal-continuation",
+      "events": [
+        {"payload": {"hook_event_name": "PostCompact", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "terminal-internal-continuation", "trigger": "auto"}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostCompact", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "terminal-internal-continuation", "trigger": "auto"}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostCompact", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "terminal-internal-continuation", "trigger": "auto"}, "expected_action": {"kind": "stop", "reason": "loop_fuse_no_progress_compaction"}},
+        {"payload": {"hook_event_name": "PreCompact", "model": "gpt-5.6-sol", "session_id": "fixture-session", "turn_id": "terminal-internal-continuation", "trigger": "auto"}, "expected_action": {"kind": "stop", "reason": "loop_fuse_no_progress_compaction"}}
+      ]
+    },
+    {
+      "id": "non-sol-pass-through",
+      "events": [
+        {"payload": {"hook_event_name": "PostToolUse", "model": "gpt-5.5", "session_id": "fixture-session", "turn_id": "non-sol-pass-through", "tool_name": "bash", "tool_input": {"command": "uv run pytest fixture-observe -q"}, "tool_response": {"exit_code": 0}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PreToolUse", "model": "gpt-5.5", "session_id": "fixture-session", "turn_id": "non-sol-pass-through", "tool_name": "bash", "tool_input": {"command": "uv run pytest fixture-observe -q"}}, "expected_action": {"kind": "pass"}},
+        {"payload": {"hook_event_name": "PostCompact", "model": "gpt-5.5", "session_id": "fixture-session", "turn_id": "non-sol-pass-through", "trigger": "auto"}, "expected_action": {"kind": "pass"}}
+      ]
+    }
+  ]
+}

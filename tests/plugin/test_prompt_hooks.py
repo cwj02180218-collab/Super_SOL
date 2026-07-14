@@ -4,7 +4,7 @@ from pathlib import Path
 from pydantic import JsonValue
 from super_sol_routes import Route, context_for
 
-from .conftest import HookEnvironmentRunner, HookRunner, hook_input
+from .conftest import HookEnvironmentRunner, HookRunner, hook_input, read_textual_state
 
 
 def _context(output: dict[str, JsonValue] | None) -> str:
@@ -61,7 +61,7 @@ def test_korean_security_prompt_routes_without_persisting_prompt(
 
     assert result.returncode == 0
     assert result.stdout is None
-    combined = "".join(path.read_text(encoding="utf-8") for path in plugin_data.rglob("*.*"))
+    combined = read_textual_state(plugin_data)
     assert prompt not in combined
     assert _state_payloads(plugin_data)[0]["natural_route"] == "security_boundary"
     assert _state_payloads(plugin_data)[0]["effective_route"] == "pass_through"

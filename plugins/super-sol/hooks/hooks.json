@@ -15,28 +15,80 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "^Bash$",
+        "matcher": ".*",
         "hooks": [
           {
             "type": "command",
             "command": "/usr/bin/python3 -S \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
             "commandWindows": "py -3 -S \"%PLUGIN_ROOT%\\hooks\\super_sol_hook.py\"",
             "timeout": 5,
-            "statusMessage": "과금 경로 확인 중"
+            "statusMessage": "도구 실행 확인 중"
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "^(Bash|apply_patch|Edit|Write)$",
+        "matcher": ".*",
         "hooks": [
           {
             "type": "command",
             "command": "/usr/bin/python3 -S \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
             "commandWindows": "py -3 -S \"%PLUGIN_ROOT%\\hooks\\super_sol_hook.py\"",
             "timeout": 5,
-            "statusMessage": "작업 증거 확인 중"
+            "statusMessage": "도구 결과 확인 중"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 -S \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
+            "commandWindows": "py -3 -S \"%PLUGIN_ROOT%\\hooks\\super_sol_hook.py\"",
+            "timeout": 5,
+            "statusMessage": "에이전트 시작 확인 중"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 -S \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
+            "commandWindows": "py -3 -S \"%PLUGIN_ROOT%\\hooks\\super_sol_hook.py\"",
+            "timeout": 5,
+            "statusMessage": "에이전트 종료 확인 중"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 -S \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
+            "commandWindows": "py -3 -S \"%PLUGIN_ROOT%\\hooks\\super_sol_hook.py\"",
+            "timeout": 5,
+            "statusMessage": "압축 전 진행 상태 확인 중"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 -S \"$PLUGIN_ROOT/hooks/super_sol_hook.py\"",
+            "commandWindows": "py -3 -S \"%PLUGIN_ROOT%\\hooks\\super_sol_hook.py\"",
+            "timeout": 5,
+            "statusMessage": "압축 후 진행 상태 확인 중"
           }
         ]
       }
