@@ -48,10 +48,20 @@ credentials were absent. The plugin tree, manifest, replay report, and audit SHA
 `50219870b1ad89d72f03ed97e1125047e0315f226d278ae518e8f1dbe9cae048`, and
 `db619a1a2d39459ac051db15fb310f05976901255862bdbeaa779ca593273332` respectively.
 
-Gate 2 has not run and remains **NOT RUN**: its separately approved 32 paid slots are the only
-basis for stable performance or uplift claims, so both remain unproven. **v0.8.0 remains the stable
-release.** See
-[`V0.9_PROMOTION_PROTOCOL.md`](docs/V0.9_PROMOTION_PROTOCOL.md) and
+The original 32-slot Gate 2 has not run and remains **NOT RUN**; it was not retroactively
+reinterpreted. A separate preregistered post-release crossover completed 192/192 valid slots across
+Sol/high and Terra/xhigh,
+with zero censored attempts or retries. Super SOL changed paired score by `+0.94` under Sol
+(95% CI `[-2.08, +4.48]`) and `+2.36` under Terra (95% CI `[-0.52, +5.90]`), while paired token/time
+ratios were `0.989/0.936` and `0.980/0.922`. Raw, Super SOL, and SOLTELU formed a shared quality tier;
+Super SOL was the token/time efficiency leader inside that tier. The strict integrated promotion
+decision still failed because the Sol CI lower bound was `-2.083`, below the preregistered `-2.0`
+threshold. Quality uplift remains unproven and **v0.8.0 remains the stable release**.
+
+See [`V0.9_POSTRELEASE_EVIDENCE.md`](docs/V0.9_POSTRELEASE_EVIDENCE.md) for the bounded aggregate
+claim and hashes, [`V0.9_PROSPECTIVE_HOLDOUT_PROTOCOL.md`](docs/V0.9_PROSPECTIVE_HOLDOUT_PROTOCOL.md)
+for the next data-only decision, and [`V0.9_PROMOTION_PROTOCOL.md`](docs/V0.9_PROMOTION_PROTOCOL.md)
+for the original gate contract. The pre-publication record remains frozen in
 [`RELEASE_BRIEF_0.9.0RC1.md`](docs/RELEASE_BRIEF_0.9.0RC1.md).
 Both the wheel and sdist carry the same release assets. The wheel uses the stable package-data path
 `fablized_sol/_release/v0_9/` for the plugin, v0.9 eval helpers, release docs, and replay evidence.
