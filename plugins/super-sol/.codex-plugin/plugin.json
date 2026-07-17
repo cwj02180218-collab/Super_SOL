@@ -1,7 +1,7 @@
 {
   "name": "super-sol",
-  "version": "0.9.0-rc1",
-  "description": "Sol-gated raw-first checks with a bounded no-progress loop fuse for stock Codex",
+  "version": "0.9.1-rc1",
+  "description": "Selective Sol and Terra checks with a bounded Sol loop fuse for stock Codex",
   "author": {
     "name": "Super SOL contributors",
     "url": "https://github.com/cwj02180218-collab/Super_SOL"
@@ -13,8 +13,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Super SOL",
-    "shortDescription": "검증 경계와 반복 작업을 제한하는 Sol 전용 Codex 도우미",
-    "longDescription": "`gpt-5.6-sol`에서만 능동 의미 개입(active semantic intervention)을 수행하고 non-Sol 모델은 observation-only로 동작합니다. 추가 model/API call, 모델 전환, 자동 재시도는 없습니다. v0.9는 반복 작업을 제한하지만 프로세스를 종료하지 않습니다. 프롬프트와 도구 출력은 저장하지 않습니다.",
+    "shortDescription": "검증 누락과 Sol 반복 작업을 제한하는 경량 Codex 도우미",
+    "longDescription": "`gpt-5.6-sol`과 `gpt-5.6-terra`에서 선택적 의미 개입을 수행하고 그 외 모델은 observation-only로 동작합니다. 루프 퓨즈는 `gpt-5.6-sol` 전용입니다. 추가 model/API call, 모델 전환, 자동 재시도는 없습니다. 프롬프트와 도구 출력은 저장하지 않습니다.",
     "developerName": "Super SOL contributors",
     "category": "Productivity",
     "capabilities": ["Interactive", "Write"],

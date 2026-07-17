@@ -80,7 +80,7 @@ STRING_MAP_ADAPTER = TypeAdapter[dict[str, str]](dict[str, str])
 ANALYSIS_ADAPTER = TypeAdapter[AnalysisEvidence](AnalysisEvidence)
 AUDIT_ADAPTER = TypeAdapter[AuditEvidence](AuditEvidence)
 EVIDENCE_MANIFEST_ADAPTER = TypeAdapter[EvidenceManifest](EvidenceManifest)
-WHEEL_ASSET_ROOT = "fablized_sol/_release/v0_9"
+WHEEL_ASSET_ROOT = "fablized_sol/_release/v0_9_1"
 RELEASE_ASSET_MAP = {
     "plugins/super-sol/.codex-plugin/plugin.json": (
         f"{WHEEL_ASSET_ROOT}/plugin/.codex-plugin/plugin.json"
@@ -138,8 +138,8 @@ RELEASE_ASSET_MAP = {
             "v09_loop_sequences.json",
         )
     },
-    "docs/V0.9_PROMOTION_PROTOCOL.md": f"{WHEEL_ASSET_ROOT}/docs/V0.9_PROMOTION_PROTOCOL.md",
-    "docs/RELEASE_BRIEF_0.9.0RC1.md": f"{WHEEL_ASSET_ROOT}/docs/RELEASE_BRIEF_0.9.0RC1.md",
+    "docs/V0.9.1_PROMOTION_PROTOCOL.md": (f"{WHEEL_ASSET_ROOT}/docs/V0.9.1_PROMOTION_PROTOCOL.md"),
+    "docs/RELEASE_BRIEF_0.9.1RC1.md": (f"{WHEEL_ASSET_ROOT}/docs/RELEASE_BRIEF_0.9.1RC1.md"),
     "benchmarks/v0.9-loop-replay/README.md": (
         f"{WHEEL_ASSET_ROOT}/benchmarks/v0.9-loop-replay/README.md"
     ),
@@ -164,8 +164,8 @@ def fresh_archives(output_dir: Path) -> tuple[Path, Path]:
         text=True,
     )
     assert completed.returncode == 0, completed.stderr
-    sdists = tuple(output_dir.glob("super_sol_harness-0.9.0rc1.tar.gz"))
-    wheels = tuple(output_dir.glob("super_sol_harness-0.9.0rc1-py3-none-any.whl"))
+    sdists = tuple(output_dir.glob("super_sol_harness-0.9.1rc1.tar.gz"))
+    wheels = tuple(output_dir.glob("super_sol_harness-0.9.1rc1-py3-none-any.whl"))
     assert len(sdists) == len(wheels) == 1
     return sdists[0], wheels[0]
 
