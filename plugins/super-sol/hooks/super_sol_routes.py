@@ -454,6 +454,11 @@ _PACKS = {
     ),
 }
 
+DEBT_CONTEXT = (
+    "Two successful edits occurred without a verifier. Run the narrowest relevant check now "
+    "and read its result before editing again."
+)
+
 REPAIR_CONTEXT = (
     "Verification failed. Use only the observed failure to revisit the active route invariants, "
     "make the smallest correction, and rerun the same focused verification once."

@@ -58,6 +58,12 @@ def test_sol_lifecycle_emits_one_residual_context(run_hook: HookRunner) -> None:
     assert _context(run_hook(verification_payload(model="gpt-5.6-sol")).stdout) is None
 
 
+def test_terra_lifecycle_emits_one_residual_context(run_hook: HookRunner) -> None:
+    assert _lifecycle(run_hook, "gpt-5.6-terra") == residual_context(
+        Contract.CONCURRENCY_CANCELLATION
+    )
+
+
 @pytest.mark.parametrize(
     ("current_model", "remove_model"),
     [

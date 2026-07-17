@@ -17,7 +17,7 @@ from super_sol_loop_policy import (
 )
 from super_sol_loop_state import LoopLedger, keyed_fingerprint, mutate_loop_ledger
 from super_sol_prompt_hook import model_profile
-from super_sol_state import claim_once, turn_root
+from super_sol_state import claim_context, turn_root
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -125,7 +125,7 @@ def _response(event: str, root: Path, decision: FuseDecision) -> dict[str, objec
         return _deny(decision.reason)
     if decision.action is FuseAction.STOP_TURN and decision.reason is not None:
         return {"continue": False, "stopReason": decision.reason}
-    if decision.action is FuseAction.WARN_ONCE and claim_once(root, "model-visible-context"):
+    if decision.action is FuseAction.WARN_ONCE and claim_context(root, "evidence"):
         return {
             "hookSpecificOutput": {"hookEventName": event, "additionalContext": _WARNINGS[event]}
         }

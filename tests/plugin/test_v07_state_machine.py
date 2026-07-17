@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import super_sol_routes
 from pydantic import JsonValue
 from super_sol_routes import Contract, Route, context_for, residual_context
 
@@ -67,6 +68,25 @@ def _edit(run_hook: HookRunner, *, success: bool = True, tool_use_id: str = "edi
     assert result.stdout is None
 
 
+def _edit_result(
+    run_hook: HookRunner,
+    *,
+    tool_name: str,
+    tool_use_id: str,
+) -> dict[str, JsonValue] | None:
+    result = run_hook(
+        hook_input(
+            "PostToolUse",
+            tool_name=tool_name,
+            tool_use_id=tool_use_id,
+            tool_input={"patch": "secret source text"},
+            tool_response={"success": True},
+        )
+    )
+    assert result.returncode == 0
+    return result.stdout
+
+
 def _verify(
     run_hook: HookRunner,
     *,
@@ -116,6 +136,43 @@ def test_failure_emits_one_repair_and_suppresses_later_residual(run_hook: HookRu
     assert "Verification failed" in str(_context(first))
     assert second is None
     assert success is None
+
+
+def test_second_distinct_unverified_edit_emits_debt_once(run_hook: HookRunner) -> None:
+    _prime(run_hook)
+    first = _edit_result(run_hook, tool_name="apply_patch", tool_use_id="debt-edit-one")
+    second = _edit_result(run_hook, tool_name="Edit", tool_use_id="debt-edit-two")
+    duplicate = _edit_result(run_hook, tool_name="Edit", tool_use_id="debt-edit-two")
+    third = _edit_result(run_hook, tool_name="Write", tool_use_id="debt-edit-three")
+
+    assert first is None
+    assert _context(second) == super_sol_routes.DEBT_CONTEXT
+    assert duplicate is None
+    assert third is None
+
+
+def test_verifier_resets_edit_debt_sequence_without_consuming_evidence(
+    run_hook: HookRunner,
+) -> None:
+    generic = run_hook(
+        hook_input("UserPromptSubmit", prompt="Fix the implementation and run tests")
+    )
+    assert generic.stdout is None
+    assert (
+        _edit_result(
+            run_hook,
+            tool_name="apply_patch",
+            tool_use_id="before-verify",
+        )
+        is None
+    )
+    assert _verify(run_hook, exit_code=0, tool_use_id="verify-reset") is None
+
+    first = _edit_result(run_hook, tool_name="Edit", tool_use_id="after-verify-one")
+    second = _edit_result(run_hook, tool_name="Write", tool_use_id="after-verify-two")
+
+    assert first is None
+    assert _context(second) == super_sol_routes.DEBT_CONTEXT
 
 
 def test_pass_through_observe_and_unrecognized_commands_are_silent(

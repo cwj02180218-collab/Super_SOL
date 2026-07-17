@@ -275,6 +275,7 @@ def test_prompt_dispatcher_matches_full_hook_output(
     payload: dict[str, JsonValue] | str,
 ) -> None:
     stdin = payload if isinstance(payload, str) else json.dumps(payload)
+
     def invoke(script: Path) -> subprocess.CompletedProcess[str]:
         environment = {
             "PATH": os.environ.get("PATH", ""),

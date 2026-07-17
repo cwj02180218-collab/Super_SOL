@@ -124,9 +124,7 @@ def test_mutation_accepting_a_181_code_point_residual_raises_budget_error() -> N
 
 
 def test_prompt_and_evidence_channels_each_emit_once(run_hook: HookRunner) -> None:
-    assert _context(run_hook(_prompt("gpt-5.6-sol")).stdout) == context_for(
-        Route.CONCURRENCY_STATE
-    )
+    assert _context(run_hook(_prompt("gpt-5.6-sol")).stdout) == context_for(Route.CONCURRENCY_STATE)
     assert _context(run_hook(_edit("gpt-5.6-sol")).stdout) is None
     assert _context(run_hook(_verification("gpt-5.6-sol")).stdout) == residual_context(
         Contract.CONCURRENCY_CANCELLATION
@@ -135,9 +133,7 @@ def test_prompt_and_evidence_channels_each_emit_once(run_hook: HookRunner) -> No
 
 
 def test_mutation_emitting_context_before_verification_is_blocked(run_hook: HookRunner) -> None:
-    assert _context(run_hook(_prompt("gpt-5.6-sol")).stdout) == context_for(
-        Route.CONCURRENCY_STATE
-    )
+    assert _context(run_hook(_prompt("gpt-5.6-sol")).stdout) == context_for(Route.CONCURRENCY_STATE)
     assert _context(run_hook(_edit("gpt-5.6-sol")).stdout) is None
     non_verification = run_hook(
         _successful_bash(
