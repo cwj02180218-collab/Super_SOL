@@ -50,14 +50,14 @@ def process_evidence(payload: dict[str, object]) -> dict[str, object] | None:  #
     tool_name = payload.get("tool_name")
     normalized_tool = tool_name.casefold() if isinstance(tool_name, str) else ""
     if normalized_tool in _EDIT_TOOLS:
-        record_event(root, payload.get("tool_use_id"), "edit", success)
+        _ = record_event(root, payload.get("tool_use_id"), "edit", success)
         return None
     if normalized_tool != "bash":
         return None
     command = command_text(payload) or ""
     if classify_command(command).kind is not CommandKind.VERIFIER:
         return None
-    record_event(root, payload.get("tool_use_id"), "verification", success)
+    _ = record_event(root, payload.get("tool_use_id"), "verification", success)
     if (
         model_profile(payload) != "sol"
         or state.get("model_profile") != "sol"

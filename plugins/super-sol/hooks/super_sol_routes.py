@@ -47,6 +47,7 @@ class RouteDecision:
     warning: Optional[str] = None
     contract: Optional[Contract] = None
     confidence: int = 0
+    actionable: bool = False
 
 
 @dataclass(frozen=True)
@@ -436,31 +437,20 @@ _SIGNALS: dict[Route, tuple[_Signal, ...]] = {
 
 _PACKS = {
     Route.CONCURRENCY_STATE: (
-        "Before editing, list the shared state, owner, and per-key synchronization "
-        "invariant. Check same-key coalescing, different-key independence, cancellation, "
-        "failure cleanup, and retry after failure. Preserve the public API. Add or run a "
-        "deterministic concurrency test. "
-        "Repair only an observed failure; avoid unrelated refactoring."
+        "Map shared state, ownership, and per-key synchronization. Check coalescing, cross-key "
+        "independence, cancellation, cleanup, and retry; run one focused deterministic test."
     ),
     Route.SECURITY_BOUNDARY: (
-        "Before editing, identify the trust boundary and each input or path normalization step. "
-        "Validate before mutation; reject traversal, aliases, symlinks, partial writes, and secret "
-        "exposure when applicable. Preserve the public API. Run focused boundary tests. "
-        "Repair only "
-        "an observed failure; avoid unrelated refactoring."
+        "Map the trust boundary and normalization order. Validate before mutation; check "
+        "traversal, aliases, symlinks, partial writes, and secret exposure in one focused test."
     ),
     Route.MIGRATION_COMPATIBILITY: (
-        "Before editing, write source and target invariants for every supported version. Preserve "
-        "unknown and nested fields, input immutability, idempotence, normalization order, and "
-        "future-version rejection. Preserve the public API. Run a focused version matrix. Repair "
-        "only an observed failure; avoid unrelated refactoring."
+        "State old, current, and future-version invariants. Preserve unknown nested fields, input "
+        "immutability, idempotence, and normalization order; run one focused matrix."
     ),
     Route.FAILURE_ATOMICITY: (
-        "Before editing, state atomicity, ordering, and idempotency invariants. Separate "
-        "validation, mutation, and commit; distinguish transient, permanent, and cancellation "
-        "failures; and "
-        "checkpoint only after success. Preserve the public API. Run focused failure-injection "
-        "tests. Repair only an observed failure; avoid unrelated refactoring."
+        "State atomicity, ordering, and idempotency. Validate before mutation, commit only on "
+        "success, preserve cancellation semantics, and run one focused failure test."
     ),
 }
 
@@ -534,7 +524,16 @@ def _control(prompt: str) -> tuple[Optional[RouteDecision], str]:
         )
     if route is Route.PASS_THROUGH:
         return RouteDecision(route, 0, (), forced=True), remainder
-    return RouteDecision(route, _ACTIVATION_SCORE, ("control.explicit",), forced=True), remainder
+    return (
+        RouteDecision(
+            route,
+            _ACTIVATION_SCORE,
+            ("control.explicit",),
+            forced=True,
+            actionable=True,
+        ),
+        remainder,
+    )
 
 
 def route_prompt(prompt: str) -> RouteDecision:
@@ -558,7 +557,7 @@ def route_prompt(prompt: str) -> RouteDecision:
     best_score, contract, matched = scored[0]
     runner_up = scored[1][0]
     if best_score < _ACTIVATION_SCORE or best_score - runner_up < _CONFIDENCE_MARGIN:
-        return RouteDecision(Route.PASS_THROUGH, 0, ())
+        return RouteDecision(Route.PASS_THROUGH, 0, (), actionable=True)
     identifiers = tuple(
         signal.identifier
         for signal in sorted(matched, key=lambda signal: (-signal.weight, signal.identifier))[:2]
@@ -570,12 +569,14 @@ def route_prompt(prompt: str) -> RouteDecision:
         identifiers,
         contract=contract,
         confidence=best_score,
+        actionable=True,
     )
 
 
 def context_for(route: Route) -> Optional[str]:
     """Return the frozen model context for one specialist route."""
-    return _PACKS.get(route)
+    context = _PACKS.get(route)
+    return validate_residual_context(context) if context is not None else None
 
 
 def validate_residual_context(context: str) -> str:

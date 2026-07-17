@@ -1,4 +1,5 @@
 from pydantic import JsonValue
+from super_sol_routes import Route, context_for
 
 from .conftest import HookRunner, hook_input
 
@@ -44,15 +45,14 @@ def test_pre_tool_replay_returns_codex_deny(run_hook: HookRunner) -> None:
 
 
 def test_loop_warning_claim_suppresses_v08_evidence_context(run_hook: HookRunner) -> None:
-    assert (
+    assert _context(
         run_hook(
             hook_input(
                 "UserPromptSubmit",
                 prompt="Fix concurrent refresh cancellation and race conditions",
             )
         ).stdout
-        is None
-    )
+    ) == context_for(Route.CONCURRENCY_STATE)
     assert (
         run_hook(
             hook_input(

@@ -22,6 +22,29 @@ _BILLING_AND_CONTROL_PHRASES = (
     "don't call api",
     "do not call api",
 )
+_ACTION_PHRASES = (
+    "add",
+    "allow",
+    "change",
+    "fix",
+    "implement",
+    "make",
+    "migrate",
+    "must",
+    "reject",
+    "repair",
+    "return",
+    "update",
+    "clean up",
+    "validate",
+    "고쳐",
+    "구현",
+    "막아",
+    "마이그레이션",
+    "수정",
+    "차단",
+    "추가",
+)
 _SIGNAL_PHRASES = (
     "copy",
     "복사",
@@ -180,7 +203,7 @@ def _generic_profile(payload: dict[str, object], environment: object) -> str | N
     if _secret_shaped(prompt):
         return None
     normalized = unicodedata.normalize("NFKC", prompt).casefold()
-    guarded = _BILLING_AND_CONTROL_PHRASES + _SIGNAL_PHRASES
+    guarded = _BILLING_AND_CONTROL_PHRASES + _ACTION_PHRASES + _SIGNAL_PHRASES
     if any(phrase in normalized for phrase in guarded):
         return None
     model = payload.get("model")

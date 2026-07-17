@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 from pydantic import JsonValue
-from super_sol_routes import Contract, residual_context
+from super_sol_routes import Contract, Route, context_for, residual_context
 
 from .conftest import (
     HookEnvironmentRunner,
@@ -51,7 +51,7 @@ def _prime(run_hook: HookRunner) -> None:
             prompt="Fix concurrent refresh cancellation and race conditions",
         )
     )
-    assert result.stdout is None
+    assert _context(result.stdout) == context_for(Route.CONCURRENCY_STATE)
 
 
 def _edit(run_hook: HookRunner, *, success: bool = True, tool_use_id: str = "edit-one") -> None:
@@ -200,17 +200,18 @@ def test_all_model_profiles_retain_no_raw_turn_fixtures(
     output = f"OUTPUT_FIXTURE_{profile}"
     fixtures = (prompt, source, path, command, output, f"MODEL_FIXTURE_{profile}")
 
-    assert (
-        run_hook(
-            _profile_payload(
-                profile,
-                model,
-                event="UserPromptSubmit",
-                prompt=prompt,
-            )
-        ).stdout
-        is None
-    )
+    prompt_output = run_hook(
+        _profile_payload(
+            profile,
+            model,
+            event="UserPromptSubmit",
+            prompt=prompt,
+        )
+    ).stdout
+    if isinstance(model, str) and model in {"gpt-5.6-sol", "gpt-5.6-terra"}:
+        assert _context(prompt_output) == context_for(Route.CONCURRENCY_STATE)
+    else:
+        assert prompt_output is None
     assert (
         run_hook(
             _profile_payload(

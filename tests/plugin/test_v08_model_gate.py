@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 from pydantic import JsonValue
-from super_sol_routes import Contract, residual_context
+from super_sol_routes import Contract, Route, context_for, residual_context
 
 from .conftest import HookEnvironmentRunner, HookRunner, hook_input, read_textual_state
 
@@ -34,7 +34,11 @@ def _lifecycle(run_hook: HookRunner, model: JsonValue) -> str | None:
         model=model,
         prompt="Fix concurrent refresh cancellation and race conditions",
     )
-    assert run_hook(prompt).stdout is None
+    prompt_context = _context(run_hook(prompt).stdout)
+    if model in {"gpt-5.6-sol", "gpt-5.6-terra"}:
+        assert prompt_context == context_for(Route.CONCURRENCY_STATE)
+    else:
+        assert prompt_context is None
     edit = hook_input(
         "PostToolUse",
         model=model,
@@ -76,7 +80,7 @@ def test_sol_state_records_verification_but_emits_no_context_after_model_drift(
         model="gpt-5.6-sol",
         prompt="Fix concurrent refresh cancellation and race conditions",
     )
-    assert run_hook(prompt).stdout is None
+    assert _context(run_hook(prompt).stdout) == context_for(Route.CONCURRENCY_STATE)
     edit = hook_input(
         "PostToolUse",
         model="gpt-5.6-sol",
@@ -97,9 +101,9 @@ def test_sol_state_records_verification_but_emits_no_context_after_model_drift(
 
 @pytest.mark.parametrize(
     "model",
-    ["gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.6-sol-preview", "", None, 17],
+    ["gpt-5.6-luna", "gpt-5.6-sol-preview", "", None, 17],
 )
-def test_non_sol_lifecycles_emit_no_context(run_hook: HookRunner, model: JsonValue) -> None:
+def test_observe_lifecycles_emit_no_context(run_hook: HookRunner, model: JsonValue) -> None:
     assert _lifecycle(run_hook, model) is None
 
 
@@ -124,7 +128,7 @@ def test_lifecycle_without_model_emits_no_context(run_hook: HookRunner) -> None:
     assert _context(run_hook(verification).stdout) is None
 
 
-def test_forced_terra_prompt_emits_no_context(
+def test_forced_terra_prompt_emits_bounded_context(
     run_hook_with_env: HookEnvironmentRunner,
 ) -> None:
     result = run_hook_with_env(
@@ -139,7 +143,7 @@ def test_forced_terra_prompt_emits_no_context(
         },
     )
 
-    assert result.stdout is None
+    assert _context(result.stdout) == context_for(Route.FAILURE_ATOMICITY)
 
 
 def test_terra_secret_is_blocked(run_hook: HookRunner) -> None:
