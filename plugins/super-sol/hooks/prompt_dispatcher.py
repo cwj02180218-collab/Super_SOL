@@ -193,7 +193,7 @@ def _reset_existing_loop(payload: dict[str, object], environment: object) -> Non
     plugin_data = _environment_value(environment, "PLUGIN_DATA")
     if not plugin_data:
         return
-    state_tree = os.path.join(plugin_data, "super-sol", "v3")  # noqa: PTH118
+    state_tree = os.path.join(plugin_data, "super-sol", "v4")  # noqa: PTH118
     if not os.path.isdir(state_tree):  # noqa: PTH112
         return
     import hashlib  # noqa: PLC0415
