@@ -119,7 +119,7 @@
     ],
     "static_audit": "passed"
   },
-  "plugin_tree_sha256": "ab7ff273f66c0ea3a7472484a0ecca05b7a7aef5876d959129946443388d7f74",
+  "plugin_tree_sha256": "84a1dbd47577585bd6ce01d5e5afb1938d976493897b6fb644d589b07ee66d29",
   "schema": "super-sol-loop-replay/v1",
   "successful_network_calls": 0,
   "summary": {

@@ -33,13 +33,13 @@ def test_distribution_declares_mit_license() -> None:
 
 
 def test_package_exports_version() -> None:
-    assert fablized_sol.__version__ == "0.9.0rc1"
+    assert fablized_sol.__version__ == "0.9.1rc1"
 
 
 def test_readme_exposes_beginner_plugin_and_current_model_contract() -> None:
     readme = Path("README.md").read_text(encoding="utf-8")
 
-    assert "codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.9.0-rc1" in readme
+    assert "codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.9.1-rc1" in readme
     assert "추가 API 과금 호출 없음" in readme
     assert "gpt-5.6-terra" in readme
     assert "--product-effort" in readme
@@ -48,7 +48,7 @@ def test_readme_exposes_beginner_plugin_and_current_model_contract() -> None:
     assert "https://openai.com/index/gpt-5-6/" in readme
     assert "GPT-5.6 Sol is a limited preview" not in readme
     assert "v0.8.0 is the stable release" in readme
-    assert "v0.9.0-rc1 is a prerelease" in readme
+    assert "v0.9.1-rc1 is a prerelease" in readme
     assert "super-sol-codex-ab" in readme
     assert "unseen holdout" in readme
 

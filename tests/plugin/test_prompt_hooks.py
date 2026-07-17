@@ -31,7 +31,7 @@ def test_pass_through_prompt_emits_no_model_context(
     assert not plugin_data.exists()
 
 
-def test_adaptive_specialist_prompt_is_raw_first_and_emits_no_context(
+def test_adaptive_specialist_prompt_emits_one_bounded_context(
     run_hook: HookRunner,
     plugin_data: Path,
 ) -> None:
@@ -43,13 +43,14 @@ def test_adaptive_specialist_prompt_is_raw_first_and_emits_no_context(
     )
 
     assert result.returncode == 0
-    assert result.stdout is None
+    assert _context(result.stdout) == context_for(Route.CONCURRENCY_STATE)
     state = _state_payloads(plugin_data)[0]
     assert state["primary_contract"] == "concurrency_cancellation"
     confidence = state["confidence"]
     assert isinstance(confidence, int)
     assert confidence >= 2
-    assert state["effective_route"] == "pass_through"
+    assert state["actionable"] is True
+    assert state["effective_route"] == "concurrency_state"
 
 
 def test_korean_security_prompt_routes_without_persisting_prompt(
@@ -60,11 +61,11 @@ def test_korean_security_prompt_routes_without_persisting_prompt(
     result = run_hook(hook_input("UserPromptSubmit", prompt=prompt))
 
     assert result.returncode == 0
-    assert result.stdout is None
+    assert _context(result.stdout) == context_for(Route.SECURITY_BOUNDARY)
     combined = read_textual_state(plugin_data)
     assert prompt not in combined
     assert _state_payloads(plugin_data)[0]["natural_route"] == "security_boundary"
-    assert _state_payloads(plugin_data)[0]["effective_route"] == "pass_through"
+    assert _state_payloads(plugin_data)[0]["effective_route"] == "security_boundary"
     assert _state_payloads(plugin_data)[0]["primary_contract"] == "security_path_boundary"
 
 
@@ -174,6 +175,7 @@ def test_observe_mode_records_natural_route_without_model_context(
     assert result.stdout is None
     assert _state_payloads(plugin_data) == [
         {
+            "actionable": True,
             "billable_authorized": False,
             "confidence": 5,
             "diagnostic_mode": "observe",
@@ -181,7 +183,7 @@ def test_observe_mode_records_natural_route_without_model_context(
             "forced": False,
             "natural_route": "concurrency_state",
             "primary_contract": "concurrency_cancellation",
-            "schema_version": 4,
+            "schema_version": 5,
             "signal_ids": [
                 "concurrency.concurrent",
                 "concurrency.race",

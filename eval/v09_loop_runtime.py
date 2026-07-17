@@ -23,6 +23,8 @@ from v09_loop_isolation import (  # pyright: ignore[reportImplicitRelativeImport
 if TYPE_CHECKING:
     from pathlib import Path
 
+STATE_NAMESPACE = "v4"
+
 
 def _action(output: object, event: str) -> dict[str, object] | None:
     if output is None:
@@ -121,7 +123,7 @@ def _turn_root(plugin_data: Path, event: object) -> Path:
     return (
         plugin_data
         / "super-sol"
-        / "v3"
+        / STATE_NAMESPACE
         / identifier(payload.get("session_id"))
         / identifier(payload.get("turn_id"))
     )

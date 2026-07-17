@@ -7,9 +7,9 @@ import re
 import time
 
 from super_sol_routes import Route, context_for, route_prompt
-from super_sol_state import claim_once, turn_root, write_private_json
+from super_sol_state import claim_context, turn_root, write_private_json
 
-_SCHEMA_VERSION = 4
+_SCHEMA_VERSION = 5
 _DIAGNOSTIC_MODE = "SUPER_SOL_DIAGNOSTIC_MODE"
 _FORCED_ROUTE = "SUPER_SOL_FORCED_ROUTE"
 _SECRET = re.compile(r"sk-[A-Za-z0-9_-]{20,}")
@@ -24,6 +24,7 @@ _NEGATIVE_BILLING = (
     "do not call api",
 )
 _BILLABLE_CONFIRMATIONS = ("super sol 유료 실행 승인", "super sol billable run approved")
+_ACTIVE_PROFILES = frozenset({"sol", "terra"})
 
 
 def _context(event: str, text: str) -> dict[str, object]:
@@ -63,9 +64,12 @@ def _diagnostic_control() -> tuple[str, Route | None, str | None]:
 def model_profile(payload: dict[str, object]) -> str:
     """Return the model eligibility profile without persisting model text."""
     model = payload.get("model")
-    return (
-        "sol" if isinstance(model, str) and model.strip().casefold() == "gpt-5.6-sol" else "observe"
-    )
+    if not isinstance(model, str):
+        return "observe"
+    normalized = model.strip().casefold()
+    if normalized == "gpt-5.6-sol":
+        return "sol"
+    return "terra" if normalized == "gpt-5.6-terra" else "observe"
 
 
 def reset_for_prompt(payload: dict[str, object]) -> None:
@@ -92,17 +96,18 @@ def process_prompt(payload: dict[str, object]) -> dict[str, object] | None:  # n
     diagnostic_mode, forced_route, diagnostic_warning = _diagnostic_control()
     profile = model_profile(payload)
     effective_route = Route.PASS_THROUGH
-    if profile == "sol":
+    if profile in _ACTIVE_PROFILES:
         if diagnostic_mode == "observe":
             effective_route = Route.PASS_THROUGH
         elif diagnostic_mode == "forced" and forced_route is not None:
             effective_route = forced_route
-        elif decision.forced:
+        elif decision.forced or decision.route is not Route.PASS_THROUGH:
             effective_route = decision.route
     root = turn_root(payload)
     billable_authorized = _billable_authorized(prompt)
     should_persist = (
         billable_authorized
+        or decision.actionable
         or decision.contract is not None
         or decision.forced
         or diagnostic_mode != "adaptive"
@@ -111,6 +116,7 @@ def process_prompt(payload: dict[str, object]) -> dict[str, object] | None:  # n
     if root is not None and should_persist:
         private_state: dict[str, object] = {
             "billable_authorized": billable_authorized,
+            "actionable": decision.actionable,
             "confidence": decision.confidence,
             "diagnostic_mode": diagnostic_mode,
             "effective_route": effective_route.value,
@@ -128,6 +134,10 @@ def process_prompt(payload: dict[str, object]) -> dict[str, object] | None:  # n
     if decision.warning is not None:
         return _warning(decision.warning)
     context = context_for(effective_route)
-    if context is not None and root is not None:
-        _ = claim_once(root, "model-visible-context")
+    if (
+        context is not None
+        and profile in _ACTIVE_PROFILES
+        and (root is None or not claim_context(root, "prompt"))
+    ):
+        context = None
     return _context("UserPromptSubmit", context) if context is not None else None

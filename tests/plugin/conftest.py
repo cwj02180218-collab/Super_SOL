@@ -18,6 +18,7 @@ PROMPT_DISPATCHER = PLUGIN_ROOT / "hooks" / "prompt_dispatcher.py"
 HOOK_CONFIG = PLUGIN_ROOT / "hooks" / "hooks.json"
 sys.path.insert(0, str(PLUGIN_ROOT / "hooks"))
 import super_sol_hook  # noqa: E402
+from super_sol_state import STATE_NAMESPACE  # noqa: E402
 
 _OBJECT_ADAPTER = TypeAdapter[dict[str, JsonValue]](dict[str, JsonValue])
 
@@ -149,7 +150,7 @@ def textual_state_artifacts(plugin_data: Path) -> tuple[Path, ...]:
     artifacts = tuple(path for path in plugin_data.rglob("*") if path.is_file())
     keys = tuple(path for path in artifacts if path.name == ".loop-key")
     for key in keys:
-        assert key == plugin_data / "super-sol" / "v3" / ".loop-key"
+        assert key == plugin_data / "super-sol" / STATE_NAMESPACE / ".loop-key"
         assert key.stat().st_size == 32
         assert key.stat().st_mode & 0o777 == 0o600
     return tuple(path for path in artifacts if path not in keys)

@@ -1,0 +1,73 @@
+{
+  "schema": "super-sol-v091-gate0/v1",
+  "generated_at": "2026-07-17T01:56:46Z",
+  "candidate_product_commit": "e8418af2967b8685687f2bea640117649b1df27a",
+  "candidate_version": "0.9.1rc1",
+  "passed": true,
+  "commands": [
+    {
+      "command": "uv run pytest --cov=src --cov=plugins/super-sol/hooks --cov-report=term-missing --cov-fail-under=90",
+      "exit_code": 0,
+      "tests_passed": 480,
+      "coverage_percent": 90.64,
+      "duration_seconds": 45.34
+    },
+    {
+      "command": "uv run ruff check .",
+      "exit_code": 0
+    },
+    {
+      "command": "uv run ruff format --check .",
+      "exit_code": 0,
+      "files_formatted": 149
+    },
+    {
+      "command": "uv run basedpyright",
+      "exit_code": 0,
+      "errors": 0,
+      "warnings": 0
+    },
+    {
+      "command": "uv build",
+      "exit_code": 0
+    },
+    {
+      "command": "uv run super-sol-container-audit --repo-root . --sbom-dir security/sbom",
+      "exit_code": 0,
+      "vulnerabilities": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    },
+    {
+      "command": "uv run super-sol-hook-latency --plugin-root plugins/super-sol --output benchmarks/v0.9-loop-replay/v091-latency.json",
+      "exit_code": 0
+    },
+    {
+      "command": "env -u OPENAI_API_KEY -u CODEX_API_KEY uv run pytest tests/eval/test_v09_loop_replay.py tests/eval/test_codex_hook_compat.py tests/eval/test_codex_hook_runtime.py -q",
+      "exit_code": 0,
+      "tests_passed": 17
+    }
+  ],
+  "archives": {
+    "sdist_sha256": "e0f2b635e6d5daf7b2277e863a7e2c9d3619c85d59a0351a32399b851aee75da",
+    "wheel_sha256": "73682fd1234a7157cb0be3d327a16e7ff319d05c0949b36ff1651c33501823f4"
+  },
+  "supply_chain": {
+    "verifier_sbom_sha256": "b0e5725c2a201f6ca42c01e8b3266347b5bac023db2fcec8c9614a8bf9f38692",
+    "grader_sbom_sha256": "1ac173dfffeb11f09f13def115c43eff62b4370543687d907bd28925cd50674b",
+    "verifier_vulnerabilities": 0,
+    "grader_vulnerabilities": 0
+  },
+  "infrastructure_events": [
+    {
+      "command": "uv run super-sol-container-audit --repo-root . --sbom-dir security/sbom",
+      "disposition": "censored_before_audit",
+      "reason": "Docker daemon socket unavailable",
+      "replacement": "same command after Docker daemon readiness check"
+    }
+  ],
+  "billable_calls": 0,
+  "gate1_240_valid_slots": "not_run"
+}

@@ -11,7 +11,9 @@ from pathlib import Path
 from typing import cast
 
 MAX_INPUT_BYTES = 1_048_576
-MAX_INJECTIONS_PER_TURN = 1
+STATE_NAMESPACE = "v4"
+_CONTEXT_CHANNELS = frozenset({"prompt", "evidence"})
+MAX_INJECTIONS_PER_TURN = len(_CONTEXT_CHANNELS)
 _MAX_STATE_BYTES = 4096
 
 
@@ -43,7 +45,7 @@ def turn_root(payload: dict[str, object]) -> "Path | None":  # noqa: UP037
     plugin_data = os.environ.get("PLUGIN_DATA")
     if not plugin_data:
         return None
-    root = Path(plugin_data) / "super-sol" / "v3"
+    root = Path(plugin_data) / "super-sol" / STATE_NAMESPACE
     return root / _identifier(payload.get("session_id")) / _identifier(payload.get("turn_id"))
 
 
@@ -73,6 +75,13 @@ def claim_once(root: Path, name: str) -> bool:
     return True
 
 
+def claim_context(root: Path, channel: str) -> bool:
+    """Claim one bounded model-visible channel, rejecting unknown channels."""
+    if channel not in _CONTEXT_CHANNELS:
+        return False
+    return claim_once(root, f"model-visible-context:{channel}")
+
+
 def read_private_json(path: Path) -> dict[str, object] | None:
     """Read one small plugin-owned JSON object, rejecting invalid state."""
     try:
@@ -93,7 +102,7 @@ def load_state(payload: dict[str, object]) -> dict[str, object] | None:
 def load_events(root: Path) -> tuple[dict[str, object], ...]:
     """Load valid private evidence records for the current turn."""
     events: list[dict[str, object]] = []
-    for path in (root / "events").glob("*.json"):
+    for path in sorted((root / "events").glob("*.json")):
         event = read_private_json(path)
         if event is not None:
             events.append(event)
@@ -106,10 +115,13 @@ def event_path(root: Path, tool_use_id: object, observed_at: int) -> tuple[Path,
     return root / "events" / f"{observed_at}-{identifier}.json", identifier
 
 
-def record_event(root: Path, tool_use_id: object, kind: str, success: bool) -> None:
-    """Record one immutable privacy-safe tool outcome."""
-    path, _identifier_value = event_path(root, tool_use_id, time.time_ns())
+def record_event(root: Path, tool_use_id: object, kind: str, success: bool) -> bool:
+    """Record one privacy-safe tool outcome, deduplicated by kind and tool id."""
+    path, identifier = event_path(root, tool_use_id, time.time_ns())
+    if not claim_once(root, f"event:{kind}:{identifier}"):
+        return False
     write_private_json(path, {"kind": kind, "success": success})
+    return True
 
 
 def has_successful_event(events: tuple[dict[str, object], ...], kind: str) -> bool:

@@ -1,6 +1,6 @@
 [project]
 name = "super-sol-harness"
-version = "0.9.0rc1"
+version = "0.9.1rc1"
 description = "Evidence-gated coding-agent harness with reproducible model comparisons"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -64,8 +64,8 @@ packages = ["src/fablized_sol"]
 "eval/v09_loop_runtime.py" = "fablized_sol/_release/v0_9/eval/v09_loop_runtime.py"
 "eval/v09_loop_seccomp.py" = "fablized_sol/_release/v0_9/eval/v09_loop_seccomp.py"
 "eval/v09_loop_sequences.json" = "fablized_sol/_release/v0_9/eval/v09_loop_sequences.json"
-"docs/V0.9_PROMOTION_PROTOCOL.md" = "fablized_sol/_release/v0_9/docs/V0.9_PROMOTION_PROTOCOL.md"
-"docs/RELEASE_BRIEF_0.9.0RC1.md" = "fablized_sol/_release/v0_9/docs/RELEASE_BRIEF_0.9.0RC1.md"
+"docs/V0.9.1_PROMOTION_PROTOCOL.md" = "fablized_sol/_release/v0_9/docs/V0.9.1_PROMOTION_PROTOCOL.md"
+"docs/RELEASE_BRIEF_0.9.1RC1.md" = "fablized_sol/_release/v0_9/docs/RELEASE_BRIEF_0.9.1RC1.md"
 "benchmarks/v0.9-loop-replay/README.md" = "fablized_sol/_release/v0_9/benchmarks/v0.9-loop-replay/README.md"
 "benchmarks/v0.9-loop-replay/report.json" = "fablized_sol/_release/v0_9/benchmarks/v0.9-loop-replay/report.json"
 

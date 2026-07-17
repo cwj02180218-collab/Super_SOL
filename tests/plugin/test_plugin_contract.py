@@ -20,7 +20,7 @@ def test_plugin_manifest_and_marketplace_are_release_ready() -> None:
     marketplace = _json(REPO_ROOT / ".agents" / "plugins" / "marketplace.json")
 
     assert manifest["name"] == "super-sol"
-    assert manifest["version"] == "0.9.0-rc1"
+    assert manifest["version"] == "0.9.1-rc1"
     assert manifest["repository"] == "https://github.com/cwj02180218-collab/Super_SOL"
     assert "mcpServers" not in manifest
     assert "apps" not in manifest
@@ -29,8 +29,9 @@ def test_plugin_manifest_and_marketplace_are_release_ready() -> None:
     long_description = interface["longDescription"]
     assert isinstance(long_description, str)
     for expected in (
-        "`gpt-5.6-sol`에서만 능동 의미 개입(active semantic intervention)",
-        "non-Sol 모델은 observation-only",
+        "`gpt-5.6-sol`과 `gpt-5.6-terra`에서 선택적 의미 개입",
+        "그 외 모델은 observation-only",
+        "루프 퓨즈는 `gpt-5.6-sol` 전용",
         "추가 model/API call, 모델 전환, 자동 재시도는 없습니다.",
     ):
         assert expected in long_description
@@ -85,15 +86,15 @@ def test_hook_config_registers_only_local_python_commands() -> None:
     assert (PLUGIN_ROOT / "hooks" / "prompt_dispatcher.py").is_file()
 
 
-def test_v09_rc_versions_and_release_contract_are_consistent() -> None:
+def test_v091_rc_versions_and_release_contract_are_consistent() -> None:
     project = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     manifest = _json(PLUGIN_ROOT / ".codex-plugin" / "plugin.json")
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-    brief_path = REPO_ROOT / "docs" / "RELEASE_BRIEF_0.9.0RC1.md"
-    protocol_path = REPO_ROOT / "docs" / "V0.9_PROMOTION_PROTOCOL.md"
+    brief_path = REPO_ROOT / "docs" / "RELEASE_BRIEF_0.9.1RC1.md"
+    protocol_path = REPO_ROOT / "docs" / "V0.9.1_PROMOTION_PROTOCOL.md"
 
-    assert project["project"]["version"] == "0.9.0rc1"
-    assert manifest["version"] == "0.9.0-rc1"
+    assert project["project"]["version"] == "0.9.1rc1"
+    assert manifest["version"] == "0.9.1-rc1"
     assert brief_path.is_file()
     assert protocol_path.is_file()
     brief = brief_path.read_text(encoding="utf-8")
@@ -103,34 +104,36 @@ def test_v09_rc_versions_and_release_contract_are_consistent() -> None:
     for document in (readme, brief):
         normalized = " ".join(document.casefold().split())
         for expected in (
-            "v0.9.0-rc1",
+            "v0.9.1-rc1",
             "gpt-5.6-sol",
-            "continue:false",
-            "passed verifier replay",
-            "third identical no-progress result warns; fourth blocks",
-            "maximum depth is one",
-            "maximum 2 concurrent children",
-            "maximum 3 total starts including failures",
-            "manual compaction is excluded",
-            "user input resets the turn budget",
-            "no process killer",
-            "gate 2 has not run",
+            "gpt-5.6-terra",
+            "selective semantic intervention",
+            "two successful distinct edits",
+            "one prompt context",
+            "one evidence context",
+            "no model calls",
+            "no retries",
+            "quality uplift has not been established",
+            "240 valid slots have not run",
         ):
             assert expected in normalized
 
     for expected in (
         "Gate 0",
         "Gate 1",
-        "six loop lifecycle capability events",
-        "separate `UserPromptSubmit` reset check",
-        "seven top-level events",
-        "12/12",
-        "0 unexpected contexts",
-        "32 valid slots",
+        "30 new tasks",
+        "240 valid slots",
+        "Sol/high",
+        "Terra/xhigh",
+        "fresh homes",
+        "fresh worktrees",
         "mean paired score delta at least 0",
-        "token ratio at most 1.05",
-        "wall-time ratio at most 1.10",
-        "Gate 2 is billable",
+        "task-clustered 95% CI lower bound at least -2",
+        "token ratio at most 1.03",
+        "wall-time ratio at most 1.05",
+        "zero contamination",
+        "quality uplift requires",
+        "separate explicit billable approval",
     ):
         assert expected in normalized_protocol
 

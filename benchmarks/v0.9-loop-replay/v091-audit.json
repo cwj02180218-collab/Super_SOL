@@ -1,0 +1,63 @@
+{
+  "schema": "super-sol-v091-audit/v1",
+  "generated_at": "2026-07-17T01:56:46Z",
+  "candidate_product_commit": "e8418af2967b8685687f2bea640117649b1df27a",
+  "passed": true,
+  "digests": {
+    "plugin_tree_sha256": "84a1dbd47577585bd6ce01d5e5afb1938d976493897b6fb644d589b07ee66d29",
+    "plugin_manifest_sha256": "1a4595f17727c9e97c83c7d73f3cd7f44fd5e2c358f437a54b1dcb4a5b76ec85",
+    "replay_manifest_sha256": "9412d22d97e6558adb645b59be48de38f0d8187f4e83a8a61cc9b644197c98b5",
+    "replay_report_sha256": "165d52ad96d0ed18887e615319218ce3a8a4cd5786b107fe2430e4335ffa0680",
+    "latency_report_sha256": "9cac940d3ec05651b3ff6912d503af98d752063a8284d80a5f3e035639eef9a7"
+  },
+  "hook_inventory": [
+    "PostCompact",
+    "PostToolUse",
+    "PreCompact",
+    "PreToolUse",
+    "SubagentStart",
+    "SubagentStop",
+    "UserPromptSubmit"
+  ],
+  "model_visible_context": {
+    "configured_codepoint_limit": 180,
+    "observed_pack_max_codepoints": 169,
+    "prompt_channel_max_per_turn": 1,
+    "evidence_channel_max_per_turn": 1
+  },
+  "latency_ms": {
+    "hook_p95": 57.45559616480023,
+    "incremental_p95": 34.92545976769179,
+    "hook_p95_limit": 100.0,
+    "incremental_p95_limit": 70.0,
+    "passed": true
+  },
+  "loop_replay": {
+    "passed": 12,
+    "failed": 0,
+    "unexpected_contexts": 0,
+    "successful_network_calls": 0,
+    "kernel_network_deny": true
+  },
+  "privacy": {
+    "prompt_text_persisted": false,
+    "tool_output_persisted": false,
+    "credential_keys_absent": [
+      "AWS_ACCESS_KEY_ID",
+      "AWS_SECRET_ACCESS_KEY",
+      "AWS_SESSION_TOKEN",
+      "CODEX_API_KEY",
+      "OPENAI_API_KEY",
+      "SUPER_SOL_FORCED_ROUTE"
+    ]
+  },
+  "automatic_actions": {
+    "model_calls": 0,
+    "billable_calls": 0,
+    "retries": 0,
+    "continuations": 0,
+    "model_switches": 0,
+    "subagent_starts": 0,
+    "process_kills": 0
+  }
+}

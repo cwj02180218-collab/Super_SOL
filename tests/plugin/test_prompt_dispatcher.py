@@ -183,6 +183,18 @@ def test_guarded_sol_prompts_still_delegate_to_the_full_processor(prompt: str) -
     assert _delegated(hook_input("UserPromptSubmit", prompt=prompt))
 
 
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        "Fix the implementation and run tests",
+        "Update the command help",
+        "구현을 수정해줘",
+    ],
+)
+def test_action_prompts_delegate_without_specialist_signals(prompt: str) -> None:
+    assert _delegated(hook_input("UserPromptSubmit", prompt=prompt))
+
+
 def test_generic_sol_without_loop_state_skips_event_modules(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -263,14 +275,14 @@ def test_prompt_dispatcher_matches_full_hook_output(
     payload: dict[str, JsonValue] | str,
 ) -> None:
     stdin = payload if isinstance(payload, str) else json.dumps(payload)
-    environment = {
-        "PATH": os.environ.get("PATH", ""),
-        "PLUGIN_DATA": str(tmp_path / "plugin-data"),
-        "PLUGIN_ROOT": str(PLUGIN_ROOT),
-        "PYTHONUTF8": "1",
-    }
 
     def invoke(script: Path) -> subprocess.CompletedProcess[str]:
+        environment = {
+            "PATH": os.environ.get("PATH", ""),
+            "PLUGIN_DATA": str(tmp_path / f"plugin-data-{script.stem}"),
+            "PLUGIN_ROOT": str(PLUGIN_ROOT),
+            "PYTHONUTF8": "1",
+        }
         return subprocess.run(  # noqa: S603
             ["/usr/bin/python3", "-S", str(script)],
             input=stdin,

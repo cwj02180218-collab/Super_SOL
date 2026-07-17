@@ -1,6 +1,13 @@
 from pathlib import Path
 
-from super_sol_routes import CONTEXT_CODEPOINT_LIMIT, REPAIR_CONTEXT, Contract, residual_context
+from super_sol_routes import (
+    CONTEXT_CODEPOINT_LIMIT,
+    REPAIR_CONTEXT,
+    Contract,
+    Route,
+    context_for,
+    residual_context,
+)
 from super_sol_state import MAX_INJECTIONS_PER_TURN
 
 from fablized_sol.eval.hook_latency import (
@@ -23,7 +30,12 @@ from .conftest import (
 def test_public_context_and_injection_budgets_are_frozen() -> None:
     assert CONTEXT_CODEPOINT_LIMIT == 180
     assert len(REPAIR_CONTEXT) <= CONTEXT_CODEPOINT_LIMIT
-    assert MAX_INJECTIONS_PER_TURN == 1
+    assert MAX_INJECTIONS_PER_TURN == 2
+    assert all(
+        len(context) <= CONTEXT_CODEPOINT_LIMIT
+        for route in Route
+        if (context := context_for(route)) is not None
+    )
     assert all(len(residual_context(contract)) <= CONTEXT_CODEPOINT_LIMIT for contract in Contract)
 
 
@@ -47,7 +59,7 @@ def test_stored_state_is_bounded_and_contains_no_raw_fixture_text(
     command = "uv run pytest -q SECRET_COMMAND"
     source = "SECRET_SOURCE"
     output = "SECRET_OUTPUT"
-    assert run_hook(hook_input("UserPromptSubmit", prompt=prompt)).stdout is None
+    assert run_hook(hook_input("UserPromptSubmit", prompt=prompt)).stdout is not None
     assert (
         run_hook(
             hook_input(

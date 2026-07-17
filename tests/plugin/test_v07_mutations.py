@@ -1,7 +1,7 @@
 import pytest
 import super_sol_routes
 from pydantic import JsonValue
-from super_sol_routes import Contract, residual_context
+from super_sol_routes import Contract, Route, context_for, residual_context
 from super_sol_state import next_context_kind
 
 from .conftest import HookRunner, hook_input
@@ -113,9 +113,9 @@ def test_each_context_guard_blocks_its_mutation(
 def test_mutation_removing_model_gating_emits_no_context_for_an_observe_model(
     run_hook: HookRunner,
 ) -> None:
-    assert _context(run_hook(_prompt("gpt-5.6-terra")).stdout) is None
-    assert _context(run_hook(_edit("gpt-5.6-terra")).stdout) is None
-    assert _context(run_hook(_verification("gpt-5.6-terra")).stdout) is None
+    assert _context(run_hook(_prompt("gpt-5.6-luna")).stdout) is None
+    assert _context(run_hook(_edit("gpt-5.6-luna")).stdout) is None
+    assert _context(run_hook(_verification("gpt-5.6-luna")).stdout) is None
 
 
 def test_mutation_accepting_a_181_code_point_residual_raises_budget_error() -> None:
@@ -123,8 +123,8 @@ def test_mutation_accepting_a_181_code_point_residual_raises_budget_error() -> N
         _ = super_sol_routes.validate_residual_context("x" * 181)
 
 
-def test_mutation_allowing_a_second_context_injection_is_blocked(run_hook: HookRunner) -> None:
-    assert _context(run_hook(_prompt("gpt-5.6-sol")).stdout) is None
+def test_prompt_and_evidence_channels_each_emit_once(run_hook: HookRunner) -> None:
+    assert _context(run_hook(_prompt("gpt-5.6-sol")).stdout) == context_for(Route.CONCURRENCY_STATE)
     assert _context(run_hook(_edit("gpt-5.6-sol")).stdout) is None
     assert _context(run_hook(_verification("gpt-5.6-sol")).stdout) == residual_context(
         Contract.CONCURRENCY_CANCELLATION
@@ -133,7 +133,7 @@ def test_mutation_allowing_a_second_context_injection_is_blocked(run_hook: HookR
 
 
 def test_mutation_emitting_context_before_verification_is_blocked(run_hook: HookRunner) -> None:
-    assert _context(run_hook(_prompt("gpt-5.6-sol")).stdout) is None
+    assert _context(run_hook(_prompt("gpt-5.6-sol")).stdout) == context_for(Route.CONCURRENCY_STATE)
     assert _context(run_hook(_edit("gpt-5.6-sol")).stdout) is None
     non_verification = run_hook(
         _successful_bash(
