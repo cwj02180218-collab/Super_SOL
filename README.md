@@ -35,7 +35,7 @@ and two repetitions. It requires noninferior semantic quality, token ratio at mo
 ratio at most 1.05, and zero contamination or hidden-grader leakage. See
 [`V0.9.1_PROMOTION_PROTOCOL.md`](docs/V0.9.1_PROMOTION_PROTOCOL.md) and
 [`RELEASE_BRIEF_0.9.1RC1.md`](docs/RELEASE_BRIEF_0.9.1RC1.md). Both wheel and sdist store these release
-assets under `fablized_sol/_release/v0_9_1/`.
+assets under `fablized_sol/_release/v0_9/`.
 
 ## v0.9.0-rc1 Loop Fuse prerelease
 

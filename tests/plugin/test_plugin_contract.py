@@ -138,7 +138,7 @@ def test_v091_rc_versions_and_release_contract_are_consistent() -> None:
         assert expected in normalized_protocol
 
     for document in (readme, brief):
-        assert "fablized_sol/_release/v0_9_1/" in document
+        assert "fablized_sol/_release/v0_9/" in document
 
 
 def test_skill_is_concise_explicit_and_stock_codex_only() -> None:

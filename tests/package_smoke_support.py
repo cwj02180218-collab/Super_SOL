@@ -80,7 +80,7 @@ STRING_MAP_ADAPTER = TypeAdapter[dict[str, str]](dict[str, str])
 ANALYSIS_ADAPTER = TypeAdapter[AnalysisEvidence](AnalysisEvidence)
 AUDIT_ADAPTER = TypeAdapter[AuditEvidence](AuditEvidence)
 EVIDENCE_MANIFEST_ADAPTER = TypeAdapter[EvidenceManifest](EvidenceManifest)
-WHEEL_ASSET_ROOT = "fablized_sol/_release/v0_9_1"
+WHEEL_ASSET_ROOT = "fablized_sol/_release/v0_9"
 RELEASE_ASSET_MAP = {
     "plugins/super-sol/.codex-plugin/plugin.json": (
         f"{WHEEL_ASSET_ROOT}/plugin/.codex-plugin/plugin.json"

@@ -11,7 +11,7 @@ The no-progress loop fuse remains exact-Sol only. Unknown profiles and ambiguous
 without model-visible context. There are no model calls, no retries, no continuations, no model
 switching, no automatic subagents, and no process killer.
 
-The package stores candidate assets under `fablized_sol/_release/v0_9_1/`. v0.8.0 remains the stable
+The package stores candidate assets under `fablized_sol/_release/v0_9/`. v0.8.0 remains the stable
 release. Quality uplift has not been established. The new 240 valid slots have not run, and no
 performance claim is made from the implementation tests.
 
