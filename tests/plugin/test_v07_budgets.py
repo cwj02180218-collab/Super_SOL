@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from super_sol_routes import (
     CONTEXT_CODEPOINT_LIMIT,
     REPAIR_CONTEXT,
@@ -20,11 +21,18 @@ from fablized_sol.eval.hook_latency import (
 
 from .conftest import (
     PLUGIN_ROOT,
+    HookEnvironmentRunner,
     HookRunner,
     hook_input,
     read_textual_state,
     textual_state_artifacts,
 )
+
+
+@pytest.fixture
+def run_hook(run_hook_with_env: HookEnvironmentRunner) -> HookRunner:
+    """Exercise the preserved v0.9.1 semantic surface explicitly."""
+    return lambda payload: run_hook_with_env(payload, {"SUPER_SOL_QUALITY_MODE": "selective"})
 
 
 def test_public_context_and_injection_budgets_are_frozen() -> None:

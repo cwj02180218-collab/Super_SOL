@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 from super_sol_commands import CommandKind, classify_command, command_text
+from super_sol_modes import QualityMode, quality_mode
 from super_sol_prompt_hook import model_profile
 from super_sol_routes import (
     DEBT_CONTEXT,
@@ -52,7 +53,9 @@ def _succeeded(payload: dict[str, object]) -> bool | None:
 def _model_visible_eligible(payload: dict[str, object], state: dict[str, object]) -> bool:
     profile = model_profile(payload)
     return (
-        profile in _ACTIVE_PROFILES
+        quality_mode() is QualityMode.SELECTIVE
+        and state.get("quality_mode") == QualityMode.SELECTIVE.value
+        and profile in _ACTIVE_PROFILES
         and state.get("model_profile") == profile
         and state.get("diagnostic_mode") != "observe"
     )

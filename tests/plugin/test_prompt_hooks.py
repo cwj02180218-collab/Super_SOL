@@ -32,14 +32,15 @@ def test_pass_through_prompt_emits_no_model_context(
 
 
 def test_adaptive_specialist_prompt_emits_one_bounded_context(
-    run_hook: HookRunner,
+    run_hook_with_env: HookEnvironmentRunner,
     plugin_data: Path,
 ) -> None:
-    result = run_hook(
+    result = run_hook_with_env(
         hook_input(
             "UserPromptSubmit",
             prompt="Fix concurrent refresh cancellation and race conditions",
-        )
+        ),
+        {"SUPER_SOL_QUALITY_MODE": "selective"},
     )
 
     assert result.returncode == 0
@@ -54,11 +55,14 @@ def test_adaptive_specialist_prompt_emits_one_bounded_context(
 
 
 def test_korean_security_prompt_routes_without_persisting_prompt(
-    run_hook: HookRunner,
+    run_hook_with_env: HookEnvironmentRunner,
     plugin_data: Path,
 ) -> None:
     prompt = "심볼릭 링크와 경로 순회를 차단해줘"
-    result = run_hook(hook_input("UserPromptSubmit", prompt=prompt))
+    result = run_hook_with_env(
+        hook_input("UserPromptSubmit", prompt=prompt),
+        {"SUPER_SOL_QUALITY_MODE": "selective"},
+    )
 
     assert result.returncode == 0
     assert _context(result.stdout) == context_for(Route.SECURITY_BOUNDARY)
@@ -82,21 +86,26 @@ def test_ambiguous_and_mixed_prompts_pass_through(run_hook: HookRunner) -> None:
         assert result.stdout is None
 
 
-def test_first_line_route_controls_are_sanitized(run_hook: HookRunner) -> None:
+def test_first_line_route_controls_are_sanitized(
+    run_hook: HookRunner,
+    run_hook_with_env: HookEnvironmentRunner,
+) -> None:
     off = run_hook(
         hook_input(
             "UserPromptSubmit",
             prompt="SUPER SOL OFF\nFix concurrent refresh race conditions",
         )
     )
-    forced = run_hook(
+    forced = run_hook_with_env(
         hook_input(
             "UserPromptSubmit",
             prompt="SUPER SOL ROUTE migration_compatibility\nFix this conversion",
-        )
+        ),
+        {"SUPER_SOL_QUALITY_MODE": "selective"},
     )
-    invalid = run_hook(
-        hook_input("UserPromptSubmit", prompt="SUPER SOL ROUTE unknown\nFix this conversion")
+    invalid = run_hook_with_env(
+        hook_input("UserPromptSubmit", prompt="SUPER SOL ROUTE unknown\nFix this conversion"),
+        {"SUPER_SOL_QUALITY_MODE": "selective"},
     )
 
     assert off.stdout is None
@@ -183,6 +192,7 @@ def test_observe_mode_records_natural_route_without_model_context(
             "forced": False,
             "natural_route": "concurrency_state",
             "primary_contract": "concurrency_cancellation",
+            "quality_mode": "safety",
             "schema_version": 5,
             "signal_ids": [
                 "concurrency.concurrent",
@@ -201,6 +211,7 @@ def test_forced_mode_applies_preregistered_pack_without_prompt_control(
         {
             "SUPER_SOL_DIAGNOSTIC_MODE": "forced",
             "SUPER_SOL_FORCED_ROUTE": "failure_atomicity",
+            "SUPER_SOL_QUALITY_MODE": "selective",
         },
     )
 
@@ -210,6 +221,7 @@ def test_forced_mode_applies_preregistered_pack_without_prompt_control(
     assert state["effective_route"] == "failure_atomicity"
     assert state["diagnostic_mode"] == "forced"
     assert state["forced"] is True
+    assert state["quality_mode"] == "selective"
 
 
 def test_invalid_diagnostic_controls_fail_closed_to_adaptive(
@@ -229,3 +241,4 @@ def test_invalid_diagnostic_controls_fail_closed_to_adaptive(
     assert state["diagnostic_mode"] == "adaptive"
     assert state["diagnostic_warning"] == "invalid_forced_route"
     assert state["effective_route"] == "pass_through"
+    assert state["quality_mode"] == "safety"

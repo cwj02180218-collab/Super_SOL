@@ -7,6 +7,12 @@ from super_sol_routes import Contract, Route, context_for, residual_context
 from .conftest import HookEnvironmentRunner, HookRunner, hook_input, read_textual_state
 
 
+@pytest.fixture
+def run_hook(run_hook_with_env: HookEnvironmentRunner) -> HookRunner:
+    """Exercise the preserved v0.9.1 semantic surface explicitly."""
+    return lambda payload: run_hook_with_env(payload, {"SUPER_SOL_QUALITY_MODE": "selective"})
+
+
 def _context(output: dict[str, JsonValue] | None) -> str | None:
     if output is None:
         return None
@@ -143,10 +149,11 @@ def test_forced_terra_prompt_emits_bounded_context(
             model="gpt-5.6-terra",
             prompt="Fix concurrent refresh cancellation and race conditions",
         ),
-        {
-            "SUPER_SOL_DIAGNOSTIC_MODE": "forced",
-            "SUPER_SOL_FORCED_ROUTE": "failure_atomicity",
-        },
+            {
+                "SUPER_SOL_DIAGNOSTIC_MODE": "forced",
+                "SUPER_SOL_FORCED_ROUTE": "failure_atomicity",
+                "SUPER_SOL_QUALITY_MODE": "selective",
+            },
     )
 
     assert _context(result.stdout) == context_for(Route.FAILURE_ATOMICITY)

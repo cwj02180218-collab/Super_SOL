@@ -5,6 +5,12 @@ from super_sol_routes import REPAIR_CONTEXT
 from .conftest import HookEnvironmentRunner, HookRunner, hook_input
 
 
+@pytest.fixture
+def run_hook(run_hook_with_env: HookEnvironmentRunner) -> HookRunner:
+    """Exercise the preserved v0.9.1 semantic surface explicitly."""
+    return lambda payload: run_hook_with_env(payload, {"SUPER_SOL_QUALITY_MODE": "selective"})
+
+
 def _prime(run_hook: HookRunner, prompt: str = "이 파일을 수정해줘") -> None:
     result = run_hook(hook_input("UserPromptSubmit", prompt=prompt))
     assert result.returncode == 0

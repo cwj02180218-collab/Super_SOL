@@ -14,6 +14,12 @@ from .conftest import (
 )
 
 
+@pytest.fixture
+def run_hook(run_hook_with_env: HookEnvironmentRunner) -> HookRunner:
+    """Exercise the preserved v0.9.1 semantic surface explicitly."""
+    return lambda payload: run_hook_with_env(payload, {"SUPER_SOL_QUALITY_MODE": "selective"})
+
+
 def _profile_payload(
     profile: str,
     model: JsonValue | None,
