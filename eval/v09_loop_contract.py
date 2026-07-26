@@ -9,7 +9,7 @@ MANIFEST_ERROR = "manifest_contract"
 HOOK_EVENTS = frozenset(
     {"PreToolUse", "PostToolUse", "SubagentStart", "SubagentStop", "PreCompact", "PostCompact"}
 )
-CONTRACTS: dict[str, tuple[str, ...]] = {
+V1_CONTRACTS: dict[str, tuple[str, ...]] = {
     "passed-verifier-replay": ("PostToolUse/pass", "PreToolUse/deny"),
     "unchanged-failing-verifier-replay": ("PostToolUse/pass", "PreToolUse/deny"),
     "healthy-edit-verify-edit-verify": (
@@ -78,7 +78,35 @@ CONTRACTS: dict[str, tuple[str, ...]] = {
     ),
     "non-sol-pass-through": ("PostToolUse/pass", "PreToolUse/pass", "PostCompact/pass"),
 }
-SEALED_MANIFEST_SHA256 = "d68858f2fb29aa535cecaa5ffb072dcc7e66859dcf0146cbbb2d623a82026273"
+V2_CONTRACTS = {
+    **V1_CONTRACTS,
+    "generic-read-replay": (
+        "PreToolUse/pass",
+        "PostToolUse/pass",
+        "PreToolUse/pass",
+        "PostToolUse/pass",
+        "PreToolUse/pass",
+        "PostToolUse/pass",
+        "PreToolUse/deny",
+    ),
+    "repeated-wait": (
+        "PreToolUse/pass",
+        "PostToolUse/pass",
+        "PreToolUse/pass",
+        "PostToolUse/pass",
+        "PreToolUse/pass",
+        "PostToolUse/pass",
+        "PreToolUse/deny",
+    ),
+}
+SEALED_MANIFEST_SHA256 = {
+    "super-sol-loop-sequences/v1": (
+        "d68858f2fb29aa535cecaa5ffb072dcc7e66859dcf0146cbbb2d623a82026273"
+    ),
+    "super-sol-loop-sequences/v2": (
+        "160ef30fde4b49a8bd2b1b8b5cc0240dc319d612207d641499a4c6d0da10a6a5"
+    ),
+}
 
 
 def as_dict(value: object) -> dict[str, object] | None:
@@ -112,9 +140,9 @@ def _event_signature(event: object) -> tuple[str, str]:
     return name, f"{name}/{action}"
 
 
-def _validate_case(case: dict[str, object]) -> set[str]:
+def _validate_case(case: dict[str, object], contracts: dict[str, tuple[str, ...]]) -> set[str]:
     case_id = case.get("id")
-    if not isinstance(case_id, str) or case_id not in CONTRACTS:
+    if not isinstance(case_id, str) or case_id not in contracts:
         raise ValueError(MANIFEST_ERROR)
     events = as_list(case.get("events"))
     setup = (
@@ -126,29 +154,38 @@ def _validate_case(case: dict[str, object]) -> set[str]:
     if not events or case.get("setup") != setup or set(case) != expected_keys:
         raise ValueError(MANIFEST_ERROR)
     signatures = tuple(_event_signature(event) for event in events)
-    if tuple(signature for _name, signature in signatures) != CONTRACTS[case_id]:
+    if tuple(signature for _name, signature in signatures) != contracts[case_id]:
         raise ValueError(MANIFEST_ERROR)
     return {name for name, _signature in signatures}
 
 
 def validate_manifest(payload: dict[str, object]) -> list[dict[str, object]]:
+    schema = payload.get("schema")
+    contracts = (
+        V1_CONTRACTS
+        if schema == "super-sol-loop-sequences/v1"
+        else V2_CONTRACTS
+        if schema == "super-sol-loop-sequences/v2"
+        else None
+    )
     cases = as_list(payload.get("cases"))
-    if payload.get("schema") != "super-sol-loop-sequences/v1" or cases is None:
+    expected_digest = SEALED_MANIFEST_SHA256.get(schema) if isinstance(schema, str) else None
+    if contracts is None or expected_digest is None or cases is None:
         raise ValueError(MANIFEST_ERROR)
     typed = [as_dict(case) for case in cases]
     if any(case is None for case in typed):
         raise ValueError(MANIFEST_ERROR)
     valid = cast("list[dict[str, object]]", typed)
-    if tuple(case.get("id") for case in valid) != tuple(CONTRACTS):
+    if tuple(case.get("id") for case in valid) != tuple(contracts):
         raise ValueError(MANIFEST_ERROR)
     observed: set[str] = set()
     try:
         for case in valid:
-            observed.update(_validate_case(case))
+            observed.update(_validate_case(case, contracts))
     except TypeError as error:
         raise ValueError(MANIFEST_ERROR) from error
     sealed = hashlib.sha256(canonical(payload)).hexdigest()
-    if observed != set(HOOK_EVENTS) or sealed != SEALED_MANIFEST_SHA256:
+    if observed != set(HOOK_EVENTS) or sealed != expected_digest:
         raise ValueError(MANIFEST_ERROR)
     return valid
 

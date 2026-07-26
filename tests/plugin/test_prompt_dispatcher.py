@@ -61,6 +61,7 @@ def test_every_production_contract_signal_delegates_to_full_hook() -> None:
         for phrase in phrases
         if not _delegated(
             hook_input("UserPromptSubmit", prompt=f"Please consider {phrase}"),
+            environment={"SUPER_SOL_QUALITY_MODE": "selective"},
         )
     ]
 
@@ -176,11 +177,17 @@ def test_generic_sol_prompt_resets_only_an_existing_same_turn_ledger(
     [
         "use sk-abcdefghijklmnopqrst for this request",
         "SUPER SOL OFF\nrename this variable",
-        "Fix concurrent refresh race conditions",
     ],
 )
 def test_guarded_sol_prompts_still_delegate_to_the_full_processor(prompt: str) -> None:
     assert _delegated(hook_input("UserPromptSubmit", prompt=prompt))
+
+
+def test_quality_prompt_delegates_only_in_selective_mode() -> None:
+    payload = hook_input("UserPromptSubmit", prompt="Fix concurrent refresh race conditions")
+
+    assert not _delegated(payload)
+    assert _delegated(payload, environment={"SUPER_SOL_QUALITY_MODE": "selective"})
 
 
 @pytest.mark.parametrize(
@@ -192,7 +199,9 @@ def test_guarded_sol_prompts_still_delegate_to_the_full_processor(prompt: str) -
     ],
 )
 def test_action_prompts_delegate_without_specialist_signals(prompt: str) -> None:
-    assert _delegated(hook_input("UserPromptSubmit", prompt=prompt))
+    payload = hook_input("UserPromptSubmit", prompt=prompt)
+    assert not _delegated(payload)
+    assert _delegated(payload, environment={"SUPER_SOL_QUALITY_MODE": "selective"})
 
 
 def test_generic_sol_without_loop_state_skips_event_modules(

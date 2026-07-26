@@ -17,6 +17,28 @@ Codex 작업 자체의 사용량은 그대로 발생하므로 비용 0을 보장
 
 ![Super SOL 상황별 사용 가이드](docs/assets/super-sol-guide-wide.png)
 
+## v0.9.2-rc1 Safety and Evidence prerelease
+
+`v0.9.2-rc1 is a prerelease.` The default is a safety-only path with no default quality context.
+It does not inject prompt routes, repair instructions, residual checks, or verification-debt
+reminders. Exact `gpt-5.6-sol` keeps the deterministic loop fuse. Unsupported model profiles pass
+through without active intervention.
+
+Safety incidents are recorded as bounded typed facts without prompts, commands, paths, tool output,
+or model output. Soft loop warnings are silent by default; deterministic deny and stop decisions
+still explain the policy that fired. There are no model calls, no retries, no continuations, no
+model switching, and no automatic subagents.
+
+The preserved v0.9.1 semantic behavior is available only for explicit experiments with
+`SUPER_SOL_QUALITY_MODE=selective`. Controlled clean-room evaluations can set
+`SUPER_SOL_BENCHMARK_GUARD=1` with validated repository-relative test roots; normal sessions do not
+block test edits. Quality uplift has not been established, and the prospective crossover has not
+run. v0.8.0 is the stable release.
+
+The package keeps release assets under `fablized_sol/_release/v0_9/`. Promotion rules are frozen in
+[`V0.9.2_PROMOTION_PROTOCOL.md`](docs/V0.9.2_PROMOTION_PROTOCOL.md), and observed candidate evidence
+is recorded in [`RELEASE_BRIEF_0.9.2RC1.md`](docs/RELEASE_BRIEF_0.9.2RC1.md).
+
 ## v0.9.1-rc1 Selective Verification prerelease
 
 `v0.9.1-rc1 is a prerelease.` Exact normalized `gpt-5.6-sol` and `gpt-5.6-terra` profiles can use
@@ -167,19 +189,20 @@ observation-only이며 model-visible context를 내보내지 않습니다. 훅 �
 승인하라는 안내가 나올 수 있습니다.
 `--dangerously-bypass-hook-trust`는 일반 설치 절차로 권장하지 않습니다.
 
-### v0.9.1-rc1 prerelease 설치
+### v0.9.2-rc1 prerelease 설치
 
-v0.8.0 is the stable release until the new 240-slot holdout passes. Install this candidate only to
-evaluate its documented selective checks; it does not establish stable performance or uplift.
+v0.8.0 is the stable release until the prospective crossover passes. Install this candidate only
+to evaluate its documented safety controls; it does not establish stable performance or uplift.
 
 ```bash
-codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.9.1-rc1
+codex plugin marketplace add cwj02180218-collab/Super_SOL --ref v0.9.2-rc1
 codex plugin add super-sol@super-sol
 codex plugin list
 ```
 
-After reopening ChatGPT/Codex Desktop, review `/hooks`. Sol and Terra may receive bounded selective
-verification contexts, while the no-progress loop fuse remains Sol-only.
+After reopening ChatGPT/Codex Desktop, review `/hooks`. The default path emits no semantic quality
+context, while the no-progress loop fuse remains Sol-only. Experimental selective behavior requires
+the explicit `SUPER_SOL_QUALITY_MODE=selective` environment setting.
 
 ### 이전 v0.9.0-rc1 prerelease 설치
 

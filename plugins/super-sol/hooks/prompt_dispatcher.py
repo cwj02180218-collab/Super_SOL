@@ -7,10 +7,12 @@ import os
 import sys
 import unicodedata
 from collections.abc import Callable  # noqa: TC003
+from typing import cast
 
 _MAX_INPUT_BYTES = 1_048_576
 _SECRET_MATCH_LENGTH = 23
 _DIAGNOSTIC_KEYS = ("SUPER_SOL_DIAGNOSTIC_MODE", "SUPER_SOL_FORCED_ROUTE")
+_QUALITY_MODE = "SUPER_SOL_QUALITY_MODE"
 _BILLING_AND_CONTROL_PHRASES = (
     "super sol",
     "과금 없이",
@@ -191,7 +193,17 @@ def _has_key(environment: object, key: str) -> bool:
 
 
 def _environment_value(environment: object, key: str) -> str | None:
-    return os.environ.get(key) if environment is os.environ else None
+    if environment is os.environ:
+        return os.environ.get(key)
+    if isinstance(environment, dict):
+        value = cast("dict[object, object]", environment).get(key)
+        return value if isinstance(value, str) else None
+    return None
+
+
+def _selective_quality(environment: object) -> bool:
+    value = _environment_value(environment, _QUALITY_MODE)
+    return value is not None and value.strip().casefold() == "selective"
 
 
 def _generic_profile(payload: dict[str, object], environment: object) -> str | None:
@@ -203,7 +215,9 @@ def _generic_profile(payload: dict[str, object], environment: object) -> str | N
     if _secret_shaped(prompt):
         return None
     normalized = unicodedata.normalize("NFKC", prompt).casefold()
-    guarded = _BILLING_AND_CONTROL_PHRASES + _ACTION_PHRASES + _SIGNAL_PHRASES
+    guarded = _BILLING_AND_CONTROL_PHRASES
+    if _selective_quality(environment):
+        guarded += _ACTION_PHRASES + _SIGNAL_PHRASES
     if any(phrase in normalized for phrase in guarded):
         return None
     model = payload.get("model")

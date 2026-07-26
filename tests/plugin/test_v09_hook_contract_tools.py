@@ -1,7 +1,14 @@
+import pytest
 from pydantic import JsonValue
 from super_sol_routes import Route, context_for
 
-from .conftest import HookRunner, hook_input
+from .conftest import HookEnvironmentRunner, HookRunner, hook_input
+
+
+@pytest.fixture
+def run_hook(run_hook_with_env: HookEnvironmentRunner) -> HookRunner:
+    """Exercise the preserved v0.9.1 semantic surface explicitly."""
+    return lambda payload: run_hook_with_env(payload, {"SUPER_SOL_QUALITY_MODE": "selective"})
 
 
 def _context(output: dict[str, JsonValue] | None) -> str | None:

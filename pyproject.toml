@@ -1,6 +1,6 @@
 [project]
 name = "super-sol-harness"
-version = "0.9.1rc1"
+version = "0.9.2rc1"
 description = "Evidence-gated coding-agent harness with reproducible model comparisons"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -45,6 +45,8 @@ packages = ["src/fablized_sol"]
 "plugins/super-sol/hooks/__init__.py" = "fablized_sol/_release/v0_9/plugin/hooks/__init__.py"
 "plugins/super-sol/hooks/hooks.json" = "fablized_sol/_release/v0_9/plugin/hooks/hooks.json"
 "plugins/super-sol/hooks/prompt_dispatcher.py" = "fablized_sol/_release/v0_9/plugin/hooks/prompt_dispatcher.py"
+"plugins/super-sol/hooks/super_sol_audit.py" = "fablized_sol/_release/v0_9/plugin/hooks/super_sol_audit.py"
+"plugins/super-sol/hooks/super_sol_benchmark_guard.py" = "fablized_sol/_release/v0_9/plugin/hooks/super_sol_benchmark_guard.py"
 "plugins/super-sol/hooks/super_sol_commands.py" = "fablized_sol/_release/v0_9/plugin/hooks/super_sol_commands.py"
 "plugins/super-sol/hooks/super_sol_evidence_hook.py" = "fablized_sol/_release/v0_9/plugin/hooks/super_sol_evidence_hook.py"
 "plugins/super-sol/hooks/super_sol_hook.py" = "fablized_sol/_release/v0_9/plugin/hooks/super_sol_hook.py"
@@ -52,6 +54,7 @@ packages = ["src/fablized_sol"]
 "plugins/super-sol/hooks/super_sol_loop_policy.py" = "fablized_sol/_release/v0_9/plugin/hooks/super_sol_loop_policy.py"
 "plugins/super-sol/hooks/super_sol_loop_state.py" = "fablized_sol/_release/v0_9/plugin/hooks/super_sol_loop_state.py"
 "plugins/super-sol/hooks/super_sol_loop_validation.py" = "fablized_sol/_release/v0_9/plugin/hooks/super_sol_loop_validation.py"
+"plugins/super-sol/hooks/super_sol_modes.py" = "fablized_sol/_release/v0_9/plugin/hooks/super_sol_modes.py"
 "plugins/super-sol/hooks/super_sol_prompt_hook.py" = "fablized_sol/_release/v0_9/plugin/hooks/super_sol_prompt_hook.py"
 "plugins/super-sol/hooks/super_sol_routes.py" = "fablized_sol/_release/v0_9/plugin/hooks/super_sol_routes.py"
 "plugins/super-sol/hooks/super_sol_state.py" = "fablized_sol/_release/v0_9/plugin/hooks/super_sol_state.py"
@@ -64,10 +67,12 @@ packages = ["src/fablized_sol"]
 "eval/v09_loop_runtime.py" = "fablized_sol/_release/v0_9/eval/v09_loop_runtime.py"
 "eval/v09_loop_seccomp.py" = "fablized_sol/_release/v0_9/eval/v09_loop_seccomp.py"
 "eval/v09_loop_sequences.json" = "fablized_sol/_release/v0_9/eval/v09_loop_sequences.json"
-"docs/V0.9.1_PROMOTION_PROTOCOL.md" = "fablized_sol/_release/v0_9/docs/V0.9.1_PROMOTION_PROTOCOL.md"
-"docs/RELEASE_BRIEF_0.9.1RC1.md" = "fablized_sol/_release/v0_9/docs/RELEASE_BRIEF_0.9.1RC1.md"
+"eval/v092_loop_sequences.json" = "fablized_sol/_release/v0_9/eval/v092_loop_sequences.json"
+"docs/V0.9.2_PROMOTION_PROTOCOL.md" = "fablized_sol/_release/v0_9/docs/V0.9.2_PROMOTION_PROTOCOL.md"
+"docs/RELEASE_BRIEF_0.9.2RC1.md" = "fablized_sol/_release/v0_9/docs/RELEASE_BRIEF_0.9.2RC1.md"
 "benchmarks/v0.9-loop-replay/README.md" = "fablized_sol/_release/v0_9/benchmarks/v0.9-loop-replay/README.md"
 "benchmarks/v0.9-loop-replay/report.json" = "fablized_sol/_release/v0_9/benchmarks/v0.9-loop-replay/report.json"
+"benchmarks/v0.9-loop-replay/v092-report.json" = "fablized_sol/_release/v0_9/benchmarks/v0.9-loop-replay/v092-report.json"
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -81,8 +86,10 @@ include = [
   "/SECURITY.md",
   "/benchmarks/v0.9-loop-replay/README.md",
   "/benchmarks/v0.9-loop-replay/report.json",
+  "/benchmarks/v0.9-loop-replay/v092-report.json",
   "/docs",
   "/eval/v09_loop*",
+  "/eval/v092_loop_sequences.json",
   "/pyproject.toml",
   "/plugins/super-sol/.codex-plugin/plugin.json",
   "/plugins/super-sol/hooks",

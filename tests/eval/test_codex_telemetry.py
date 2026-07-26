@@ -91,6 +91,21 @@ def test_rate_limit_phrases_win_over_generic_nonzero_exit(phrase: str) -> None:
     assert result == CodexInfrastructureFailure(kind=InfrastructureKind.RATE_LIMIT)
 
 
+@pytest.mark.parametrize(
+    "diagnostic",
+    [
+        "503 biscuit_baker_service_me_circuit_open",
+        "concurrency_limit",
+        "service unavailable due to high demand",
+        "stream disconnected before completion",
+    ],
+)
+def test_transient_codex_failures_are_censored(diagnostic: str) -> None:
+    result = parse_codex_capture(stdout="", stderr=diagnostic, returncode=1)
+
+    assert result == CodexInfrastructureFailure(kind=InfrastructureKind.TRANSIENT_PROVIDER)
+
+
 def test_non_object_event_and_nonzero_exit_are_missing() -> None:
     non_object = parse_codex_capture(stdout="[]", stderr="", returncode=0)
     nonzero = parse_codex_capture(stdout="", stderr="unexpected failure", returncode=7)
