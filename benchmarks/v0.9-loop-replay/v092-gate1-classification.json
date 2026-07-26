@@ -1,0 +1,9 @@
+{
+  "candidate_change_after_freeze": false,
+  "corrected_replication_promotion_use": false,
+  "corrected_replication_status": "diagnostic-only",
+  "original_v4_promotion_use": false,
+  "original_v4_status": "invalid-for-product-promotion",
+  "reason": "The original runner enabled the optional benchmark guard without its required test roots. Candidate edits were therefore denied by the intended fail-closed behavior. The corrected replication disabled the guard to match the product default, but the preregistered replay policy did not authorize this non-infrastructure replay.",
+  "retained_evidence": "The original raw records remain a hash-frozen comparator. Corrected candidate records establish diagnostic noninferiority and efficiency only; neither run establishes quality uplift or stable promotion."
+}

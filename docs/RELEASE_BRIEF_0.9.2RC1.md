@@ -44,8 +44,47 @@ Machine-readable evidence is stored in
 [`v092-latency.json`](../benchmarks/v0.9-loop-replay/v092-latency.json), and
 [`v092-report.json`](../benchmarks/v0.9-loop-replay/v092-report.json).
 
-Paid Gate 1 is **NOT RUN** and requires separate explicit billable approval. Quality uplift remains
-unestablished, so v0.8.0 remains the stable release and v0.9.2-rc1 remains a prerelease.
+## Gate 1 and Corrected Replication
+
+Paid Gate 1 ran after explicit approval on 12 sealed external PR tasks under Sol/high and
+Terra/xhigh. The first complete 96-slot collection cannot support product promotion: its runner
+enabled `SUPER_SOL_BENCHMARK_GUARD=1` for candidate arms without supplying the required validated
+test roots. The product correctly failed closed and blocked production edits. Those candidate
+observations are retained only as a benchmark-guard stress test. The 48 raw records were unaffected
+and were frozen with SHA-256
+`70075acfda1f3d757ea055b5f8b853df3676c9f59ee82629d5b424d2be5be83d`.
+
+A mechanically corrected 48-slot candidate replication then disabled the optional guard, matching
+the default product configuration. It used the unchanged candidate, task pack, prompts, graders,
+models, and efforts, and paired against the frozen raw records. All 48 candidate slots completed
+normally and passed their hidden semantic graders. Audit checks found zero infrastructure
+censoring, contamination, test mutation, hidden-marker leakage, retained credentials, or missing
+telemetry.
+
+| Tier | Arm | Pass rate | Mean tokens | Token ratio vs raw | Mean time | Time ratio vs raw |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Sol/high | raw one-shot | 100% | 414,681 | 1.000 | 164.2 s | 1.000 |
+| Sol/high | safety-only | 100% | 347,973 | 0.839 | 151.4 s | 0.922 |
+| Sol/high | selective | 100% | 413,085 | 0.996 | 171.6 s | 1.045 |
+| Terra/xhigh | raw one-shot | 100% | 400,708 | 1.000 | 152.0 s | 1.000 |
+| Terra/xhigh | safety-only | 100% | 396,522 | 0.990 | 148.9 s | 0.980 |
+| Terra/xhigh | selective | 100% | 329,046 | 0.821 | 129.0 s | 0.849 |
+
+Safety-only passed every registered diagnostic noninferiority and 3% efficiency check in both
+tiers. It also removed the one exact-command loop heuristic observed in Sol raw. Selective was
+quality-neutral; it was efficient on Terra but exceeded the Sol wall-time threshold.
+
+These results do not establish quality uplift because every raw and candidate task passed. They also
+do not authorize stable promotion: the preregistered replay policy allowed replacement only for
+infrastructure-censored slots, not for a runner-configuration correction after task exposure. The
+candidate remains `v0.9.2-rc1`, and v0.8.0 remains the stable release. A stable v0.9.2 requires a
+new sealed task pack with enough raw failures to measure quality and no post-freeze protocol repair.
+
+Machine-readable evidence is stored in
+[`v092-gate1-corrected-report.json`](../benchmarks/v0.9-loop-replay/v092-gate1-corrected-report.json),
+[`v092-gate1-corrected-audit.json`](../benchmarks/v0.9-loop-replay/v092-gate1-corrected-audit.json),
+and
+[`v092-gate1-classification.json`](../benchmarks/v0.9-loop-replay/v092-gate1-classification.json).
 
 The frozen decision rules are in
 [`V0.9.2_PROMOTION_PROTOCOL.md`](V0.9.2_PROMOTION_PROTOCOL.md).

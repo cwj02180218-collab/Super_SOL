@@ -113,9 +113,17 @@ def test_v092_rc_versions_and_release_contract_are_consistent() -> None:
             "no model calls",
             "no retries",
             "quality uplift has not been established",
-            "prospective crossover has not run",
+            "corrected replication",
+            "v0.8.0 remains the stable release",
         ):
             assert expected in normalized
+
+    for artifact in (
+        "v092-gate1-classification.json",
+        "v092-gate1-corrected-audit.json",
+        "v092-gate1-corrected-report.json",
+    ):
+        assert (REPO_ROOT / "benchmarks" / "v0.9-loop-replay" / artifact).is_file()
 
     for expected in (
         "Gate 0",
