@@ -32,12 +32,16 @@ model switching, and no automatic subagents.
 The preserved v0.9.1 semantic behavior is available only for explicit experiments with
 `SUPER_SOL_QUALITY_MODE=selective`. Controlled clean-room evaluations can set
 `SUPER_SOL_BENCHMARK_GUARD=1` with validated repository-relative test roots; normal sessions do not
-block test edits. Quality uplift has not been established, and the prospective crossover has not
-run. v0.8.0 is the stable release.
+block test edits. Quality uplift has not been established. A 96-slot corrected replication found
+100% hidden-semantic pass rates in every arm. Safety-only matched raw quality while using 0.839x
+tokens and 0.922x wall time on Sol/high, and 0.990x tokens and 0.980x wall time on Terra/xhigh.
+The run is diagnostic rather than promotion evidence because it corrected a runner configuration
+after the frozen tasks had already been exposed. v0.8.0 remains the stable release.
 
 The package keeps release assets under `fablized_sol/_release/v0_9/`. Promotion rules are frozen in
 [`V0.9.2_PROMOTION_PROTOCOL.md`](docs/V0.9.2_PROMOTION_PROTOCOL.md), and observed candidate evidence
-is recorded in [`RELEASE_BRIEF_0.9.2RC1.md`](docs/RELEASE_BRIEF_0.9.2RC1.md).
+is recorded in [`RELEASE_BRIEF_0.9.2RC1.md`](docs/RELEASE_BRIEF_0.9.2RC1.md). Machine-readable
+corrected-replication evidence is stored under `benchmarks/v0.9-loop-replay/v092-gate1-*`.
 
 ## v0.9.1-rc1 Selective Verification prerelease
 

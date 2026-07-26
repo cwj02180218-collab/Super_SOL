@@ -1,0 +1,29 @@
+{
+  "candidate_records": 48,
+  "checks": {
+    "all_hidden_graders_completed": true,
+    "all_slots_completed_normally": true,
+    "all_slots_full_pass": true,
+    "all_telemetry_present": true,
+    "benchmark_guard_disabled": true,
+    "candidate_record_count_48": true,
+    "exactly_one_super_sol_manifest_per_slot": true,
+    "not_marked_as_promotion_evidence": true,
+    "raw_reference_count_48": true,
+    "raw_reference_hash_frozen": true,
+    "schedule_exact": true,
+    "zero_auth_files": true,
+    "zero_contamination": true,
+    "zero_infrastructure_censoring": true,
+    "zero_private_marker_leaks": true,
+    "zero_retained_case_directories": true,
+    "zero_secret_hits": true,
+    "zero_test_mutation": true
+  },
+  "passed": true,
+  "preregistration_sha256": "e1f59d9057959a867eb65fc24471f5a562b9635ef79bbe1dd96c6b83152ca72e",
+  "private_marker_hits": [],
+  "protocol": "super-sol-v0.9.2-corrected-replication-v1",
+  "raw_reference_sha256": "70075acfda1f3d757ea055b5f8b853df3676c9f59ee82629d5b424d2be5be83d",
+  "secret_hits": []
+}
