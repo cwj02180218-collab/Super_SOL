@@ -87,6 +87,12 @@ RELEASE_ASSET_MAP = {
     ),
     "plugins/super-sol/hooks/__init__.py": f"{WHEEL_ASSET_ROOT}/plugin/hooks/__init__.py",
     "plugins/super-sol/hooks/hooks.json": f"{WHEEL_ASSET_ROOT}/plugin/hooks/hooks.json",
+    "plugins/super-sol/hooks/super_sol_audit.py": (
+        f"{WHEEL_ASSET_ROOT}/plugin/hooks/super_sol_audit.py"
+    ),
+    "plugins/super-sol/hooks/super_sol_benchmark_guard.py": (
+        f"{WHEEL_ASSET_ROOT}/plugin/hooks/super_sol_benchmark_guard.py"
+    ),
     "plugins/super-sol/hooks/prompt_dispatcher.py": (
         f"{WHEEL_ASSET_ROOT}/plugin/hooks/prompt_dispatcher.py"
     ),
@@ -110,6 +116,9 @@ RELEASE_ASSET_MAP = {
     ),
     "plugins/super-sol/hooks/super_sol_loop_validation.py": (
         f"{WHEEL_ASSET_ROOT}/plugin/hooks/super_sol_loop_validation.py"
+    ),
+    "plugins/super-sol/hooks/super_sol_modes.py": (
+        f"{WHEEL_ASSET_ROOT}/plugin/hooks/super_sol_modes.py"
     ),
     "plugins/super-sol/hooks/super_sol_prompt_hook.py": (
         f"{WHEEL_ASSET_ROOT}/plugin/hooks/super_sol_prompt_hook.py"
@@ -138,8 +147,8 @@ RELEASE_ASSET_MAP = {
             "v09_loop_sequences.json",
         )
     },
-    "docs/V0.9.1_PROMOTION_PROTOCOL.md": (f"{WHEEL_ASSET_ROOT}/docs/V0.9.1_PROMOTION_PROTOCOL.md"),
-    "docs/RELEASE_BRIEF_0.9.1RC1.md": (f"{WHEEL_ASSET_ROOT}/docs/RELEASE_BRIEF_0.9.1RC1.md"),
+    "docs/V0.9.2_PROMOTION_PROTOCOL.md": (f"{WHEEL_ASSET_ROOT}/docs/V0.9.2_PROMOTION_PROTOCOL.md"),
+    "docs/RELEASE_BRIEF_0.9.2RC1.md": (f"{WHEEL_ASSET_ROOT}/docs/RELEASE_BRIEF_0.9.2RC1.md"),
     "benchmarks/v0.9-loop-replay/README.md": (
         f"{WHEEL_ASSET_ROOT}/benchmarks/v0.9-loop-replay/README.md"
     ),
@@ -164,8 +173,8 @@ def fresh_archives(output_dir: Path) -> tuple[Path, Path]:
         text=True,
     )
     assert completed.returncode == 0, completed.stderr
-    sdists = tuple(output_dir.glob("super_sol_harness-0.9.1rc1.tar.gz"))
-    wheels = tuple(output_dir.glob("super_sol_harness-0.9.1rc1-py3-none-any.whl"))
+    sdists = tuple(output_dir.glob("super_sol_harness-0.9.2rc1.tar.gz"))
+    wheels = tuple(output_dir.glob("super_sol_harness-0.9.2rc1-py3-none-any.whl"))
     assert len(sdists) == len(wheels) == 1
     return sdists[0], wheels[0]
 

@@ -20,7 +20,7 @@ def test_plugin_manifest_and_marketplace_are_release_ready() -> None:
     marketplace = _json(REPO_ROOT / ".agents" / "plugins" / "marketplace.json")
 
     assert manifest["name"] == "super-sol"
-    assert manifest["version"] == "0.9.1-rc1"
+    assert manifest["version"] == "0.9.2-rc1"
     assert manifest["repository"] == "https://github.com/cwj02180218-collab/Super_SOL"
     assert "mcpServers" not in manifest
     assert "apps" not in manifest
@@ -29,9 +29,9 @@ def test_plugin_manifest_and_marketplace_are_release_ready() -> None:
     long_description = interface["longDescription"]
     assert isinstance(long_description, str)
     for expected in (
-        "`gpt-5.6-sol`과 `gpt-5.6-terra`에서 선택적 의미 개입",
-        "그 외 모델은 observation-only",
+        "기본 모드는 model-visible 품질 지시 없이",
         "루프 퓨즈는 `gpt-5.6-sol` 전용",
+        "벤치마크 테스트 보호는 명시적 opt-in",
         "추가 model/API call, 모델 전환, 자동 재시도는 없습니다.",
     ):
         assert expected in long_description
@@ -86,15 +86,15 @@ def test_hook_config_registers_only_local_python_commands() -> None:
     assert (PLUGIN_ROOT / "hooks" / "prompt_dispatcher.py").is_file()
 
 
-def test_v091_rc_versions_and_release_contract_are_consistent() -> None:
+def test_v092_rc_versions_and_release_contract_are_consistent() -> None:
     project = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     manifest = _json(PLUGIN_ROOT / ".codex-plugin" / "plugin.json")
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-    brief_path = REPO_ROOT / "docs" / "RELEASE_BRIEF_0.9.1RC1.md"
-    protocol_path = REPO_ROOT / "docs" / "V0.9.1_PROMOTION_PROTOCOL.md"
+    brief_path = REPO_ROOT / "docs" / "RELEASE_BRIEF_0.9.2RC1.md"
+    protocol_path = REPO_ROOT / "docs" / "V0.9.2_PROMOTION_PROTOCOL.md"
 
-    assert project["project"]["version"] == "0.9.1rc1"
-    assert manifest["version"] == "0.9.1-rc1"
+    assert project["project"]["version"] == "0.9.2rc1"
+    assert manifest["version"] == "0.9.2-rc1"
     assert brief_path.is_file()
     assert protocol_path.is_file()
     brief = brief_path.read_text(encoding="utf-8")
@@ -104,25 +104,25 @@ def test_v091_rc_versions_and_release_contract_are_consistent() -> None:
     for document in (readme, brief):
         normalized = " ".join(document.casefold().split())
         for expected in (
-            "v0.9.1-rc1",
+            "v0.9.2-rc1",
             "gpt-5.6-sol",
-            "gpt-5.6-terra",
-            "selective semantic intervention",
-            "two successful distinct edits",
-            "one prompt context",
-            "one evidence context",
+            "safety and evidence",
+            "super_sol_quality_mode=selective",
+            "super_sol_benchmark_guard=1",
+            "no default quality context",
             "no model calls",
             "no retries",
             "quality uplift has not been established",
-            "240 valid slots have not run",
+            "prospective crossover has not run",
         ):
             assert expected in normalized
 
     for expected in (
         "Gate 0",
         "Gate 1",
-        "30 new tasks",
-        "240 valid slots",
+        "raw same-budget retry",
+        "safety-only",
+        "experimental selective",
         "Sol/high",
         "Terra/xhigh",
         "fresh homes",
@@ -130,9 +130,9 @@ def test_v091_rc_versions_and_release_contract_are_consistent() -> None:
         "mean paired score delta at least 0",
         "task-clustered 95% CI lower bound at least -2",
         "token ratio at most 1.03",
-        "wall-time ratio at most 1.05",
+        "wall-time ratio at most 1.03",
         "zero contamination",
-        "quality uplift requires",
+        "zero benign-replay false denials",
         "separate explicit billable approval",
     ):
         assert expected in normalized_protocol
