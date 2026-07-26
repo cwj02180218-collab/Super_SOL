@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import time
+from contextlib import suppress
 from typing import TYPE_CHECKING, cast
 
+from super_sol_audit import record_incident
 from super_sol_commands import CommandKind, classify_command, command_text
 from super_sol_loop_policy import (
     FuseAction,
@@ -16,6 +18,7 @@ from super_sol_loop_policy import (
     on_subagent_stop,
 )
 from super_sol_loop_state import LoopLedger, keyed_fingerprint, mutate_loop_ledger
+from super_sol_modes import QualityMode, quality_mode
 from super_sol_prompt_hook import model_profile
 from super_sol_state import claim_context, turn_root
 
@@ -121,11 +124,31 @@ def _deny(reason: str | None) -> dict[str, object]:
 
 
 def _response(event: str, root: Path, decision: FuseDecision) -> dict[str, object] | None:
-    if decision.action is FuseAction.BLOCK_ACTION:
-        return _deny(decision.reason)
-    if decision.action is FuseAction.STOP_TURN and decision.reason is not None:
-        return {"continue": False, "stopReason": decision.reason}
-    if decision.action is FuseAction.WARN_ONCE and claim_context(root, "evidence"):
+    action = decision.action
+    reason = decision.reason
+    audit_decision = {
+        FuseAction.BLOCK_ACTION: "deny",
+        FuseAction.STOP_TURN: "stop",
+        FuseAction.WARN_ONCE: "warn",
+    }.get(action)
+    if audit_decision is not None and reason is not None:
+        with suppress(OSError, TimeoutError, TypeError, ValueError):
+            _ = record_incident(
+                root,
+                event=event,
+                reason=reason,
+                decision=audit_decision,
+                observed_at=time.time_ns(),
+            )
+    if action is FuseAction.BLOCK_ACTION:
+        return _deny(reason)
+    if action is FuseAction.STOP_TURN and reason is not None:
+        return {"continue": False, "stopReason": reason}
+    if (
+        action is FuseAction.WARN_ONCE
+        and quality_mode() is QualityMode.SELECTIVE
+        and claim_context(root, "evidence")
+    ):
         return {
             "hookSpecificOutput": {"hookEventName": event, "additionalContext": _WARNINGS[event]}
         }
