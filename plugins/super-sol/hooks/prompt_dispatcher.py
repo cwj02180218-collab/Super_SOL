@@ -7,6 +7,7 @@ import os
 import sys
 import unicodedata
 from collections.abc import Callable  # noqa: TC003
+from typing import cast
 
 _MAX_INPUT_BYTES = 1_048_576
 _SECRET_MATCH_LENGTH = 23
@@ -195,7 +196,7 @@ def _environment_value(environment: object, key: str) -> str | None:
     if environment is os.environ:
         return os.environ.get(key)
     if isinstance(environment, dict):
-        value = environment.get(key)
+        value = cast("dict[object, object]", environment).get(key)
         return value if isinstance(value, str) else None
     return None
 

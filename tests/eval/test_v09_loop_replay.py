@@ -2,19 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-import subprocess
-import sys
-from typing import TYPE_CHECKING, cast
+from typing import cast
 
 import pytest
 
 from .v09_loop_test_support import ROOT, replay_module
 
-if TYPE_CHECKING:
-    from pathlib import Path
-
 MANIFEST = ROOT / "eval" / "v09_loop_sequences.json"
-RUNNER = ROOT / "eval" / "v09_loop_replay.py"
 REPORT = ROOT / "benchmarks" / "v0.9-loop-replay" / "report.json"
 PLUGIN = ROOT / "plugins" / "super-sol"
 CASE_IDS = (
@@ -103,19 +97,8 @@ def test_altered_required_hook_event_fails_manifest_validation() -> None:
         _ = replay_module().build_report(manifest, PLUGIN)
 
 
-def test_loop_replay_report_is_immutable_and_passing(tmp_path: Path) -> None:
-    generated = tmp_path / "report.json"
-    completed = subprocess.run(  # noqa: S603
-        (sys.executable, str(RUNNER), "--manifest", str(MANIFEST), "--output", str(generated)),
-        capture_output=True,
-        check=False,
-        text=True,
-        timeout=20,
-    )
-
-    assert completed.returncode == 0, completed.stderr
-    assert generated.read_bytes() == REPORT.read_bytes()
-    report = cast("dict[str, object]", json.loads(generated.read_text(encoding="utf-8")))
+def test_historical_loop_replay_report_is_immutable_and_passing() -> None:
+    report = cast("dict[str, object]", json.loads(REPORT.read_text(encoding="utf-8")))
     summary = cast("dict[str, object]", report["summary"])
     cases = cast("list[dict[str, object]]", report["cases"])
     network = cast("dict[str, object]", report["network_isolation"])

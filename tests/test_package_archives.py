@@ -33,8 +33,10 @@ def test_sdist_uses_an_explicit_source_allowlist() -> None:
         "/SECURITY.md",
         "/benchmarks/v0.9-loop-replay/README.md",
         "/benchmarks/v0.9-loop-replay/report.json",
+        "/benchmarks/v0.9-loop-replay/v092-report.json",
         "/docs",
         "/eval/v09_loop*",
+        "/eval/v092_loop_sequences.json",
         "/pyproject.toml",
         "/plugins/super-sol/.codex-plugin/plugin.json",
         "/plugins/super-sol/hooks",
@@ -67,6 +69,7 @@ def test_fresh_wheel_and_sdist_contain_only_publishable_v092_assets(tmp_path: Pa
     allowed_benchmarks = {
         "benchmarks/v0.9-loop-replay/README.md",
         "benchmarks/v0.9-loop-replay/report.json",
+        "benchmarks/v0.9-loop-replay/v092-report.json",
     }
 
     assert set(RELEASE_ASSET_MAP) <= sdist_members

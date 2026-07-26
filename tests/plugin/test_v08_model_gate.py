@@ -149,11 +149,11 @@ def test_forced_terra_prompt_emits_bounded_context(
             model="gpt-5.6-terra",
             prompt="Fix concurrent refresh cancellation and race conditions",
         ),
-            {
-                "SUPER_SOL_DIAGNOSTIC_MODE": "forced",
-                "SUPER_SOL_FORCED_ROUTE": "failure_atomicity",
-                "SUPER_SOL_QUALITY_MODE": "selective",
-            },
+        {
+            "SUPER_SOL_DIAGNOSTIC_MODE": "forced",
+            "SUPER_SOL_FORCED_ROUTE": "failure_atomicity",
+            "SUPER_SOL_QUALITY_MODE": "selective",
+        },
     )
 
     assert _context(result.stdout) == context_for(Route.FAILURE_ATOMICITY)

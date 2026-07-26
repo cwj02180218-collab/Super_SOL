@@ -147,6 +147,7 @@ RELEASE_ASSET_MAP = {
             "v09_loop_sequences.json",
         )
     },
+    "eval/v092_loop_sequences.json": f"{WHEEL_ASSET_ROOT}/eval/v092_loop_sequences.json",
     "docs/V0.9.2_PROMOTION_PROTOCOL.md": (f"{WHEEL_ASSET_ROOT}/docs/V0.9.2_PROMOTION_PROTOCOL.md"),
     "docs/RELEASE_BRIEF_0.9.2RC1.md": (f"{WHEEL_ASSET_ROOT}/docs/RELEASE_BRIEF_0.9.2RC1.md"),
     "benchmarks/v0.9-loop-replay/README.md": (
@@ -154,6 +155,9 @@ RELEASE_ASSET_MAP = {
     ),
     "benchmarks/v0.9-loop-replay/report.json": (
         f"{WHEEL_ASSET_ROOT}/benchmarks/v0.9-loop-replay/report.json"
+    ),
+    "benchmarks/v0.9-loop-replay/v092-report.json": (
+        f"{WHEEL_ASSET_ROOT}/benchmarks/v0.9-loop-replay/v092-report.json"
     ),
 }
 

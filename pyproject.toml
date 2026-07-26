@@ -67,10 +67,12 @@ packages = ["src/fablized_sol"]
 "eval/v09_loop_runtime.py" = "fablized_sol/_release/v0_9/eval/v09_loop_runtime.py"
 "eval/v09_loop_seccomp.py" = "fablized_sol/_release/v0_9/eval/v09_loop_seccomp.py"
 "eval/v09_loop_sequences.json" = "fablized_sol/_release/v0_9/eval/v09_loop_sequences.json"
+"eval/v092_loop_sequences.json" = "fablized_sol/_release/v0_9/eval/v092_loop_sequences.json"
 "docs/V0.9.2_PROMOTION_PROTOCOL.md" = "fablized_sol/_release/v0_9/docs/V0.9.2_PROMOTION_PROTOCOL.md"
 "docs/RELEASE_BRIEF_0.9.2RC1.md" = "fablized_sol/_release/v0_9/docs/RELEASE_BRIEF_0.9.2RC1.md"
 "benchmarks/v0.9-loop-replay/README.md" = "fablized_sol/_release/v0_9/benchmarks/v0.9-loop-replay/README.md"
 "benchmarks/v0.9-loop-replay/report.json" = "fablized_sol/_release/v0_9/benchmarks/v0.9-loop-replay/report.json"
+"benchmarks/v0.9-loop-replay/v092-report.json" = "fablized_sol/_release/v0_9/benchmarks/v0.9-loop-replay/v092-report.json"
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -84,8 +86,10 @@ include = [
   "/SECURITY.md",
   "/benchmarks/v0.9-loop-replay/README.md",
   "/benchmarks/v0.9-loop-replay/report.json",
+  "/benchmarks/v0.9-loop-replay/v092-report.json",
   "/docs",
   "/eval/v09_loop*",
+  "/eval/v092_loop_sequences.json",
   "/pyproject.toml",
   "/plugins/super-sol/.codex-plugin/plugin.json",
   "/plugins/super-sol/hooks",
