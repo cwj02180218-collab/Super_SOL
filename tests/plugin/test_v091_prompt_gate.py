@@ -5,7 +5,9 @@ import pytest
 from pydantic import JsonValue
 from super_sol_routes import Route, context_for, route_prompt
 
-from .conftest import HookRunner, hook_input
+from .conftest import HookEnvironmentRunner, HookRunner, hook_input
+
+_SELECTIVE = {"SUPER_SOL_QUALITY_MODE": "selective"}
 
 
 def _context(output: dict[str, JsonValue] | None) -> str | None:
@@ -30,31 +32,33 @@ def _state_payloads(plugin_data: Path) -> list[dict[str, object]]:
     ],
 )
 def test_high_confidence_routes_are_active_for_exact_profiles(
-    run_hook: HookRunner,
+    run_hook_with_env: HookEnvironmentRunner,
     model: str,
     turn_id: str,
 ) -> None:
-    result = run_hook(
+    result = run_hook_with_env(
         hook_input(
             "UserPromptSubmit",
             model=model,
             turn_id=turn_id,
             prompt="Fix concurrent refresh cancellation and race conditions",
-        )
+        ),
+        _SELECTIVE,
     )
 
     assert _context(result.stdout) == context_for(Route.CONCURRENCY_STATE)
 
 
 def test_ambiguous_action_is_silent_but_persists_action_marker(
-    run_hook: HookRunner,
+    run_hook_with_env: HookEnvironmentRunner,
     plugin_data: Path,
 ) -> None:
-    result = run_hook(
+    result = run_hook_with_env(
         hook_input(
             "UserPromptSubmit",
             prompt="Add path traversal protection and migrate schema versions",
-        )
+        ),
+        _SELECTIVE,
     )
 
     assert result.stdout is None
@@ -63,15 +67,17 @@ def test_ambiguous_action_is_silent_but_persists_action_marker(
     assert state["effective_route"] == "pass_through"
 
 
-def test_same_prompt_turn_claim_emits_once(run_hook: HookRunner) -> None:
+def test_same_prompt_turn_claim_emits_once(
+    run_hook_with_env: HookEnvironmentRunner,
+) -> None:
     payload = hook_input(
         "UserPromptSubmit",
         turn_id="duplicate-prompt-turn",
         prompt="Fix concurrent refresh cancellation and race conditions",
     )
 
-    first = run_hook(payload)
-    second = run_hook(payload)
+    first = run_hook_with_env(payload, _SELECTIVE)
+    second = run_hook_with_env(payload, _SELECTIVE)
 
     assert _context(first.stdout) == context_for(Route.CONCURRENCY_STATE)
     assert second.stdout is None

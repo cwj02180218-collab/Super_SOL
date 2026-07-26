@@ -6,6 +6,7 @@ import os
 import re
 import time
 
+from super_sol_modes import QualityMode, quality_mode
 from super_sol_routes import Route, context_for, route_prompt
 from super_sol_state import claim_context, turn_root, write_private_json
 
@@ -95,8 +96,10 @@ def process_prompt(payload: dict[str, object]) -> dict[str, object] | None:  # n
     decision = route_prompt(prompt)
     diagnostic_mode, forced_route, diagnostic_warning = _diagnostic_control()
     profile = model_profile(payload)
+    selected_quality_mode = quality_mode()
+    semantic_enabled = selected_quality_mode is QualityMode.SELECTIVE
     effective_route = Route.PASS_THROUGH
-    if profile in _ACTIVE_PROFILES:
+    if semantic_enabled and profile in _ACTIVE_PROFILES:
         if diagnostic_mode == "observe":
             effective_route = Route.PASS_THROUGH
         elif diagnostic_mode == "forced" and forced_route is not None:
@@ -107,11 +110,12 @@ def process_prompt(payload: dict[str, object]) -> dict[str, object] | None:  # n
     billable_authorized = _billable_authorized(prompt)
     should_persist = (
         billable_authorized
-        or decision.actionable
-        or decision.contract is not None
-        or decision.forced
         or diagnostic_mode != "adaptive"
         or diagnostic_warning is not None
+        or (
+            semantic_enabled
+            and (decision.actionable or decision.contract is not None or decision.forced)
+        )
     )
     if root is not None and should_persist:
         private_state: dict[str, object] = {
@@ -123,6 +127,7 @@ def process_prompt(payload: dict[str, object]) -> dict[str, object] | None:  # n
             "forced": decision.forced or diagnostic_mode == "forced",
             "natural_route": decision.route.value,
             "primary_contract": decision.contract.value if decision.contract is not None else None,
+            "quality_mode": selected_quality_mode.value,
             "schema_version": _SCHEMA_VERSION,
             "signal_ids": list(decision.signal_ids),
         }
@@ -136,6 +141,7 @@ def process_prompt(payload: dict[str, object]) -> dict[str, object] | None:  # n
     context = context_for(effective_route)
     if (
         context is not None
+        and semantic_enabled
         and profile in _ACTIVE_PROFILES
         and (root is None or not claim_context(root, "prompt"))
     ):

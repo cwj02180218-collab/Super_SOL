@@ -15,6 +15,12 @@ _RATE_LIMIT_PHRASES: Final = (
     "session limit",
     "too many requests",
 )
+_TRANSIENT_PROVIDER_PHRASES: Final = (
+    "biscuit_baker_service_me_circuit_open",
+    "concurrency_limit",
+    "service unavailable due to high demand",
+    "stream disconnected before completion",
+)
 _PROVIDER_ERROR_EVENTS: Final = {"error", "turn.failed"}
 
 
@@ -22,6 +28,7 @@ class InfrastructureKind(StrEnum):
     """Why one Codex process cannot produce a benchmark sample."""
 
     RATE_LIMIT = "rate_limit"
+    TRANSIENT_PROVIDER = "transient_provider"
     NONZERO_EXIT = "nonzero_exit"
     INVALID_JSONL = "invalid_jsonl"
     INVALID_EVENT = "invalid_event"
@@ -76,7 +83,7 @@ def _failure(kind: InfrastructureKind) -> CodexInfrastructureFailure:
     return CodexInfrastructureFailure(kind=kind)
 
 
-def parse_codex_capture(  # noqa: C901, PLR0911 - explicit fail-closed state machine
+def parse_codex_capture(  # noqa: C901, PLR0911, PLR0912 - explicit fail-closed state machine
     stdout: str, stderr: str, returncode: int
 ) -> CodexTelemetryResult:
     """Parse exactly one terminal turn or return a typed infrastructure-missing result."""
@@ -84,6 +91,8 @@ def parse_codex_capture(  # noqa: C901, PLR0911 - explicit fail-closed state mac
     if returncode != 0:
         if any(phrase in diagnostics for phrase in _RATE_LIMIT_PHRASES):
             return _failure(InfrastructureKind.RATE_LIMIT)
+        if any(phrase in diagnostics for phrase in _TRANSIENT_PROVIDER_PHRASES):
+            return _failure(InfrastructureKind.TRANSIENT_PROVIDER)
         return _failure(InfrastructureKind.NONZERO_EXIT)
 
     completed: list[dict[str, JsonValue]] = []

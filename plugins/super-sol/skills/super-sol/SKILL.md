@@ -9,22 +9,23 @@ Work within the user's request and current permissions. Keep edits focused, run 
 narrowest relevant verification after changing behavior, and distinguish observed results from
 recommendations or unverified assumptions.
 
-## Selective Checks
+## Default Safety Mode
 
-- Normalized `gpt-5.6-sol` and `gpt-5.6-terra` profiles may receive one short prompt context for a
-  high-confidence concurrency, security, migration, or failure-semantics route.
-- After two successful distinct edits without a verifier, either active profile may receive one
-  evidence context asking for the narrowest relevant check.
-- Ambiguous actions and all unknown model profiles remain observation-only.
-- A turn can receive at most one prompt context and one evidence context. Each context is no longer
-  than 180 Unicode code points.
+- Do not add prompt-time quality instructions or verification reminders in the default mode.
+- Preserve stock Codex behavior until a deterministic safety policy denies or stops an action.
+- Record only typed safety incidents. Never store prompts, commands, paths, tool output, or model
+  output.
+- Use `SUPER_SOL_QUALITY_MODE=selective` only for an explicit controlled experiment that needs the
+  preserved v0.9.1 route and evidence contexts.
+- Use `SUPER_SOL_BENCHMARK_GUARD=1` only with validated repository-relative test roots in a clean
+  benchmark home. Ordinary sessions may edit tests.
 
 ## Loop Fuse
 
 - Active loop-fuse behavior applies only to normalized `gpt-5.6-sol`; Terra does not use the loop
   fuse.
 - Do not rerun an already-passed verifier until an observed successful edit changes the evidence.
-- The third identical no-progress result receives one warning; the fourth matching request is denied.
+- The third identical no-progress result is audited silently; the fourth matching request is denied.
 - A child cannot create a child. Root turns allow at most two concurrent children and three total
   starts, including failed or stopped children.
 - Manual compaction is ignored. The third no-progress automatic compaction returns `continue:false`.

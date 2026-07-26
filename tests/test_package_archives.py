@@ -33,8 +33,10 @@ def test_sdist_uses_an_explicit_source_allowlist() -> None:
         "/SECURITY.md",
         "/benchmarks/v0.9-loop-replay/README.md",
         "/benchmarks/v0.9-loop-replay/report.json",
+        "/benchmarks/v0.9-loop-replay/v092-report.json",
         "/docs",
         "/eval/v09_loop*",
+        "/eval/v092_loop_sequences.json",
         "/pyproject.toml",
         "/plugins/super-sol/.codex-plugin/plugin.json",
         "/plugins/super-sol/hooks",
@@ -45,7 +47,7 @@ def test_sdist_uses_an_explicit_source_allowlist() -> None:
     }
 
 
-def test_v091_wheel_release_assets_use_an_explicit_stable_mapping() -> None:
+def test_v092_wheel_release_assets_use_an_explicit_stable_mapping() -> None:
     with Path("pyproject.toml").open("rb") as stream:
         configuration = JSON_OBJECT_ADAPTER.validate_python(load(stream))
     tool = nested_object(configuration["tool"], "tool")
@@ -61,12 +63,13 @@ def test_v091_wheel_release_assets_use_an_explicit_stable_mapping() -> None:
     assert all(Path(source).is_file() for source in force_include)
 
 
-def test_fresh_wheel_and_sdist_contain_only_publishable_v091_assets(tmp_path: Path) -> None:
+def test_fresh_wheel_and_sdist_contain_only_publishable_v092_assets(tmp_path: Path) -> None:
     sdist, wheel = fresh_archives(tmp_path)
     sdist_members, wheel_members = archive_members(sdist, wheel)
     allowed_benchmarks = {
         "benchmarks/v0.9-loop-replay/README.md",
         "benchmarks/v0.9-loop-replay/report.json",
+        "benchmarks/v0.9-loop-replay/v092-report.json",
     }
 
     assert set(RELEASE_ASSET_MAP) <= sdist_members
