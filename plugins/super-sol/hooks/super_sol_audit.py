@@ -21,6 +21,8 @@ _REASONS = frozenset(
         "loop_fuse_tool_replay",
         "loop_fuse_total_agent_budget",
         "loop_fuse_verifier_replay",
+        "benchmark_guard_invalid_target",
+        "benchmark_guard_test_mutation",
     }
 )
 

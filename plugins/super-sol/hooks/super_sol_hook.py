@@ -4,12 +4,42 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 
 _MAX_INPUT_BYTES = 1_048_576
 
 
 def _warning(message: str) -> dict[str, object]:
     return {"continue": True, "systemMessage": f"Super SOL: {message}"}
+
+
+def _benchmark_guard(payload: dict[str, object]) -> dict[str, object] | None:
+    from super_sol_benchmark_guard import benchmark_guard_decision  # noqa: PLC0415
+
+    decision = benchmark_guard_decision(payload)
+    if not decision.deny or decision.reason is None:
+        return None
+    from super_sol_audit import record_incident  # noqa: PLC0415
+    from super_sol_state import turn_root  # noqa: PLC0415
+
+    root = turn_root(payload)
+    if root is not None:
+        _ = record_incident(
+            root,
+            event="PreToolUse",
+            reason=decision.reason,
+            decision="deny",
+            observed_at=time.time_ns(),
+        )
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "PreToolUse",
+            "permissionDecision": "deny",
+            "permissionDecisionReason": (
+                "벤치마크 무결성 보호로 이 편집을 차단했습니다. 제품 코드만 수정하세요."
+            ),
+        }
+    }
 
 
 def _decode_object(raw: bytes) -> dict[str, object] | None:
@@ -30,7 +60,11 @@ def _dispatch(payload: dict[str, object]) -> dict[str, object] | None:  # noqa: 
         from super_sol_loop_hook import process_pre_tool  # noqa: PLC0415
         from super_sol_state import load_state  # noqa: PLC0415
 
-        return billable_pre_tool(payload, load_state(payload) or {}) or process_pre_tool(payload)
+        return (
+            _benchmark_guard(payload)
+            or billable_pre_tool(payload, load_state(payload) or {})
+            or process_pre_tool(payload)
+        )
     if event == "PostToolUse":
         from super_sol_evidence_hook import process_evidence  # noqa: PLC0415
         from super_sol_loop_hook import process_post_tool  # noqa: PLC0415
