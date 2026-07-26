@@ -1,0 +1,79 @@
+{
+  "schema": "super-sol-v092-gate0/v1",
+  "candidate_commit": "8092adf6ef916e2a5d43e2cf917c67ba71bbc1d1",
+  "passed": true,
+  "commands": [
+    {
+      "command": "uv sync --locked --dev",
+      "exit_code": 0
+    },
+    {
+      "command": "uv run ruff format --check .",
+      "exit_code": 0,
+      "files_checked": 156
+    },
+    {
+      "command": "uv run ruff check .",
+      "exit_code": 0
+    },
+    {
+      "command": "uv run basedpyright",
+      "errors": 0,
+      "exit_code": 0,
+      "warnings": 0
+    },
+    {
+      "command": "uv run pytest --cov=src --cov=plugins/super-sol/hooks --cov-report=term --cov-fail-under=90 -q",
+      "coverage_percent": 90.84,
+      "duration_seconds": 48.03,
+      "exit_code": 0,
+      "tests_failed": 0,
+      "tests_passed": 500
+    },
+    {
+      "command": "uv build",
+      "exit_code": 0
+    },
+    {
+      "command": "uv run super-sol-hook-latency --plugin-root plugins/super-sol --output benchmarks/v0.9-loop-replay/v092-latency.json",
+      "exit_code": 0
+    },
+    {
+      "command": "uv run python eval/v09_loop_replay.py --manifest eval/v092_loop_sequences.json --output benchmarks/v0.9-loop-replay/v092-report.json",
+      "exit_code": 0
+    },
+    {
+      "command": "uv run super-sol-container-audit --repo-root . --sbom-dir security/sbom",
+      "exit_code": 0,
+      "grader_vulnerabilities": 0,
+      "verifier_vulnerabilities": 0
+    }
+  ],
+  "artifacts": {
+    "dependency_lock_sha256": "ebb6e45cb92a10f6dfd0559fbf6e17c522ec6d242027106ec081b19c0d707ac2",
+    "grader_sbom_sha256": "1364024119c0ca2df8593049e2d878b371cdc72a4c54e208d0b9adbcd27b61b0",
+    "latency_sha256": "c73d91f0bf0ade014bd6b0bc2f1ba188cf3803e3c66f82a4d295d7803634f8a4",
+    "manifest_sha256": "31676cec3a5a1dd38364632997a332c86a257f4dab5a9e810857f29abe615a24",
+    "plugin_manifest_sha256": "5c36fb6e78b42f3d2091aea83ed14e52479c0b5dd3ca4130f562dd0241febdc3",
+    "plugin_tree_sha256": "bda8262319d8b7c9db8abd41eaa915045f6e478e14037542c6bd1f9deec0166c",
+    "replay_report_sha256": "c80102533e25dee9d1181df90285d5a6e3c3abf8aa41836571c201b095aadae8",
+    "sdist_sha256": "3bc8366db058819f364a7de15108e9a6ba7cfca30f60a7400792507037d11a88",
+    "verifier_sbom_sha256": "849553c5930279c4ea2ab9c0b725572be6950cce17eef5f7d17cd7b9b0c644a1",
+    "wheel_sha256": "91ffd5a2c07606ce1474a6f75d84932cc864266a78cbf78f50642b78bd9a6261"
+  },
+  "latency": {
+    "absolute_p95_ms": 88.03094197646716,
+    "absolute_threshold_ms": 100.0,
+    "floor_samples": 150,
+    "hook_samples": 300,
+    "incremental_p95_ms": 59.81898153549992,
+    "incremental_threshold_ms": 70.0,
+    "passed": true
+  },
+  "source_size_audit": {
+    "legacy_files_over_250_ncnb_lines": 12,
+    "new_v092_production_files_over_250_ncnb_lines": 0,
+    "status": "legacy_debt_disclosed"
+  },
+  "paid_prospective_crossover": "NOT RUN"
+}

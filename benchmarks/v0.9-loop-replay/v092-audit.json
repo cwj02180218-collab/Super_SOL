@@ -1,0 +1,51 @@
+{
+  "schema": "super-sol-v092-audit/v1",
+  "candidate_commit": "8092adf6ef916e2a5d43e2cf917c67ba71bbc1d1",
+  "passed": true,
+  "billable_calls": 0,
+  "default_mode": {
+    "model_visible_quality_contexts_on_benign_replay": 0,
+    "model_visible_quality_contexts_on_soft_warning": 0,
+    "quality_mode": "safety",
+    "selective_opt_in": "SUPER_SOL_QUALITY_MODE=selective"
+  },
+  "hook_inventory": [
+    "PostCompact",
+    "PostToolUse",
+    "PreCompact",
+    "PreToolUse",
+    "SubagentStart",
+    "SubagentStop",
+    "UserPromptSubmit"
+  ],
+  "replay": {
+    "failed": 0,
+    "manifest_sha256": "31676cec3a5a1dd38364632997a332c86a257f4dab5a9e810857f29abe615a24",
+    "network_calls": 0,
+    "passed": 12,
+    "plugin_tree_sha256": "bda8262319d8b7c9db8abd41eaa915045f6e478e14037542c6bd1f9deec0166c",
+    "successful_network_calls": 0,
+    "total": 12,
+    "unexpected_contexts": 0
+  },
+  "privacy": {
+    "audit_event_limit_per_turn": 64,
+    "benchmark_guard_is_opt_in": true,
+    "credential_environment_forwarded": false,
+    "hidden_test_content_persisted": false,
+    "production_secret_scan_findings": 0,
+    "raw_command_persisted": false,
+    "raw_model_output_persisted": false,
+    "raw_path_persisted": false,
+    "raw_prompt_persisted": false,
+    "raw_tool_output_persisted": false
+  },
+  "safety_tests": {
+    "audit_tests": 5,
+    "benchmark_guard_tests": 6,
+    "benign_false_denials": 0,
+    "transient_provider_regressions": 4
+  },
+  "quality_uplift": "NOT ESTABLISHED",
+  "paid_prospective_crossover": "NOT RUN"
+}

@@ -1,0 +1,56 @@
+{
+  "command": {
+    "argv": [
+      "/usr/bin/python3",
+      "-S",
+      "$PLUGIN_ROOT/hooks/prompt_dispatcher.py"
+    ],
+    "sha256": "d33a440ae3bce96c1231bbd5e2b7134d9e85c7192aa3445e2f3a08cc6d2673eb"
+  },
+  "floor_ms": {
+    "max": 47.96783300116658,
+    "min": 20.56200010702014,
+    "p50": 21.736396534834057,
+    "p95": 33.350746374344475,
+    "p99": 41.51812741300084
+  },
+  "hook_ms": {
+    "max": 111.1848340369761,
+    "min": 57.266084011644125,
+    "p50": 60.117041517514735,
+    "p95": 88.03094197646716,
+    "p99": 100.24981377413492
+  },
+  "host": {
+    "cpu_count": 10,
+    "loadavg_after": [
+      5.14208984375,
+      5.5791015625,
+      5.4189453125
+    ],
+    "loadavg_before": [
+      5.16845703125,
+      5.60546875,
+      5.4248046875
+    ],
+    "platform": "macOS-15.6.1-arm64-arm-64bit"
+  },
+  "incremental_ms": {
+    "p50": 38.23739499785006,
+    "p95": 59.81898153549992,
+    "p99": 71.01618682150728
+  },
+  "passed": true,
+  "plugin": {
+    "sha256": "5002eed61a82fca6046ef893facf4e10db2bb50c095360010e41fc082b956064"
+  },
+  "sample_counts": {
+    "floor": 150,
+    "hook": 300
+  },
+  "schema": "super-sol-hook-latency.v1",
+  "thresholds_ms": {
+    "absolute_hook_p95_lt": 100.0,
+    "incremental_p95_lt": 70.0
+  }
+}

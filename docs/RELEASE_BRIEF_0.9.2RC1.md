@@ -23,9 +23,29 @@ Focused red-green implementation tests for default silence, explicit selective c
 bounded incident auditing, audit privacy, benchmark test protection, and transient provider
 censoring passed before the full candidate freeze.
 
-Full Gate 0 is **NOT RUN** at this document revision. Coverage, complete-suite count, latency,
-replay, supply-chain audit, artifact hashes, and candidate commit will be recorded only after their
-commands complete. Paid Gate 1 is **NOT RUN** and requires separate explicit billable approval.
+Gate 0 completed against candidate commit `8092adf6ef916e2a5d43e2cf917c67ba71bbc1d1`.
+The complete suite passed 500/500 tests in 48.03 seconds with 90.84% combined source and hook
+coverage. Ruff formatting, Ruff lint, BasedPyright with zero errors and warnings, package build,
+archive inventory, dependency-lock provenance, stock hook lifecycle, and credential-stripped replay
+passed.
+
+The v0.9.2 safety replay passed 12/12 with zero unexpected contexts, zero network calls, and zero
+billable calls. Hook latency passed with absolute p95 `88.03094197646716 ms` and incremental p95
+`59.81898153549992 ms`, below the registered `100/70 ms` limits. Docker Scout found zero known
+vulnerable packages in both 57-package verifier and grader images and regenerated both SPDX SBOMs.
+
+The source-size audit found no new v0.9.2 production module above 250 non-comment, non-blank lines.
+It also found 12 pre-existing oversized source or test files; this legacy debt is disclosed rather
+than treated as completed refactoring outside the candidate scope.
+
+Machine-readable evidence is stored in
+[`v092-gate0.json`](../benchmarks/v0.9-loop-replay/v092-gate0.json),
+[`v092-audit.json`](../benchmarks/v0.9-loop-replay/v092-audit.json),
+[`v092-latency.json`](../benchmarks/v0.9-loop-replay/v092-latency.json), and
+[`v092-report.json`](../benchmarks/v0.9-loop-replay/v092-report.json).
+
+Paid Gate 1 is **NOT RUN** and requires separate explicit billable approval. Quality uplift remains
+unestablished, so v0.8.0 remains the stable release and v0.9.2-rc1 remains a prerelease.
 
 The frozen decision rules are in
 [`V0.9.2_PROMOTION_PROTOCOL.md`](V0.9.2_PROMOTION_PROTOCOL.md).
